@@ -4,7 +4,7 @@ Living document. Records decisions, the reasoning behind them, and the questions
 Originates from a Spanish-language idea sketch; this is the refined English version the
 implementation follows.
 
-Companion documents: [content plan](content.md) · [decisions](decisions/)
+Companion documents: [content plan](content.md) · [format & rendering](rendering.md) · [decisions](decisions/)
 
 ---
 
@@ -108,8 +108,11 @@ numbers to `needs_close_review` rather than rejecting.
 **Hard case — false positives.** Years, list positions, "top 10", version numbers. Needs a small
 ignore-list and a notion of "numbers that are not claims". Table-driven tests will earn their keep.
 
-**Hard case — locale number formats.** `3,400.50` in English is `3.400,50` in Spanish and German.
-The validator must normalise per locale before comparing, or every translation fails. See §3.5.
+**Solved by the format contract.** Numbers live in typed frontmatter fields, not in prose (see
+[rendering](rendering.md)), so validation is field-by-field comparison against the manifest rather
+than regex extraction — and the prose is validated by the simpler assertion that it contains *no*
+unaccounted numerics at all. This also removes the locale number-format problem entirely: figures
+never appear in translated text.
 
 ### 3.4 Retrieval (RAG)
 
@@ -148,15 +151,18 @@ source draft → provenance ✓ → human review ✓ → canonical
                                     └→ ×6 locales
 ```
 
-The translation validator asserts, per locale:
+Only prose is translated. The `data` block — every figure in the post — is identical across all
+seven locale files, and Phoenix formats numbers at render time using the app's existing localisation
+(see [rendering](rendering.md)). The translation validator therefore asserts, per locale:
 
-- **Same numeric multiset as the source**, after locale-aware normalisation (decimal comma vs point,
-  thousands separator, currency placement, date format).
-- **Same ticker symbols**, in the same count.
-- **Same structure** — section count, heading count, link count and targets.
+- **`data` block byte-identical to the source.** No figure can drift in translation because no figure
+  is translated.
+- **No numerics introduced into prose.** Same rule as the source draft.
+- **Same structure** — prose section count and keys, link count and targets.
 - **No added claims** — length within a tolerance band of the source.
-- **Same fold position** — the `fold_after` marker sits at the equivalent structural point (see
-  [content plan](content.md#registration-gate)).
+
+This is a stronger guarantee than the locale-aware numeric normalisation it replaces, and much less
+code.
 
 Any mismatch holds that locale only; the source and the passing locales still publish. A held locale
 surfaces in the review queue with the specific assertion that failed.
@@ -197,9 +203,11 @@ Retention: `tool_calls` responses can be large; plan a compaction policy before 
 
 - **Review queue** — SQLite rows plus a minimal read-only HTTP view (`net/http` + `html/template`,
   no JS framework) once there are more than a handful of drafts. Deliberately not a product.
-- **Pull requests** — `go-github`: branch, commit markdown files, open PR against the private Quantic
-  repo, targeting the `/insights` section. Token scoped to branch and PR creation only; `main` is
-  protected independently, so a bug in the agent cannot merge.
+- **Pull requests** — `go-github`: branch, commit one file per locale (typed frontmatter + prose,
+  per the [format contract](rendering.md)), open PR against the private Quantic repo targeting
+  `/insights`. Token scoped to branch and PR creation only; `main` is protected independently, so a
+  bug in the agent cannot merge. NimblePublisher compiles posts at build time, so a malformed post
+  fails CI rather than a request.
 - **Issues** — for data-QA findings with no mechanical fix.
 
 ## 4. Stack
@@ -244,6 +252,10 @@ Retention: `tool_calls` responses can be large; plan a compaction policy before 
    `embed`, not stored in the database. They must contain no Quantic-internal content (N4).
 7. **Chunking strategy for filings.** 10-Ks are long and structured. Naive fixed-size chunking will
    split tables badly. Deferred until milestone 10.
+8. **Can a 14B model reliably write prose with no figures in it?** The format contract forbids
+   numbers in prose entirely. Small models will violate this. The validator catches it and retries,
+   but if the violation rate is high the writing prompt needs restructuring — possibly generating
+   prose and data in separate calls. This is the likeliest place the accept-rate metric first bites.
 
 ## 6. Explicit non-goals
 

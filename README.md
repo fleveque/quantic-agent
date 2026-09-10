@@ -108,7 +108,8 @@ Delivery tools live outside the loop entirely. See
 | `internal/rag` | Embeddings in SQLite BLOBs, brute-force cosine similarity, style memory over approved drafts |
 | `internal/provenance` | Records every tool call; validates that generated numbers trace back to one |
 | `internal/tasks` | Task definitions (Week Ahead, raise/cut notes, valuation write-up, data QA) and schedules |
-| `internal/i18n` | Translation pass and the locale-aware translation validator across 7 locales |
+| `internal/i18n` | Translation pass (prose only) and the translation validator across 7 locales |
+| `internal/post` | The output format: typed frontmatter + prose, serialisation, fold marker |
 | `internal/store` | SQLite: review queue, task history, full tool-call audit log |
 | `internal/ghpr` | `go-github` helper: branch, commit, open PR — no push to `main`, ever |
 
@@ -136,11 +137,17 @@ opportunistically: work while the machine is on, checkpoint state, resume cleanl
 
 The flagship format, built and proved first:
 
-**The Dividend Week Ahead** — weekly, ~600 words. *N companies go ex-dividend this week* (table:
-ticker, ex-date, amount, yield), *raises declared* with old → new, *cuts and at-risk flags* from the
-existing dividend-safety work, *radar movers*, and one short "what to watch" paragraph that is the
-only freely written prose and contains no figures. Published to `/insights` across all seven locales
-from one human review, plus a social variant sharing the same manifest.
+**The Dividend Week Ahead** — weekly. *N companies go ex-dividend this week* (table: ticker, ex-date,
+amount, yield, safety badge), *raises declared* with old → new, *cuts and at-risk flags* from the
+existing dividend-safety work, *radar movers*, and one short "what to watch" paragraph. Published to
+`/insights` across all seven locales from one human review, plus a social variant sharing the same
+manifest.
+
+The agent emits **typed data plus prose**, never HTML and never markdown tables — a Phoenix template
+per post kind renders it through the components Quantic already has, so posts look like Quantic and a
+redesign never means regenerating content. Figures live in structured fields, prose contains no
+numbers at all, which makes provenance validation exact and removes locale number formatting from the
+agent's problem entirely. See the [format contract](docs/rendering.md).
 
 Then, in order: **raise & cut notes** (event-driven, a raise is news the day it's declared),
 **valuation deep-dives** (evergreen, where retrieval over filings earns its place), and a **monthly
@@ -183,7 +190,7 @@ the point is learning Go, not just having an agent.
 | 8 | **The agentic research loop** — dispatch, budgets, retries | state machines, backoff, `context` in a loop |
 | 9 | Worker pool: serialised GPU, parallel I/O | goroutines, channels, `sync`, `errgroup`, semaphores |
 | 10 | **Retrieval**: embeddings, brute-force cosine, style memory | `[]float32` math, `testing.B`, BLOBs |
-| 11 | Week Ahead end to end, 7 locales, translation validator | time, `embed`, `x/text`, locale number formats |
+| 11 | Week Ahead end to end, 7 locales, translation validator | time, `embed`, YAML marshalling, struct tags |
 | 12 | GitHub PR flow | `go-github`, auth, third-party module ergonomics |
 | 13 | Ship it: binary, `log/slog`, systemd unit | build flags, cross-compilation, structured logging |
 
@@ -196,6 +203,7 @@ Elixir and Ruby — what surprised me, what I got wrong first, and why Go does i
 
 - [`docs/design.md`](docs/design.md) — architecture, provenance, retrieval, translation, open questions
 - [`docs/content.md`](docs/content.md) — what gets published, cadence, locales, the registration gate
+- [`docs/rendering.md`](docs/rendering.md) — the format contract: typed data + prose, rendered by Quantic components
 - [`docs/decisions/`](docs/decisions) — architecture decision records
 - [`docs/lessons/`](docs/lessons) — the Go lessons
 

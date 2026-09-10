@@ -1,6 +1,7 @@
 # Content plan
 
-What the agent publishes, how often, and where it lands. Companion to the [design](design.md).
+What the agent publishes, how often, and where it lands. Companion to the [design](design.md) and the
+[format & rendering contract](rendering.md).
 
 ---
 
@@ -92,8 +93,9 @@ Google's *flexible sampling*:
   cloaking penalty applies.
 
 **Agent-side consequence:** the agent must emit the fold itself, because it's the only thing that
-knows where the natural hook sits. Each draft carries a `fold_after` field in its frontmatter, and
-the writing prompt is instructed to place it where curiosity peaks.
+knows where the natural hook sits. Each draft carries a `fold_after` field in its frontmatter naming
+the block the gate opens after, and the writing prompt is instructed to place it where curiosity
+peaks. See the [format contract](rendering.md).
 
 For the Week Ahead that's typically: free portion gives the *counts and the shape* — "23 companies go
 ex-dividend this week, three raises declared, one cut" — and the gate opens onto the full table with
