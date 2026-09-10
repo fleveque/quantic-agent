@@ -1,0 +1,25 @@
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+config.local.yaml
+
+# Local state
+*.db
+*.db-shm
+*.db-wal
+/data/
+
+# Go build output
+/bin/
+/dist/
+*.exe
+*.test
+*.out
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
