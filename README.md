@@ -64,23 +64,37 @@ concurrency are genuinely different models, which is the point.
 ## Architecture
 
 ```
-┌──────────────┐      ┌──────────────────────────────────────┐      ┌─────────────┐
-│ local LLM    │◄────►│           quantic-agent (Go)         │◄────►│ Quantic MCP │
-│ Qwen · GPU   │ tool │  scheduler · worker pool · provenance │ data │ (real data) │
-└──────────────┘ calls└──────────────────────────────────────┘      └─────────────┘
-                                    │           │
-                        drafts +    │           │  code changes
-                        provenance  ▼           ▼
-                              ┌──────────┐  ┌──────────────┐
-                              │  SQLite  │  │  GitHub PR   │
-                              │  review  │  │  (never      │
-                              │  queue   │  │   merged)    │
-                              └──────────┘  └──────────────┘
-                                    │              │
-                                    └──────┬───────┘
-                                           ▼
-                                   human review — always
+                    ┌───── RESEARCH (agentic, bounded) ─────┐
+   ┌──────────┐     │                                       │
+   │ local LLM│◄───►│   model ⇄ read-only Quantic tools  ×N  │──► manifest
+   │ Qwen·GPU │     │   budgets: calls · time · tokens       │       │
+   └──────────┘     └───────────────────────────────────────┘       │
+        ▲                                                            ▼
+        │                                              ┌──────────────────────┐
+        └──────────────────────────────────────────────│  WRITE (no tools)    │
+                                                       │  prose from manifest │
+                                                       └──────────┬───────────┘
+                                                                  ▼
+                                                       ┌──────────────────────┐
+                                                       │ PROVENANCE VALIDATOR │
+                                                       │ every number traced  │
+                                                       └──────────┬───────────┘
+                                                    ┌─────────────┴────────────┐
+                                                    ▼                          ▼
+                                            ┌──────────────┐          ┌────────────────┐
+                                            │ SQLite queue │          │  GitHub PR     │
+                                            │ + 7 locales  │          │  (never merged)│
+                                            └──────┬───────┘          └───────┬────────┘
+                                                   └───────────┬──────────────┘
+                                                               ▼
+                                                       human review — always
 ```
+
+The split is the whole design: **research is a real agentic loop** where the model picks tools and
+follows threads, bounded by call/time/token budgets over a read-only allowlist. **Writing has no tools
+at all** — it receives the accumulated manifest and nothing else, so it cannot wander into invention.
+Delivery tools live outside the loop entirely. See
+[decision 0001](docs/decisions/0001-agentic-research-constrained-writing.md).
 
 ### Components
 
@@ -89,9 +103,12 @@ concurrency are genuinely different models, which is the point.
 | `cmd/agent` | Entrypoint, flag/config parsing, daemon loop and graceful shutdown |
 | `internal/llm` | Local model client (Ollama HTTP API), tool-call schema, structured-output decoding |
 | `internal/mcp` | Client for Quantic's MCP server — the only source of financial facts |
-| `internal/tools` | Tool registry exposed to the model: Quantic data tools + `create_pr` + `enqueue_for_review` |
+| `internal/agent` | The research loop: tool dispatch, budget accounting, retries, phase state machine |
+| `internal/tools` | Tool registry and JSON schemas generated from Go structs; read-only allowlist vs delivery tools |
+| `internal/rag` | Embeddings in SQLite BLOBs, brute-force cosine similarity, style memory over approved drafts |
 | `internal/provenance` | Records every tool call; validates that generated numbers trace back to one |
-| `internal/tasks` | Task definitions (weekly digest, valuation write-up, data QA) and their schedules |
+| `internal/tasks` | Task definitions (Week Ahead, raise/cut notes, valuation write-up, data QA) and schedules |
+| `internal/i18n` | Translation pass and the locale-aware translation validator across 7 locales |
 | `internal/store` | SQLite: review queue, task history, full tool-call audit log |
 | `internal/ghpr` | `go-github` helper: branch, commit, open PR — no push to `main`, ever |
 
@@ -115,19 +132,27 @@ opportunistically: work while the machine is on, checkpoint state, resume cleanl
 
 ---
 
-## Use cases, ordered by how safe they are
+## What it publishes
 
-1. **Data-grounded content drafts** — valuation analyses, dividend summaries, stock comparisons built
-   from `get_valuation`, `dividend_calendar`, `screen_stocks`, `compare_stocks`. Output: a PR adding a
-   markdown file. *(Safest: worst case is a bad draft nobody merges.)*
-2. **Periodic digests** — what went ex-dividend, notable yield moves, new radar entries. Output: a
-   review-queue row with text ready for Telegram/Reddit. *(A human presses publish.)*
-3. **Data QA / enrichment** — nulls, outliers, impossible dates, suspicious dividend histories across
-   the instrument universe. Output: GitHub issues, or small mechanical PRs against parsers/seeds.
-4. **Low-risk code work** — mechanical refactors, new tests, fixture updates, docs.
-   *Never:* business logic, financial calculations, or anything touching real user money.
+The flagship format, built and proved first:
 
----
+**The Dividend Week Ahead** — weekly, ~600 words. *N companies go ex-dividend this week* (table:
+ticker, ex-date, amount, yield), *raises declared* with old → new, *cuts and at-risk flags* from the
+existing dividend-safety work, *radar movers*, and one short "what to watch" paragraph that is the
+only freely written prose and contains no figures. Published to `/insights` across all seven locales
+from one human review, plus a social variant sharing the same manifest.
+
+Then, in order: **raise & cut notes** (event-driven, a raise is news the day it's declared),
+**valuation deep-dives** (evergreen, where retrieval over filings earns its place), and a **monthly
+dividend health report**.
+
+Deliberately weekly, not daily — Google's scaled-content-abuse policy targets bulk machine-generated
+pages, and quantic.es is a real domain with ranking pages already earning traffic. Full reasoning,
+formats and the registration-gate design in the [content plan](docs/content.md).
+
+Alongside the content: **data QA** (nulls, outliers, impossible dates across the instrument universe →
+GitHub issues or small mechanical PRs) and **low-risk code work** (refactors, tests, fixtures, docs).
+*Never:* business logic, financial calculations, or anything touching real user money.
 
 ## Guardrails
 
@@ -147,27 +172,32 @@ the point is learning Go, not just having an agent.
 
 | # | Milestone | Go ground covered |
 |---|---|---|
-| 0 | Repo, design, README | — *(you are here)* |
+| 0 | Repo, design, decisions | — *(you are here)* |
 | 1 | Hello, module: layout, `cmd/` vs `internal/`, first test | modules, packages, visibility, `go test` |
 | 2 | Ollama client: send a prompt, decode the response | structs, JSON tags, interfaces, `net/http` |
 | 3 | Error handling across the LLM boundary | `error` values, wrapping, `errors.Is/As`, sentinels |
 | 4 | Timeouts and cancellation for slow generations | `context`, deadlines, graceful shutdown |
-| 5 | First real tool: `dividend_calendar` end to end | encoding/json edge cases, schema definition |
+| 5 | First real tool: `dividend_calendar` end to end | schema from structs, reflection, MCP auth |
 | 6 | Provenance validator + table-driven tests | slices/maps, `testing`, `httptest`, fakes |
-| 7 | SQLite review queue | `database/sql`, migrations, transactions |
-| 8 | Worker pool: serialised GPU, parallel I/O | goroutines, channels, `sync`, `errgroup`, semaphores |
-| 9 | Weekly digest task, scheduled | time, tickers, config, `embed` |
-| 10 | GitHub PR flow | `go-github`, auth, third-party module ergonomics |
-| 11 | Ship it: binary, `log/slog`, systemd unit | build flags, cross-compilation, structured logging |
+| 7 | SQLite: runs, drafts, audit log | `database/sql`, migrations, transactions |
+| 8 | **The agentic research loop** — dispatch, budgets, retries | state machines, backoff, `context` in a loop |
+| 9 | Worker pool: serialised GPU, parallel I/O | goroutines, channels, `sync`, `errgroup`, semaphores |
+| 10 | **Retrieval**: embeddings, brute-force cosine, style memory | `[]float32` math, `testing.B`, BLOBs |
+| 11 | Week Ahead end to end, 7 locales, translation validator | time, `embed`, `x/text`, locale number formats |
+| 12 | GitHub PR flow | `go-github`, auth, third-party module ergonomics |
+| 13 | Ship it: binary, `log/slog`, systemd unit | build flags, cross-compilation, structured logging |
 
 ## Lessons
 
 Written as I go, in [`docs/lessons`](docs/lessons). They're notes from someone coming to Go from
 Elixir and Ruby — what surprised me, what I got wrong first, and why Go does it that way.
 
-## Design document
+## Documents
 
-The full design and its open questions live in [`docs/design.md`](docs/design.md).
+- [`docs/design.md`](docs/design.md) — architecture, provenance, retrieval, translation, open questions
+- [`docs/content.md`](docs/content.md) — what gets published, cadence, locales, the registration gate
+- [`docs/decisions/`](docs/decisions) — architecture decision records
+- [`docs/lessons/`](docs/lessons) — the Go lessons
 
 ## Licence
 
