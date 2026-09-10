@@ -119,10 +119,17 @@ seven indexable pages, and the hosts to carry them already exist:
 | `ca` | `quantic.cat` | | `fr` | `fr.quantic.finance` |
 | | | | `it` | `it.quantic.finance` |
 
-The review burden is handled by *not* human-reviewing translations. You review the source once;
-the other six are machine-verified by the translation validator (same numeric multiset after
-locale-aware normalisation, same tickers, same structure). A locale that fails is held; the rest
-publish. Full mechanism in [design §3.5](design.md#35-translation).
+The review burden is handled by *not* human-reviewing every translation:
+
+- **`en` is the source** — Quantic's reference language and the canonical host. This is the draft the
+  provenance validator gates and the one you read in full.
+- **`es` is spot-checked** — the locale you can actually judge, so it surfaces in the queue for a
+  fluency read. Not a re-review of facts: the `data` block is byte-identical to the source, so no
+  figure can differ.
+- **`ca`, `fr`, `de`, `it`, `pt` publish on machine verification** — same data block, same structure,
+  no numerics introduced, length in tolerance. A locale that fails is held; the rest publish.
+
+Full mechanism in [design §3.5](design.md#35-translation).
 
 Register follows existing Quantic conventions: informal throughout, Brazilian Portuguese for `pt`.
 Note this is per-locale markdown, not gettext — the msgid rules don't apply to content.
