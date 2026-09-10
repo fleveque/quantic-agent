@@ -56,3 +56,11 @@ retries — and expect this to be where the accept-rate metric first bites.
 
 **Rejected — directives in the body** (`{{ block: ex_dividends }}`). Needs a custom parser, is an
 injection surface fed by model output, and lets the agent make layout decisions it has no basis for.
+
+**Rejected — a post-hoc transformation commit.** Let the agent emit plain prose markdown, then convert
+it to the structured form as a second commit on the PR, by hand or with a frontier model. This breaks
+N1: the validated artifact stops being the published one, and a digit transposed during transformation
+has nothing to catch it. It also inverts the effort — the tool data arrives structured, so emitting
+frontmatter is `yaml.Marshal` on a struct the agent already holds, while flattening it to a prose
+table for something else to rebuild is strictly more work. A frontier model's leverage here is
+one-time template work in the Quantic repo, not a per-post step run ~350 times a year.

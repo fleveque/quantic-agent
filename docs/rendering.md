@@ -18,6 +18,15 @@ reach them.
 Emitting HTML from the agent is worse: unreviewable in a PR diff, an injection surface, and it welds
 generated content to whatever the frontend looked like the day it was generated.
 
+## It is still a markdown file
+
+Worth stating plainly, because the section below can read as more exotic than it is: **the agent
+commits a `.md` file, and Quantic does the markdown-to-HTML conversion.** That part is exactly the
+obvious design.
+
+The only refinement is *where the numbers live*. Both of these are `.md` files rendered by the app;
+one of them can reach the design system and one can't.
+
 ## The format: structured data + named prose
 
 A post is **one file per locale** with YAML frontmatter and a markdown body:
@@ -114,6 +123,35 @@ simpler, safer, and smaller to validate.
 
 The cost is that a new post *shape* needs a new template. That's fine — there are four planned
 formats, not four hundred.
+
+### Why not have a human (or Claude Code) transform the markdown afterwards?
+
+A tempting shortcut: let the agent emit plain prose markdown, then convert it to the structured form
+as a second commit on the PR — by hand, or with a frontier model that's far better at the
+transformation than a local 14B.
+
+Rejected for the recurring case, for two reasons.
+
+**It breaks provenance.** N1 says every published figure traces to a recorded tool call. The validated
+artifact is the draft the validator passed. If an unvalidated step afterwards rewrites the content,
+what ships is no longer what was checked, and a transposed digit introduced during transformation has
+nothing to catch it. The guarantee has to hold all the way to the commit.
+
+**It doesn't scale, and it's the wrong direction of effort.** This runs weekly across seven locales —
+a per-post manual step is ~350 transformations a year. And the premise doesn't hold: emitting
+frontmatter is *easier* for the agent than writing good prose tables, not harder. The data comes back
+from the tools already structured; the Go side is `yaml.Marshal` on a struct it already has. Asking
+the model to flatten structured data into a markdown table, so that something else can rebuild the
+structure later, is strictly more work and more places to lose fidelity.
+
+**Where a frontier model genuinely helps: once, on the templates.** Turning "here's what a Week Ahead
+should look like" into `week_ahead.html.heex`, the `Post` struct, and the components around them is a
+one-time job in the Quantic repo, and a good one to hand to Claude Code. After that the agent emits
+frontmatter directly and no per-post transformation exists.
+
+**Legitimate as scaffolding only.** Before the template exists, the first two or three posts can be
+hand-rendered to validate that the format is right. That's a bootstrap with an end date, not the
+architecture.
 
 ### Charts
 
