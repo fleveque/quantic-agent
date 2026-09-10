@@ -10,7 +10,7 @@ Companion documents: [content plan](content.md) · [format & rendering](renderin
 
 ## 1. Problem
 
-Quantic (quantic.es) is a dividend-portfolio tracker: Elixir/Phoenix monolith, real users, real
+Quantic (quantic.finance) is a dividend-portfolio tracker: Elixir/Phoenix monolith, real users, real
 money decisions. Two recurring jobs are repetitive, LLM-shaped, and intolerant of hallucination:
 
 1. **Content.** Recurring, data-grounded publishing — a weekly dividend digest, raise/cut notes,
@@ -167,9 +167,13 @@ code.
 Any mismatch holds that locale only; the source and the passing locales still publish. A held locale
 surfaces in the review queue with the specific assertion that failed.
 
-Note this is a *different mechanism* from Quantic's gettext workflow. Blog content is per-locale
-markdown files, not msgids — the existing "never edit msgids, fill msgstr" rules don't apply here.
-The register conventions do: informal throughout, Brazilian Portuguese for `pt`.
+Note this is a *different mechanism* from Quantic's gettext workflow. Content is per-locale markdown
+files, not msgids — the existing "never edit msgids, fill msgstr" rules don't apply here. The register
+conventions do: informal throughout, Brazilian Portuguese for `pt`.
+
+Quantic resolves locale from the **request host**, not a path prefix, so a post's seven files are
+keyed by locale and served on the host that carries that language — see
+[rendering](rendering.md#locales-are-hosts-not-paths).
 
 ### 3.6 Concurrency model
 

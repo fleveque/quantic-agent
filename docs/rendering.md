@@ -191,12 +191,30 @@ is a much stronger guarantee than the one it replaces.
 
 ---
 
+## Locales are hosts, not paths
+
+Quantic resolves locale from the **request host**, app-wide — `quantic.finance` is `en` and
+canonical, `quantic.es` is `es`, `quantic.cat` is `ca`, and `pt`/`de`/`fr`/`it` live on
+`{lang}.quantic.finance`. There are no path prefixes, which is why internal links (`~p"/…"`) are
+locale-agnostic.
+
+Three consequences for content, all of them simplifications:
+
+- **The seven files are keyed by locale, not by path.** `/insights/week-ahead-2026-W38` is the same
+  route on every host; which locale's file it renders is decided by the host that served the request.
+- **Canonical, hreflang and per-host sitemaps are already automatic** through the existing SEO layer,
+  driven by `:locale_origins`. The section needs to appear in the sitemap; the seven-way alternate
+  wiring is not new work.
+- **Links inside a post need no locale handling.** A ticker chip pointing at `/stocks/MSFT` resolves
+  on whatever host the reader is on, so the agent emits plain paths and never thinks about locale.
+
 ## What this needs from the Quantic repo
 
 Prerequisite work, none of it agent work:
 
-1. `/insights` route, index, and per-locale routing consistent with the language subdomains.
-2. NimblePublisher + MDEx wired up, one `Post` struct per kind.
+1. `/insights` route and index, plus the section registered in the sitemap. No locale-aware routing
+   needed — the host already carries it.
+2. NimblePublisher + MDEx wired up, raw HTML disabled, one `Post` struct per kind, locale-keyed
+   lookup.
 3. `week_ahead.html.heex` and the components it composes (most already exist).
 4. The free-registration gate honouring `fold_after`, with `schema.org` flexible-sampling markup.
-5. Sitemap and hreflang entries for the section.

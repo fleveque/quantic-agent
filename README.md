@@ -1,6 +1,6 @@
 # quantic-agent
 
-A local, autonomous content and QA agent for [Quantic](https://quantic.es), written in Go.
+A local, autonomous content and QA agent for [Quantic](https://quantic.finance), written in Go.
 
 It runs on my own hardware, drives a **local LLM** (no API bills, no data leaving the machine),
 pulls **real financial data** from Quantic's MCP server, and turns it into draft content, data-quality
@@ -154,7 +154,7 @@ Then, in order: **raise & cut notes** (event-driven, a raise is news the day it'
 dividend health report**.
 
 Deliberately weekly, not daily — Google's scaled-content-abuse policy targets bulk machine-generated
-pages, and quantic.es is a real domain with ranking pages already earning traffic. Full reasoning,
+pages, and quantic.finance is a real domain with ranking pages already earning traffic. Full reasoning,
 formats and the registration-gate design in the [content plan](docs/content.md).
 
 Alongside the content: **data QA** (nulls, outliers, impossible dates across the instrument universe →

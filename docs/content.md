@@ -10,8 +10,8 @@ What the agent publishes, how often, and where it lands. Companion to the [desig
 - **Recurring and time-anchored beats evergreen volume.** A reader who knows something lands every
   Sunday comes back. A pile of undated listicles doesn't.
 - **Weekly, not daily.** Two reasons. Google's scaled-content-abuse policy explicitly targets bulk
-  machine-generated pages, and quantic.es is a real domain with real ranking pages already earning
-  traffic — 365 auto-written pages a year is a way to damage it. Second, a 14B model at daily cadence
+  machine-generated pages, and quantic.finance is a real domain with real ranking pages already
+  earning traffic — 365 auto-written pages a year is a way to damage it. Second, a 14B model at daily cadence
   produces daily *mediocre* output, and a review queue that's a chore is a review queue that stops
   being read. Cadence is easy to raise later; a penalised domain is not easy to fix.
 - **Don't duplicate the ranking pages.** The aristocrats/kings/monthly/highest-yield/safest-REIT
@@ -74,9 +74,10 @@ Anything daily. Anything whose value depends on the model having an opinion.
 A new markdown-backed section in the Phoenix app. The agent opens a PR adding one `.md` file per
 locale per post; the app renders them.
 
-Per-locale routing follows the language subdomains already shipped, with hreflang across all seven
-and the section in the sitemap. **This section doesn't exist yet** — it's prerequisite work in the
-private Quantic repo, not agent work, and it blocks the first content milestone.
+Locale comes from the request host, which Quantic already does app-wide, so `/insights` needs no
+locale-aware routing of its own and canonical/hreflang/sitemap come for free from the existing SEO
+layer. **The section itself doesn't exist yet** — prerequisite work in the private Quantic repo, not
+agent work, and it blocks the first content milestone.
 
 ### Registration gate
 
@@ -109,7 +110,14 @@ obligation is the marker.
 ## Locales
 
 All seven from the first content milestone. The multiplier is the point: one reviewed post becomes
-seven indexable pages, and the language subdomains to carry them already exist.
+seven indexable pages, and the hosts to carry them already exist:
+
+| Locale | Host | | Locale | Host |
+|---|---|---|---|---|
+| `en` | `quantic.finance` *(canonical)* | | `pt` | `pt.quantic.finance` |
+| `es` | `quantic.es` | | `de` | `de.quantic.finance` |
+| `ca` | `quantic.cat` | | `fr` | `fr.quantic.finance` |
+| | | | `it` | `it.quantic.finance` |
 
 The review burden is handled by *not* human-reviewing translations. You review the source once;
 the other six are machine-verified by the translation validator (same numeric multiset after
