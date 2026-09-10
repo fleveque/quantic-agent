@@ -5,6 +5,8 @@ turns out to be enforced by the compiler rather than by convention. That's the s
 
 Coming from Elixir and Ruby, where project structure is convention plus a linter's opinion.
 
+*Also readable as a [formatted page](https://claude.ai/code/artifact/bd329fad-14ba-44b7-8188-bd98cf419424).*
+
 ---
 
 ## The module is the unit, not the directory
