@@ -194,6 +194,16 @@ the point is learning Go, not just having an agent.
 | 12 | GitHub PR flow | `go-github`, auth, third-party module ergonomics |
 | 13 | Ship it: binary, `log/slog`, systemd unit | build flags, cross-compilation, structured logging |
 
+## Working on this
+
+`main` is protected: no direct pushes, every change goes through a pull request, and CI must pass
+before merge. Same discipline as the main Quantic repo — worth having on a solo project precisely
+because there's nobody else to catch a bad push.
+
+CI runs `gofmt`, `go vet`, `go build` and `go test -race`, plus a check that relative links in the
+docs still resolve. Until milestone 1 lands real packages the Go steps skip themselves and say so —
+a green tick that checked nothing would be worse than no tick.
+
 ## Lessons
 
 Written as I go, in [`docs/lessons`](docs/lessons). They're notes from someone coming to Go from
@@ -204,7 +214,7 @@ Elixir and Ruby — what surprised me, what I got wrong first, and why Go does i
 - [`docs/design.md`](docs/design.md) — architecture, provenance, retrieval, translation, open questions
 - [`docs/content.md`](docs/content.md) — what gets published, cadence, locales, the registration gate
 - [`docs/rendering.md`](docs/rendering.md) — the format contract: typed data + prose, rendered by Quantic components
-- [`docs/decisions/`](docs/decisions) — architecture decision records
+- [`docs/decisions/`](docs/decisions) — architecture decision records (why the design is what it is)
 - [`docs/lessons/`](docs/lessons) — the Go lessons
 
 ## Licence

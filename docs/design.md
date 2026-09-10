@@ -140,15 +140,28 @@ shortcut; revisit only if the corpus grows two orders of magnitude. Embeddings f
 ### 3.5 Translation
 
 All seven Quantic locales are in scope from the first content milestone. The review burden is the
-thing to design around: **the human reviews the source once; translations are machine-verified, not
-human-reviewed.**
+thing to design around: **the human reviews the source; translations are machine-verified, not
+human-reviewed — with one exception.**
+
+**English is the source.** It's Quantic's reference language and the canonical host, so the `en` draft
+is what the validator gates and what the human reads first.
+
+**Spanish is spot-checked.** `es` is the locale the reviewer can actually judge for correctness, so it
+surfaces in the review queue alongside the source rather than publishing on machine verification
+alone. It's a fluency check on the translation pass, not a re-review of the facts — those are already
+guaranteed identical by the byte-identical `data` block.
+
+The remaining five (`ca`, `fr`, `de`, `it`, `pt`) publish on machine verification. A sustained
+pattern of problems found in the `es` spot-check is evidence the translation prompt is wrong for all
+of them, so the queue records spot-check outcomes as a signal, not just a gate.
 
 ```
-source draft → provenance ✓ → human review ✓ → canonical
-                                    │
-                                    ├→ translate (model, no tools) → translation validator → publish
-                                    ├→ …                                                      ↘ hold
-                                    └→ ×6 locales
+en draft → provenance ✓ → human review ✓ → canonical (reference)
+                                │
+                                ├→ es → translation validator ✓ → human spot-check → publish
+                                │                                                      ↘ hold
+                                └→ ca fr de it pt → translation validator ✓ ──────────→ publish
+                                                                            ↘ hold
 ```
 
 Only prose is translated. The `data` block — every figure in the post — is identical across all
@@ -195,7 +208,8 @@ SQLite via `modernc.org/sqlite` (pure Go, no cgo — preserves the static-binary
 
 - `runs` — id, task_kind, params, phase, state, budgets_used, started_at, finished_at, error
 - `tool_calls` — id, run_id, tool, args, response, duration_ms, called_at *(the audit log, N3)*
-- `drafts` — id, run_id, locale, content, state, validator_report, created_at
+- `drafts` — id, run_id, locale, role (`source` | `spot_check` | `auto`), content, state,
+  validator_report, created_at
 - `manifests` — draft_id → tool_call_ids *(provenance link, N1)*
 - `embeddings` — id, source_kind, source_id, chunk, vector BLOB, model, created_at
 - `reviews` — draft_id, verdict, reviewer_note, decided_at *(feeds both style memory and the

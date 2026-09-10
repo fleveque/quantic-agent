@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Grouped per ref so a push to a branch cancels only that branch's in-flight
+# run. A main run is never cancelled by a PR's.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          # Single source of truth: the version in go.mod. setup-go caches
+          # modules and the build cache by default, keyed on go.sum.
+          go-version-file: go.mod
+
+      # The repo starts as design docs with no Go code (milestone 0). Without
+      # this guard the steps below would still pass, but silently — and a
+      # green tick that checked nothing is worse than no tick. Delete this
+      # step and the `if:` conditions once milestone 1 lands real packages.
+      - name: Is there Go code yet?
+        id: probe
+        run: |
+          if [ -n "$(find . -name '*.go' -not -path './.git/*' -print -quit)" ]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No .go files yet — skipping build, vet and test."
+          fi
+
+      - name: Check formatting
+        if: steps.probe.outputs.found == 'true'
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "::error::gofmt would change these files:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: Build
+        if: steps.probe.outputs.found == 'true'
+        run: go build ./...
+
+      # Go's closest equivalent to --warnings-as-errors. vet catches the
+      # mistakes the compiler permits: bad Printf verbs, unused results of
+      # pure functions, struct tags that don't parse.
+      - name: Vet
+        if: steps.probe.outputs.found == 'true'
+        run: go vet ./...
+
+      # -race matters more here than in most projects: the agent's whole point
+      # is a worker pool sharing a GPU semaphore and a SQLite handle.
+      - name: Test
+        if: steps.probe.outputs.found == 'true'
+        run: go test -race ./...
+
+  docs:
+    name: docs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # This repo is mostly cross-linked design docs and lessons, so a moved
+      # file breaks navigation silently. Checks relative links only; external
+      # URLs are not fetched.
+      - name: Check relative links resolve
+        run: |
+          fail=0
+          while IFS= read -r file; do
+            dir="$(dirname "$file")"
+            while IFS= read -r link; do
+              target="${link%%#*}"
+              [ -z "$target" ] && continue
+              if [ ! -e "$dir/$target" ]; then
+                echo "::error file=$file::broken relative link: $link"
+                fail=1
+              fi
+            done < <(grep -oP '\]\(\K[^)]+' "$file" | grep -Ev '^(https?:|mailto:|#)')
+          done < <(find . -name '*.md' -not -path './.git/*')
+          exit "$fail"
