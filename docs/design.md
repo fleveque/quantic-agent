@@ -105,6 +105,14 @@ derived numbers enter the manifest legitimately. The tools are trivial to write,
 keep the invariant total. Fallback if this proves too strict in practice: downgrade unaccounted
 numbers to `needs_close_review` rather than rejecting.
 
+The calculators return **full `float64` precision and never round**. 1.50 → 1.55 is
+`3.333333333333336`, and that is the value the manifest records and the data block carries. Rounding
+is presentation, so the template does it — which means the figure the validator compares is exactly
+the figure the tool returned, with no rounding rule duplicated between Go and Elixir. A calculator
+also refuses inputs it can't answer honestly: `pct_change` from a zero or negative base returns an
+error rather than `Inf` or a percentage whose sign reads backwards. Implemented in
+[`internal/tools`](../internal/tools/calc.go), milestone 1.
+
 **Hard case — false positives.** Years, list positions, "top 10", version numbers. Needs a small
 ignore-list and a notion of "numbers that are not claims". Table-driven tests will earn their keep.
 

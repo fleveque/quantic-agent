@@ -7,8 +7,9 @@ pulls **real financial data** from Quantic's MCP server, and turns it into draft
 reports and small code changes — delivered as **pull requests and review-queue entries, never as
 anything published automatically**.
 
-> **Status: day 0.** The repo exists, the design is written, no Go code yet. This is deliberate — the
-> project doubles as my way of learning Go in public, so the commit history *is* the learning record.
+> **Status: milestone 1.** The module builds, the binary runs and does nothing yet, and the first real
+> code is the deterministic calculator tools with their tests. Slow on purpose — the project doubles as
+> my way of learning Go in public, so the commit history *is* the learning record.
 > See the [roadmap](#roadmap) for where it's going and [docs/lessons](docs/lessons) for what each step taught me.
 
 ---
@@ -179,8 +180,8 @@ the point is learning Go, not just having an agent.
 
 | # | Milestone | Go ground covered |
 |---|---|---|
-| 0 | Repo, design, decisions | — *(you are here)* |
-| 1 | Hello, module: layout, `cmd/` vs `internal/`, first test | modules, packages, visibility, `go test` |
+| 0 | Repo, design, decisions | — |
+| 1 | Hello, module: layout, `cmd/` vs `internal/`, first test *(you are here)* | modules, packages, visibility, `go test` |
 | 2 | Ollama client: send a prompt, decode the response | structs, JSON tags, interfaces, `net/http` |
 | 3 | Error handling across the LLM boundary | `error` values, wrapping, `errors.Is/As`, sentinels |
 | 4 | Timeouts and cancellation for slow generations | `context`, deadlines, graceful shutdown |
@@ -201,8 +202,14 @@ before merge. Same discipline as the main Quantic repo — worth having on a sol
 because there's nobody else to catch a bad push.
 
 CI runs `gofmt`, `go vet`, `go build` and `go test -race`, plus a check that relative links in the
-docs still resolve. Until milestone 1 lands real packages the Go steps skip themselves and say so —
-a green tick that checked nothing would be worse than no tick.
+docs still resolve. The same checks locally:
+
+```sh
+gofmt -l .              # lists unformatted files; empty output is a pass
+go vet ./...
+go test -race ./...
+go run ./cmd/agent -version
+```
 
 ## Lessons
 

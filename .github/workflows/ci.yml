@@ -27,22 +27,7 @@ jobs:
           # modules and the build cache by default, keyed on go.sum.
           go-version-file: go.mod
 
-      # The repo starts as design docs with no Go code (milestone 0). Without
-      # this guard the steps below would still pass, but silently — and a
-      # green tick that checked nothing is worse than no tick. Delete this
-      # step and the `if:` conditions once milestone 1 lands real packages.
-      - name: Is there Go code yet?
-        id: probe
-        run: |
-          if [ -n "$(find . -name '*.go' -not -path './.git/*' -print -quit)" ]; then
-            echo "found=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "found=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::No .go files yet — skipping build, vet and test."
-          fi
-
       - name: Check formatting
-        if: steps.probe.outputs.found == 'true'
         run: |
           unformatted="$(gofmt -l .)"
           if [ -n "$unformatted" ]; then
@@ -52,20 +37,17 @@ jobs:
           fi
 
       - name: Build
-        if: steps.probe.outputs.found == 'true'
         run: go build ./...
 
       # Go's closest equivalent to --warnings-as-errors. vet catches the
       # mistakes the compiler permits: bad Printf verbs, unused results of
       # pure functions, struct tags that don't parse.
       - name: Vet
-        if: steps.probe.outputs.found == 'true'
         run: go vet ./...
 
       # -race matters more here than in most projects: the agent's whole point
       # is a worker pool sharing a GPU semaphore and a SQLite handle.
       - name: Test
-        if: steps.probe.outputs.found == 'true'
         run: go test -race ./...
 
   docs:

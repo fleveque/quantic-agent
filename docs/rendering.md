@@ -67,7 +67,7 @@ data:
     - symbol: ITW
       previous: 1.50
       current: 1.55
-      change_pct: 3.33
+      change_pct: 3.333333333333336   # full precision; the template rounds
       currency: USD
   charts:
     - component: dividend_growth
