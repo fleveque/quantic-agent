@@ -154,4 +154,4 @@ are cheap for humans but not free for the compiler's dependency graph). Leaning 
 
 ---
 
-**Next:** Lesson 01 — structs, JSON tags, and the LLM boundary *(not written yet)*
+**Next:** [Lesson 01 — A binary, a package, and `go test`](01-a-binary-a-package-and-go-test.md)

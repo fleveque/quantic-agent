@@ -1,3 +1,3 @@
 module github.com/fleveque/quantic-agent
 
-go 1.24
+go 1.27
