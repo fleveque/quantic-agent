@@ -60,11 +60,16 @@ type GenerateRequest struct {
 	Options *Options
 }
 
-// Options are Ollama's sampling knobs. The pointers are deliberate: 0 is a
+// Options are Ollama's per-request knobs.
+//
+// NumCtx is the one that bites: the server uses a 4096-token window unless
+// asked for more, whatever the model itself supports, and a longer prompt is
+// truncated to fit. A research context has to ask. The pointers are deliberate: 0 is a
 // meaningful temperature and a meaningful seed, so those fields cannot use
 // omitempty on a plain value without losing the ability to send zero.
 type Options struct {
 	NumPredict  int      `json:"num_predict,omitempty"`
+	NumCtx      int      `json:"num_ctx,omitempty"`
 	Temperature *float64 `json:"temperature,omitempty"`
 	Seed        *int     `json:"seed,omitempty"`
 }
@@ -232,6 +237,38 @@ func (c *Client) Models() ([]Model, error) {
 		Models []Model `json:"models"`
 	}
 	if err := c.get("/api/tags", &out); err != nil {
+		return nil, err
+	}
+	return out.Models, nil
+}
+
+// RunningModel is a model the server currently holds in memory.
+type RunningModel struct {
+	Name          string       `json:"name"`
+	Size          int64        `json:"size"`
+	SizeVRAM      int64        `json:"size_vram"`
+	ContextLength int          `json:"context_length"`
+	ExpiresAt     time.Time    `json:"expires_at"`
+	Details       ModelDetails `json:"details"`
+}
+
+// OnGPU reports how much of the loaded model sits in VRAM, from 0 (entirely
+// in system RAM) to 1 (entirely on the card). A model too large for the GPU
+// keeps running with some layers on the CPU, which is the difference between
+// a heavy tier that is merely slow and one that is unusable.
+func (r RunningModel) OnGPU() float64 {
+	if r.Size == 0 {
+		return 0
+	}
+	return float64(r.SizeVRAM) / float64(r.Size)
+}
+
+// Running lists what the server is holding in memory right now.
+func (c *Client) Running() ([]RunningModel, error) {
+	var out struct {
+		Models []RunningModel `json:"models"`
+	}
+	if err := c.get("/api/ps", &out); err != nil {
 		return nil, err
 	}
 	return out.Models, nil

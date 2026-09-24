@@ -1,0 +1,265 @@
+// Command bench measures what the model server can actually do on the
+// machine it is running on.
+//
+// It exists for design open question 9: on a 16GB card, does a 27B with some
+// layers spilled into system RAM beat a 9B that fits entirely in VRAM? That
+// is a measurement, not an argument, and the answer belongs to one machine,
+// so the benchmark travels with the repo and runs where the agent will.
+package main
+
+import (
+	"encoding/json"
+	"flag"
+	"fmt"
+	"io"
+	"math/rand/v2"
+	"os"
+	"slices"
+	"strconv"
+	"strings"
+	"text/tabwriter"
+	"time"
+
+	"github.com/fleveque/quantic-agent/internal/llm"
+)
+
+// result is one (model, context length) measurement.
+type result struct {
+	Model         string  `json:"model"`
+	ContextTokens int     `json:"context_tokens"`
+	PromptTokens  int     `json:"prompt_tokens"`
+	PromptRate    float64 `json:"prompt_tokens_per_second"`
+	GenTokens     int     `json:"generated_tokens"`
+	GenRate       float64 `json:"generated_tokens_per_second"`
+	TotalSeconds  float64 `json:"total_seconds"`
+	LoadSeconds   float64 `json:"load_seconds"`
+	SizeBytes     int64   `json:"size_bytes"`
+	VRAMBytes     int64   `json:"vram_bytes"`
+	OnGPU         float64 `json:"fraction_on_gpu"`
+	Truncated     bool    `json:"truncated"`
+}
+
+func main() {
+	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
+}
+
+func run(args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("bench", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	baseURL := fs.String("ollama", envOr("OLLAMA_HOST", llm.DefaultBaseURL), "model server base URL")
+	models := fs.String("models", "qwen3.5:9b,qwen3.6:27b", "comma-separated models to measure")
+	contexts := fs.String("contexts", "4096,32768", "comma-separated context sizes in tokens")
+	predict := fs.Int("predict", 128, "tokens to generate per measurement")
+	asJSON := fs.Bool("json", false, "emit results as JSON instead of a table")
+
+	if err := fs.Parse(args); err != nil {
+		if err == flag.ErrHelp {
+			return 0
+		}
+		return 2
+	}
+
+	wanted := splitList(*models)
+	sizes, err := parseSizes(*contexts)
+	if err != nil {
+		fmt.Fprintln(stderr, "bench:", err)
+		return 2
+	}
+
+	client := llm.New(*baseURL, "")
+	available, err := client.Models()
+	if err != nil {
+		fmt.Fprintln(stderr, "bench:", err)
+		return 1
+	}
+	present := make([]string, 0, len(available))
+	for _, m := range available {
+		present = append(present, m.Name)
+	}
+
+	var results []result
+	for _, name := range wanted {
+		if !slices.Contains(present, name) {
+			fmt.Fprintf(stderr, "bench: %s is not on this server, skipping\n", name)
+			continue
+		}
+
+		// One untimed call so the measurements below exclude loading the
+		// weights, and so load time is reported once rather than smeared
+		// across the first context size.
+		loaded := llm.New(*baseURL, name)
+		warm, err := loaded.Generate(llm.GenerateRequest{
+			Prompt:  "Reply with the single word: ready.",
+			Think:   llm.Bool(false),
+			Options: &llm.Options{NumPredict: 1, NumCtx: sizes[0]},
+		})
+		if err != nil {
+			fmt.Fprintf(stderr, "bench: %s: %v\n", name, err)
+			continue
+		}
+
+		for _, ctx := range sizes {
+			r, err := measure(loaded, name, ctx, *predict, warm.LoadDuration)
+			if err != nil {
+				fmt.Fprintf(stderr, "bench: %s at %d: %v\n", name, ctx, err)
+				continue
+			}
+			results = append(results, r)
+		}
+	}
+
+	if len(results) == 0 {
+		fmt.Fprintln(stderr, "bench: nothing measured")
+		return 1
+	}
+
+	if *asJSON {
+		enc := json.NewEncoder(stdout)
+		enc.SetIndent("", "  ")
+		if err := enc.Encode(results); err != nil {
+			fmt.Fprintln(stderr, "bench:", err)
+			return 1
+		}
+		return 0
+	}
+
+	writeTable(stdout, results)
+	return 0
+}
+
+// measure runs one generation and reports the rates the server itself
+// counted. Ollama returns token counts and nanosecond durations per phase,
+// so nothing here is timed with a wall clock that would include HTTP.
+func measure(client *llm.Client, name string, ctx, predict int, load time.Duration) (result, error) {
+	resp, err := client.Generate(llm.GenerateRequest{
+		Prompt: fillerPrompt(ctx * 8 / 10),
+		Think:  llm.Bool(false),
+		Options: &llm.Options{
+			NumPredict: predict,
+			NumCtx:     ctx,
+		},
+	})
+	if err != nil {
+		return result{}, err
+	}
+
+	r := result{
+		Model:         name,
+		ContextTokens: ctx,
+		PromptTokens:  resp.PromptEvalCount,
+		PromptRate:    rate(resp.PromptEvalCount, resp.PromptEvalDuration),
+		GenTokens:     resp.EvalCount,
+		GenRate:       rate(resp.EvalCount, resp.EvalDuration),
+		TotalSeconds:  resp.TotalDuration.Seconds(),
+		LoadSeconds:   load.Seconds(),
+		Truncated:     resp.Truncated(),
+	}
+
+	// Residency is only knowable while the model is still held, so ask
+	// immediately after the generation rather than at the end of the run.
+	running, err := client.Running()
+	if err != nil {
+		return r, nil // the measurement stands; residency is a bonus
+	}
+	for _, m := range running {
+		if m.Name == name {
+			r.SizeBytes, r.VRAMBytes, r.OnGPU = m.Size, m.SizeVRAM, m.OnGPU()
+			break
+		}
+	}
+	return r, nil
+}
+
+func writeTable(w io.Writer, results []result) {
+	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(tw, "MODEL\tCTX\tPROMPT tok/s\tGEN tok/s\tRESIDENT\tON GPU\tLOAD\tTOTAL")
+	for _, r := range results {
+		note := ""
+		if r.Truncated {
+			note = " (hit the token limit)"
+		}
+		fmt.Fprintf(tw, "%s\t%s\t%.0f\t%.1f\t%.1f GB\t%s\t%.1fs\t%.1fs%s\n",
+			r.Model, shortCount(r.ContextTokens), r.PromptRate, r.GenRate,
+			float64(r.SizeBytes)/1e9, percent(r.OnGPU), r.LoadSeconds, r.TotalSeconds, note)
+	}
+	tw.Flush()
+
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "ON GPU below 100% means layers spilled into system RAM: the model is larger than")
+	fmt.Fprintln(w, "the card once its KV cache is counted. To find out whether cache quantisation helps,")
+	fmt.Fprintln(w, "run this again with OLLAMA_KV_CACHE_TYPE=q8_0 set on the *server* and compare the")
+	fmt.Fprintln(w, "largest context row. If nothing moves, flash attention isn't active for that model")
+	fmt.Fprintln(w, "and the setting is being ignored.")
+}
+
+// fillerPrompt returns a prompt of roughly tokens tokens. The nonce matters:
+// without it Ollama's prefix cache answers the second run for free and
+// reports a prompt-processing rate that doesn't exist.
+func fillerPrompt(tokens int) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "Session %016x. Read the notes below, then reply with the single word: done.\n\n", rand.Uint64())
+
+	const line = "Dividend note: the payout was declared, the ex-date is set, and the yield moved with the price. "
+	for b.Len() < tokens*4 { // ~4 characters per token; the measured count is reported
+		b.WriteString(line)
+	}
+	return b.String()
+}
+
+func rate(tokens int, d time.Duration) float64 {
+	if d <= 0 {
+		return 0
+	}
+	return float64(tokens) / d.Seconds()
+}
+
+func percent(f float64) string {
+	if f <= 0 {
+		return "0% (CPU)"
+	}
+	return fmt.Sprintf("%.0f%%", f*100)
+}
+
+// shortCount renders a context length the way model cards do: 262144 as 256K.
+func shortCount(n int) string {
+	switch {
+	case n >= 1024*1024:
+		return fmt.Sprintf("%dM", n/(1024*1024))
+	case n >= 1024:
+		return fmt.Sprintf("%dK", n/1024)
+	default:
+		return strconv.Itoa(n)
+	}
+}
+
+func splitList(s string) []string {
+	var out []string
+	for _, part := range strings.Split(s, ",") {
+		if p := strings.TrimSpace(part); p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+func parseSizes(s string) ([]int, error) {
+	var out []int
+	for _, part := range splitList(s) {
+		n, err := strconv.Atoi(part)
+		if err != nil || n <= 0 {
+			return nil, fmt.Errorf("context size %q is not a positive number of tokens", part)
+		}
+		out = append(out, n)
+	}
+	if len(out) == 0 {
+		return nil, fmt.Errorf("no context sizes given")
+	}
+	return out, nil
+}
+
+func envOr(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}

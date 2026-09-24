@@ -102,6 +102,7 @@ Delivery tools live outside the loop entirely. See
 | Package | Responsibility |
 |---|---|
 | `cmd/agent` | Entrypoint, flag/config parsing, daemon loop and graceful shutdown |
+| `cmd/bench` | Measures prompt/generation throughput and GPU residency per model, on the machine it runs on |
 | `internal/llm` | Local model client (Ollama HTTP API), tool-call schema, structured-output decoding |
 | `internal/mcp` | Client for Quantic's MCP server — the only source of financial facts |
 | `internal/agent` | The research loop: tool dispatch, budget accounting, retries, phase state machine |
@@ -216,7 +217,12 @@ go test -race ./...
 go run ./cmd/agent -version
 go run ./cmd/agent -check              # is the model server up?
 go run ./cmd/agent -ask "say hello"    # one prompt, one reply
+go run ./cmd/bench                     # tokens/second and GPU residency per model
 ```
+
+`cmd/bench` is meant for the machine the agent will actually run on: it reports prompt and
+generation rates per model and context size, and how much of each model stayed in VRAM. Numbers from
+a development laptop say nothing useful about the deployment box.
 
 ## Lessons
 

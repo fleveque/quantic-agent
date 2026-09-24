@@ -294,3 +294,59 @@ func TestModels(t *testing.T) {
 		t.Error("Supports(telepathy) = true, want false")
 	}
 }
+
+func TestRunning(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/ps" {
+			t.Errorf("path = %q, want /api/ps", r.URL.Path)
+		}
+		w.Write(fixture(t, "ps.json"))
+	}))
+	t.Cleanup(srv.Close)
+
+	running, err := llm.New(srv.URL, "qwen3.5:9b").Running()
+	if err != nil {
+		t.Fatalf("Running: %v", err)
+	}
+	if len(running) != 1 {
+		t.Fatalf("got %d running models, want 1", len(running))
+	}
+
+	got := running[0]
+	if got.Name != "qwen3.5:9b" {
+		t.Errorf("Name = %q, want qwen3.5:9b", got.Name)
+	}
+	// Captured on a machine with no CUDA GPU, so nothing is in VRAM. That is
+	// exactly the case the benchmark has to make obvious.
+	if got.SizeVRAM != 0 {
+		t.Errorf("SizeVRAM = %d, want 0", got.SizeVRAM)
+	}
+	if got.OnGPU() != 0 {
+		t.Errorf("OnGPU() = %v, want 0", got.OnGPU())
+	}
+	// The server reports its default window, not the model's maximum.
+	if got.ContextLength != 4096 {
+		t.Errorf("ContextLength = %d, want 4096", got.ContextLength)
+	}
+}
+
+func TestOnGPUFraction(t *testing.T) {
+	tests := []struct {
+		name string
+		m    llm.RunningModel
+		want float64
+	}{
+		{name: "fully resident", m: llm.RunningModel{Size: 100, SizeVRAM: 100}, want: 1},
+		{name: "partly offloaded", m: llm.RunningModel{Size: 100, SizeVRAM: 75}, want: 0.75},
+		{name: "cpu only", m: llm.RunningModel{Size: 100, SizeVRAM: 0}, want: 0},
+		{name: "nothing loaded", m: llm.RunningModel{}, want: 0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.m.OnGPU(); got != tt.want {
+				t.Errorf("OnGPU() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

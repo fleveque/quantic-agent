@@ -310,6 +310,15 @@ including each model's `capabilities` — the `tools` entry is what milestone 5 
    with partial RAM offload (best model, unknown speed). The deciding numbers are tokens/second at a
    realistic research-context length and whether a 27B run finishes inside the loop's wall-clock
    budget. Nothing in the code depends on the answer — it is one flag.
+
+   `cmd/bench` measures it: prompt and generation rates per model and context size, plus the share of
+   each model that stayed in VRAM (`/api/ps` reports `size` against `size_vram`, and anything below
+   100% means layers spilled into system RAM). Run it on the deployment machine — a development
+   laptop with no CUDA device reports 0% and about 10 tokens/second, which answers nothing about the
+   4070 Ti Super. Two further notes the tool encodes: each measurement carries a unique nonce,
+   because Ollama's prefix cache otherwise reports cached tokens as if it had processed them, and
+   every request sets `num_ctx`, because the server defaults to a 4096-token window whatever the
+   model supports and silently truncates a longer prompt.
 8. **Can a 14B model reliably write prose with no figures in it?** The format contract forbids
    numbers in prose entirely. Small models will violate this. The validator catches it and retries,
    but if the violation rate is high the writing prompt needs restructuring — possibly generating
