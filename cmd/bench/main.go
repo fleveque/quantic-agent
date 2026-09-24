@@ -23,6 +23,13 @@ import (
 	"github.com/fleveque/quantic-agent/internal/llm"
 )
 
+// defaultModels are the candidates for design open question 9: the 9B that
+// fits with room to spare, and Qwen3.8-27B at two sub-4-bit quantisations
+// that Ollama's own library doesn't publish, pulled from Hugging Face.
+const defaultModels = "qwen3.5:9b," +
+	"hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S," +
+	"hf.co/unsloth/Qwen3.8-27B-GGUF:UD-Q3_K_XL"
+
 // result is one (model, context length) measurement.
 type result struct {
 	Model         string  `json:"model"`
@@ -36,7 +43,7 @@ type result struct {
 	SizeBytes     int64   `json:"size_bytes"`
 	VRAMBytes     int64   `json:"vram_bytes"`
 	OnGPU         float64 `json:"fraction_on_gpu"`
-	Truncated     bool    `json:"truncated"`
+	GenRequested  int     `json:"generated_tokens_requested"`
 }
 
 func main() {
@@ -47,8 +54,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("bench", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	baseURL := fs.String("ollama", envOr("OLLAMA_HOST", llm.DefaultBaseURL), "model server base URL")
-	models := fs.String("models", "qwen3.5:9b,qwen3.6:27b", "comma-separated models to measure")
-	contexts := fs.String("contexts", "4096,32768", "comma-separated context sizes in tokens")
+	models := fs.String("models", defaultModels, "comma-separated models to measure")
+	contexts := fs.String("contexts", "8192,32768,65536", "comma-separated context sizes in tokens")
 	predict := fs.Int("predict", 128, "tokens to generate per measurement")
 	asJSON := fs.Bool("json", false, "emit results as JSON instead of a table")
 
@@ -79,7 +86,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 
 	var results []result
 	for _, name := range wanted {
-		if !slices.Contains(present, name) {
+		if !slices.ContainsFunc(present, func(p string) bool { return strings.EqualFold(p, name) }) {
 			fmt.Fprintf(stderr, "bench: %s is not on this server, skipping\n", name)
 			continue
 		}
@@ -152,7 +159,7 @@ func measure(client *llm.Client, name string, ctx, predict int, load time.Durati
 		GenRate:       rate(resp.EvalCount, resp.EvalDuration),
 		TotalSeconds:  resp.TotalDuration.Seconds(),
 		LoadSeconds:   load.Seconds(),
-		Truncated:     resp.Truncated(),
+		GenRequested:  predict,
 	}
 
 	// Residency is only knowable while the model is still held, so ask
@@ -162,7 +169,7 @@ func measure(client *llm.Client, name string, ctx, predict int, load time.Durati
 		return r, nil // the measurement stands; residency is a bonus
 	}
 	for _, m := range running {
-		if m.Name == name {
+		if strings.EqualFold(m.Name, name) {
 			r.SizeBytes, r.VRAMBytes, r.OnGPU = m.Size, m.SizeVRAM, m.OnGPU()
 			break
 		}
@@ -175,8 +182,8 @@ func writeTable(w io.Writer, results []result) {
 	fmt.Fprintln(tw, "MODEL\tCTX\tPROMPT tok/s\tGEN tok/s\tRESIDENT\tON GPU\tLOAD\tTOTAL")
 	for _, r := range results {
 		note := ""
-		if r.Truncated {
-			note = " (hit the token limit)"
+		if r.GenRequested > 0 && r.GenTokens < r.GenRequested {
+			note = fmt.Sprintf(" (stopped after %d of %d tokens: small sample)", r.GenTokens, r.GenRequested)
 		}
 		fmt.Fprintf(tw, "%s\t%s\t%.0f\t%.1f\t%.1f GB\t%s\t%.1fs\t%.1fs%s\n",
 			r.Model, shortCount(r.ContextTokens), r.PromptRate, r.GenRate,
@@ -192,12 +199,14 @@ func writeTable(w io.Writer, results []result) {
 	fmt.Fprintln(w, "and the setting is being ignored.")
 }
 
-// fillerPrompt returns a prompt of roughly tokens tokens. The nonce matters:
-// without it Ollama's prefix cache answers the second run for free and
-// reports a prompt-processing rate that doesn't exist.
+// fillerPrompt returns a prompt of roughly tokens tokens. It asks for a long
+// answer on purpose: generation speed measured over two tokens is noise, so
+// the model should run to the -predict limit. The nonce matters too: without
+// it Ollama's prefix cache answers the second run for free and reports a
+// prompt-processing rate that doesn't exist.
 func fillerPrompt(tokens int) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "Session %016x. Read the notes below, then reply with the single word: done.\n\n", rand.Uint64())
+	fmt.Fprintf(&b, "Session %016x. Read the notes below, then summarise them at length.\n\n", rand.Uint64())
 
 	const line = "Dividend note: the payout was declared, the ex-date is set, and the yield moved with the price. "
 	for b.Len() < tokens*4 { // ~4 characters per token; the measured count is reported

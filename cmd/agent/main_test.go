@@ -158,3 +158,19 @@ func TestRunReportsAnUnreachableServer(t *testing.T) {
 		t.Errorf("stderr = %q, want it to start with the program name", got)
 	}
 }
+
+// Ollama resolves model names case-insensitively, so -check must too, or it
+// reports a perfectly usable model as missing.
+func TestRunCheckMatchesModelNamesCaseInsensitively(t *testing.T) {
+	srv := checkServer(t)
+
+	var stdout, stderr bytes.Buffer
+	code := run([]string{"-ollama", srv.URL, "-model", "QWEN3.5:9B", "-check"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0 (stderr: %q)", code, stderr.String())
+	}
+	if got := stdout.String(); !strings.Contains(got, "* qwen3.5:9b") {
+		t.Errorf("stdout = %q, want the model marked as selected", got)
+	}
+}

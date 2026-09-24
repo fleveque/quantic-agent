@@ -241,9 +241,9 @@ Retention: `tool_calls` responses can be large; plan a compaction policy before 
 | Concern | Choice | Reasoning |
 |---|---|---|
 | Inference server | Ollama | Three model tiers behind one endpoint with load/unload on demand, embeddings on the same server, and per-model capability metadata. `llama.cpp` stays the escape hatch ([llm-kit](https://github.com/fleveque/llm-kit)) with explicit triggers — [decision 0004](decisions/0004-ollama-now-llama-cpp-on-a-trigger.md). |
-| Primary model | Qwen3.5-9B, Q4_K_M (6.6GB) | Fits entirely in 16GB with ~9GB left for KV cache, so long research contexts stay on the GPU. Advertises `tools` and `thinking`. |
-| Quality option | Qwen3.5-9B, Q8_0 (11GB) | Same model, near-lossless quantisation, still fully resident — trades context headroom for fidelity. Choose by measurement, not by argument. |
-| Heavy model | Qwen3.6-27B, Q4_K_M (17GB) | Over the 16GB line, so some layers spill to RAM. Reserved for occasional deep work where slow is acceptable. |
+| Primary candidate | Qwen3.8-27B, `UD-IQ3_S` (12.0GB, ≈3.45 bits/weight) | The largest current Qwen that fits *entirely* in 16GB. Hybrid attention keeps a KV cache on only 16 of its 64 layers, so context stays affordable beside the weights. From `hf.co/unsloth/Qwen3.8-27B-GGUF`. |
+| Quality step | Qwen3.8-27B, `UD-Q3_K_XL` (13.1GB) | More bits per weight, about 1GB less room for context. |
+| Safe default | Qwen3.5-9B, Q4_K_M (6.6GB) | Fits with ~9GB to spare. The default until `cmd/bench` confirms a 27B on the real card. |
 | Fast model | Qwen3.5-4B (3.4GB) | Mechanical passes — data-QA triage, classification — where a 9B is overkill. |
 | Embeddings | `nomic-embed-text` via Ollama | Small, fast, good enough for a few thousand chunks. |
 | Model I/O | JSON-schema-constrained decoding | Local models are flakier at native tool-calling than frontier models; constrained output is the reliable floor, native tool-calling an optimisation. |
@@ -268,18 +268,35 @@ ignores it.
 pull before trading model size away. It fails quietly on architectures without flash attention
 support, so it is a thing to verify on the target machine rather than assume.
 
-**Sizing the model to the card.** The Qwen3.5 line runs 0.8B, 2B, 4B, 9B, then jumps to 27B — there is
-no 14B any more, which is what the original Qwen2.5-14B plan assumed. At Q4_K_M the 27B needs about
-17GB, so on a 16GB card it cannot hold the weights *and* a KV cache; a few layers spill to system RAM
-and throughput drops. That leaves two honest candidates for the primary model, the 9B at Q4_K_M and
-the same 9B at Q8_0, and one open question: whether a partially offloaded 27B is fast enough to be
-worth its quality on this specific card. That is a measurement on the target machine, not a judgement
-call — see [open question 9](#5-open-questions).
+**Sizing the model to the card.** The newest Qwen at this size is **Qwen3.8-27B**. Ollama's own library
+publishes it only at Q4_K_M (18GB), which cannot hold weights *and* a KV cache in 16GB. But Unsloth
+publishes sub-4-bit GGUFs on Hugging Face, which Ollama pulls directly
+([decision 0004](decisions/0004-ollama-now-llama-cpp-on-a-trigger.md)): `UD-IQ3_S` is 12.0GB,
+`UD-Q3_K_XL` 13.1GB, `UD-IQ4_XS` 14.3GB.
+
+What makes the 27B viable at these sizes is its architecture: 64 layers arranged as 16 × (3 Gated
+DeltaNet + 1 standard attention), with 4 KV heads on the attention layers. Only those 16 layers keep a
+KV cache — roughly a quarter of what a conventional 64-layer model needs at the same context — and the
+DeltaNet state doesn't grow with context at all.
+
+The risk is quality, not fit. Below 4 bits per weight a model degrades, and the degradation shows up
+first in exactly what this agent leans on: precise structured output and tool-call arguments. A
+throughput benchmark can't see that. So the 27B is the *primary candidate*, confirmed by `cmd/bench` on
+the target card for speed and residency, and by tool-call validity once milestone 5 exists. The 9B
+remains the default until both say otherwise — a default that silently fails to fit is worse than a
+smaller one that works.
+
+An earlier version of this section concluded that no 27B fits in 16GB. That was true of Ollama's
+library and false once Hugging Face quants were counted — the research had only looked at models
+already installed on the development laptop.
 
 **Development is not deployment.** The agent is written on one machine and runs on another, so no
 model name, host or path is baked into the binary. `-model` / `QUANTIC_MODEL` and `-ollama` /
 `OLLAMA_HOST` carry them, and `agent -check` prints what the server it is pointed at actually has,
 including each model's `capabilities` — the `tools` entry is what milestone 5 depends on.
+
+Keep the target's Ollama current. Version floors per model are undocumented, and the desktop's 0.24.0
+refused Qwen3.5 outright with a `412: requires a newer version of Ollama`.
 
 ## 5. Open questions
 
@@ -305,11 +322,11 @@ including each model's `capabilities` — the `tools` entry is what milestone 5 
    `embed`, not stored in the database. They must contain no Quantic-internal content (N4).
 7. **Chunking strategy for filings.** 10-Ks are long and structured. Naive fixed-size chunking will
    split tables badly. Deferred until milestone 10.
-9. **Which primary model, measured on the target box.** Qwen3.5-9B Q4_K_M (fully resident, most
-   context), the same 9B at Q8_0 (fully resident, best fidelity for its size), or Qwen3.6-27B Q4_K_M
-   with partial RAM offload (best model, unknown speed). The deciding numbers are tokens/second at a
-   realistic research-context length and whether a 27B run finishes inside the loop's wall-clock
-   budget. Nothing in the code depends on the answer — it is one flag.
+9. **Which primary model, measured on the target box.** Qwen3.8-27B at `UD-IQ3_S` or `UD-Q3_K_XL`
+   (best model that fits, reduced precision) against Qwen3.5-9B Q4_K_M (fits easily, most context).
+   The deciding numbers are tokens/second and GPU residency at realistic research-context lengths —
+   where the 27B's cache stops fitting — and, from milestone 5, tool-call validity at 3-point-something
+   bits. Nothing in the code depends on the answer — it is one flag.
 
    `cmd/bench` measures it: prompt and generation rates per model and context size, plus the share of
    each model that stayed in VRAM (`/api/ps` reports `size` against `size_vram`, and anything below
