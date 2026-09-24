@@ -59,6 +59,13 @@ problem.
 3. KV quantisation silently falls back to f16 on the model we settle on, and the cache won't fit.
 4. Structured output needs grammar-level constraint that `format` can't express.
 
+## Update, same day
+
+The `hf.co/{user}/{repo}:{QUANT}` path turned out to be load-bearing, not theoretical. The strongest
+model that fits the 16GB card — Qwen3.8-27B at `UD-IQ3_S` — isn't in Ollama's library at that size and
+comes from Hugging Face. Ollama pulled and ran an `hf.co` model end to end on the first try, which is
+the evidence the "more models on llama.cpp" concern needed.
+
 ## Why this is cheap to get wrong
 
 `internal/llm` is about 200 lines behind a concrete `*Client`, and `llama-server` speaks an

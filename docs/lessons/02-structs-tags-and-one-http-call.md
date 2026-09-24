@@ -240,6 +240,13 @@ original design assumed is gone — and 27B at Q4_K_M wants about 17GB, which do
 alongside a KV cache. So the default is the 9B, and the 27B stays as a heavy tier for work where slow
 is acceptable.
 
+**Correction, same day.** That conclusion was wrong, and for the same reason this section exists: I
+had only researched the models already on this laptop. Qwen3.8-27B is newer, and Unsloth publishes it
+on Hugging Face at `UD-IQ3_S` — about 3.45 bits per weight, 12GB — which Ollama pulls directly. Its
+hybrid attention keeps a KV cache on only 16 of its 64 layers, so it fits in 16GB with room for
+context. It's now the primary candidate, pending `cmd/bench` on the real card; see
+[design §4](../design.md#4-stack).
+
 ## What I'm taking into milestone 3
 
 - `omitempty` only where the receiver's default matches Go's zero value. `stream: false` has to be on

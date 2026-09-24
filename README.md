@@ -120,10 +120,11 @@ Delivery tools live outside the loop entirely. See
 - **Inference: Ollama** over raw `llama.cpp server`, for its tool-calling API and model management.
   (I already maintain [llm-kit](https://github.com/fleveque/llm-kit) for the llama.cpp path if I need
   more control later.)
-- **Model: Qwen3.5-9B** at Q4_K_M — the largest Qwen that fits *entirely* in 16GB VRAM with room left
-  for a long-context KV cache, and it advertises the `tools` capability the research loop needs. The
-  27B is the quality ceiling but wants ~17GB, so it spills to RAM; it stays as the heavy tier for
-  occasional deep work. Nothing is baked in: `-model` and `QUANTIC_MODEL` choose, and `agent -check`
+- **Model: Qwen3.8-27B at ≈3.5 bits** (`UD-IQ3_S`, 12GB, from Hugging Face) is the primary candidate —
+  the best current Qwen that fits *entirely* in 16GB VRAM, made viable by hybrid attention that keeps a
+  KV cache on only a quarter of its layers. It has to prove itself on the real card first, so the
+  default stays **Qwen3.5-9B** until `cmd/bench` (speed, residency) and milestone 5 (tool-call
+  validity) say otherwise. Nothing is baked in: `-model` and `QUANTIC_MODEL` choose, and `agent -check`
   reports what the target machine actually has.
 - **Structured output over native tool-calling.** Local models are noticeably flakier at tool-calling
   than frontier models. The plan is to lean on JSON-schema-constrained decoding and treat native

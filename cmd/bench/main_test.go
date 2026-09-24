@@ -157,3 +157,34 @@ func TestParseSizes(t *testing.T) {
 		})
 	}
 }
+
+// Ollama resolves model names case-insensitively, so a hand-typed
+// hf.co/... name in the wrong case must still be found and measured.
+func TestRunMatchesModelNamesCaseInsensitively(t *testing.T) {
+	srv := benchServer(t, true)
+
+	var stdout, stderr bytes.Buffer
+	code := run([]string{"-ollama", srv.URL, "-models", "QWEN3.5:9B", "-contexts", "4096", "-predict", "100"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0 (stderr: %q)", code, stderr.String())
+	}
+	// Residency is matched by name as well, so 100% proves both lookups.
+	if got := stdout.String(); !strings.Contains(got, "100%") {
+		t.Errorf("table = %q, want the model found and shown fully on GPU", got)
+	}
+}
+
+func TestRunFlagsAShortGenerationSample(t *testing.T) {
+	srv := benchServer(t, true) // the fake server always generates 100 tokens
+
+	var stdout, stderr bytes.Buffer
+	code := run([]string{"-ollama", srv.URL, "-models", "qwen3.5:9b", "-contexts", "4096", "-predict", "128"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0 (stderr: %q)", code, stderr.String())
+	}
+	if got := stdout.String(); !strings.Contains(got, "stopped after 100 of 128 tokens") {
+		t.Errorf("table = %q, want the short sample flagged", got)
+	}
+}
