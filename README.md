@@ -223,7 +223,8 @@ go run ./cmd/bench                     # tokens/second and GPU residency per mod
 
 `cmd/bench` is meant for the machine the agent will actually run on: it reports prompt and
 generation rates per model and context size, and how much of each model stayed in VRAM. Numbers from
-a development laptop say nothing useful about the deployment box.
+a development laptop say nothing useful about the deployment box. Setting up that machine, pulling
+the models and running the benchmark is in [docs/target-machine.md](docs/target-machine.md).
 
 ## Lessons
 
@@ -235,6 +236,7 @@ Elixir and Ruby — what surprised me, what I got wrong first, and why Go does i
 - [`docs/design.md`](docs/design.md) — architecture, provenance, retrieval, translation, open questions
 - [`docs/content.md`](docs/content.md) — what gets published, cadence, locales, the registration gate
 - [`docs/rendering.md`](docs/rendering.md) — the format contract: typed data + prose, rendered by Quantic components
+- [`docs/target-machine.md`](docs/target-machine.md) — runbook for the desktop the agent runs on: setup, models, benchmark
 - [`docs/decisions/`](docs/decisions) — architecture decision records (why the design is what it is)
 - [`docs/lessons/`](docs/lessons) — the Go lessons
 
