@@ -86,20 +86,55 @@ func TestRunAsk(t *testing.T) {
 	}
 }
 
-func TestRunCheck(t *testing.T) {
+// checkServer answers the two endpoints -check calls.
+func checkServer(t *testing.T) *httptest.Server {
+	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`{"version":"0.30.3"}`))
+		switch r.URL.Path {
+		case "/api/version":
+			w.Write([]byte(`{"version":"0.30.3"}`))
+		case "/api/tags":
+			w.Write([]byte(`{"models":[{"name":"qwen3.5:9b","size":6594474711,` +
+				`"details":{"parameter_size":"9.7B","quantization_level":"Q4_K_M",` +
+				`"context_length":262144},"capabilities":["completion","tools","thinking"]}]}`))
+		default:
+			t.Errorf("unexpected path %q", r.URL.Path)
+		}
 	}))
 	t.Cleanup(srv.Close)
+	return srv
+}
+
+func TestRunCheck(t *testing.T) {
+	srv := checkServer(t)
 
 	var stdout, stderr bytes.Buffer
-	code := run([]string{"-ollama", srv.URL, "-check"}, &stdout, &stderr)
+	code := run([]string{"-ollama", srv.URL, "-model", "qwen3.5:9b", "-check"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("exit code = %d, want 0 (stderr: %q)", code, stderr.String())
 	}
-	if got := stdout.String(); !strings.Contains(got, "ollama 0.30.3") {
-		t.Errorf("stdout = %q, want it to report the server version", got)
+	got := stdout.String()
+	for _, want := range []string{"ollama 0.30.3", "* qwen3.5:9b", "6.6 GB", "256K", "tools"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("stdout = %q, want it to contain %q", got, want)
+		}
+	}
+}
+
+func TestRunCheckFlagsAMissingModel(t *testing.T) {
+	srv := checkServer(t)
+
+	var stdout, stderr bytes.Buffer
+	code := run([]string{"-ollama", srv.URL, "-model", "not-pulled:latest", "-check"}, &stdout, &stderr)
+
+	// A model that was never pulled on the target machine has to fail here,
+	// not later in the middle of a task.
+	if code != 1 {
+		t.Errorf("exit code = %d, want 1", code)
+	}
+	if got := stderr.String(); !strings.Contains(got, "not-pulled:latest is not on this server") {
+		t.Errorf("stderr = %q, want it to name the missing model", got)
 	}
 }
 

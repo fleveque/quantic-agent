@@ -247,3 +247,50 @@ func TestNewAcceptsHostWithoutScheme(t *testing.T) {
 		t.Fatalf("Generate against %q: %v", hostPort, err)
 	}
 }
+
+func TestModels(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/tags" {
+			t.Errorf("path = %q, want /api/tags", r.URL.Path)
+		}
+		w.Write(fixture(t, "tags.json"))
+	}))
+	t.Cleanup(srv.Close)
+
+	models, err := llm.New(srv.URL, "qwen3.5:9b").Models()
+	if err != nil {
+		t.Fatalf("Models: %v", err)
+	}
+	if len(models) != 3 {
+		t.Fatalf("got %d models, want the 3 in the fixture", len(models))
+	}
+
+	got := models[0]
+	if got.Name != "qwen3.5:9b" {
+		t.Errorf("Name = %q, want qwen3.5:9b", got.Name)
+	}
+	if got.Details.ParameterSize != "9.7B" {
+		t.Errorf("ParameterSize = %q, want 9.7B", got.Details.ParameterSize)
+	}
+	if got.Details.QuantizationLevel != "Q4_K_M" {
+		t.Errorf("QuantizationLevel = %q, want Q4_K_M", got.Details.QuantizationLevel)
+	}
+	if got.Details.ContextLength != 262144 {
+		t.Errorf("ContextLength = %d, want 262144", got.Details.ContextLength)
+	}
+	if got.Size != 6594474711 {
+		t.Errorf("Size = %d, want 6594474711", got.Size)
+	}
+
+	// Milestone 5 needs tool-calling, so the capability list is worth
+	// reading rather than assuming.
+	if !got.Supports("tools") {
+		t.Errorf("Supports(tools) = false, want true (capabilities: %v)", got.Capabilities)
+	}
+	if !got.Supports("thinking") {
+		t.Errorf("Supports(thinking) = false, want true (capabilities: %v)", got.Capabilities)
+	}
+	if got.Supports("telepathy") {
+		t.Error("Supports(telepathy) = true, want false")
+	}
+}

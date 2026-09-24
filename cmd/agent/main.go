@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/fleveque/quantic-agent/internal/llm"
@@ -19,9 +21,11 @@ import (
 // (milestone 13). Until then every build reports "dev".
 var version = "dev"
 
-// defaultModel is what runs on this machine today. Both flags below take an
-// environment variable first, so nothing here is baked into the binary.
-const defaultModel = "quantic-9b:latest"
+// defaultModel is the model chosen for the target hardware (design §4): the
+// largest Qwen that fits entirely in 16GB of VRAM with room left for a long
+// context. Development happens on a different machine, so both flags below
+// read an environment variable first and nothing is baked in.
+const defaultModel = "qwen3.5:9b"
 
 func main() {
 	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
@@ -64,7 +68,30 @@ func run(args []string, stdout, stderr io.Writer) int {
 			fmt.Fprintln(stderr, "agent:", err)
 			return 1
 		}
-		fmt.Fprintf(stdout, "ollama %s at %s, model %s\n", serverVersion, *baseURL, client.Model())
+		fmt.Fprintf(stdout, "ollama %s at %s\n", serverVersion, *baseURL)
+
+		models, err := client.Models()
+		if err != nil {
+			fmt.Fprintln(stderr, "agent:", err)
+			return 1
+		}
+		selected := false
+		for _, m := range models {
+			marker := " "
+			if m.Name == client.Model() {
+				marker, selected = "*", true
+			}
+			fmt.Fprintf(stdout, "%s %-26s %5.1f GB  %-6s %-7s ctx %-5s %s\n",
+				marker, m.Name, float64(m.Size)/1e9, m.Details.ParameterSize,
+				m.Details.QuantizationLevel, shortCount(m.Details.ContextLength),
+				strings.Join(m.Capabilities, " "))
+		}
+		// The agent runs where its developer isn't sitting, so a model that
+		// was never pulled has to be loud now rather than 404 mid-task.
+		if !selected {
+			fmt.Fprintf(stderr, "agent: %s is not on this server\n", client.Model())
+			return 1
+		}
 		return 0
 
 	case *ask != "":
@@ -83,6 +110,18 @@ func run(args []string, stdout, stderr io.Writer) int {
 
 	fmt.Fprintln(stdout, "quantic-agent: no tasks defined yet")
 	return 0
+}
+
+// shortCount renders a context length the way model cards do: 262144 as 256K.
+func shortCount(n int) string {
+	switch {
+	case n >= 1024*1024:
+		return fmt.Sprintf("%dM", n/(1024*1024))
+	case n >= 1024:
+		return fmt.Sprintf("%dK", n/1024)
+	default:
+		return strconv.Itoa(n)
+	}
 }
 
 func truncationNote(resp llm.GenerateResponse) string {

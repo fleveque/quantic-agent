@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 )
@@ -199,3 +200,39 @@ func serverError(resp *http.Response) string {
 func Bool(v bool) *bool          { return &v }
 func Float64(v float64) *float64 { return &v }
 func Int(v int) *int             { return &v }
+
+// ModelDetails describes how a pulled model was built.
+type ModelDetails struct {
+	ParameterSize     string `json:"parameter_size"`
+	QuantizationLevel string `json:"quantization_level"`
+	ContextLength     int    `json:"context_length"`
+}
+
+// Model is one model the server has pulled.
+type Model struct {
+	Name         string       `json:"name"`
+	Size         int64        `json:"size"`
+	ModifiedAt   time.Time    `json:"modified_at"`
+	Details      ModelDetails `json:"details"`
+	Capabilities []string     `json:"capabilities"`
+}
+
+// Supports reports whether the model advertises a capability. The ones that
+// matter here are "tools", which milestone 5 depends on, and "thinking",
+// which decides whether think:false is doing anything.
+func (m Model) Supports(capability string) bool {
+	return slices.Contains(m.Capabilities, capability)
+}
+
+// Models lists what this server has pulled. The agent is developed on one
+// machine and runs on another, so "what is actually on that box" has to be a
+// question the binary itself can answer.
+func (c *Client) Models() ([]Model, error) {
+	var out struct {
+		Models []Model `json:"models"`
+	}
+	if err := c.get("/api/tags", &out); err != nil {
+		return nil, err
+	}
+	return out.Models, nil
+}

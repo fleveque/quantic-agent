@@ -119,9 +119,11 @@ Delivery tools live outside the loop entirely. See
 - **Inference: Ollama** over raw `llama.cpp server`, for its tool-calling API and model management.
   (I already maintain [llm-kit](https://github.com/fleveque/llm-kit) for the llama.cpp path if I need
   more control later.)
-- **Model: Qwen2.5-14B-Instruct** at Q4/Q5 — fits comfortably in 16GB VRAM with room for context, and
-  has genuine tool-calling support. Fallback to Qwen3-8B for latency-sensitive tasks; 32B at Q3 with
-  partial RAM offload for occasional heavy batch work.
+- **Model: Qwen3.5-9B** at Q4_K_M — the largest Qwen that fits *entirely* in 16GB VRAM with room left
+  for a long-context KV cache, and it advertises the `tools` capability the research loop needs. The
+  27B is the quality ceiling but wants ~17GB, so it spills to RAM; it stays as the heavy tier for
+  occasional deep work. Nothing is baked in: `-model` and `QUANTIC_MODEL` choose, and `agent -check`
+  reports what the target machine actually has.
 - **Structured output over native tool-calling.** Local models are noticeably flakier at tool-calling
   than frontier models. The plan is to lean on JSON-schema-constrained decoding and treat native
   tool-calling as an optimisation, not a foundation.
@@ -131,6 +133,9 @@ Delivery tools live outside the loop entirely. See
 
 Ryzen-class desktop, 64GB RAM, NVIDIA RTX 4070 Ti Super (16GB VRAM). The agent is designed to run
 opportunistically: work while the machine is on, checkpoint state, resume cleanly.
+
+That machine is the deployment target, not where this is written, so the binary assumes nothing about
+which models are present — `agent -check` asks the server it's pointed at.
 
 ---
 

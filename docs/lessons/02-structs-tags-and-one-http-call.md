@@ -215,6 +215,31 @@ func (r GenerateResponse) Truncated() bool { return r.DoneReason == "length" }
 A model with no thinking mode accepts `think:false` and ignores it, so the field can always be sent.
 I checked rather than assuming.
 
+## The machine I'm writing on isn't the machine it runs on
+
+This is written on a laptop-shaped development box. The agent runs on the desktop with the 4070 Ti
+Super, and the two don't have the same models pulled. That turned a convenience into a rule: no model
+name, host or path is baked into the binary. `-model`/`QUANTIC_MODEL` and `-ollama`/`OLLAMA_HOST`
+carry them, and the binary can ask the server what it has:
+
+```
+$ go run ./cmd/agent -check
+ollama 0.30.3 at http://localhost:11434
+* qwen3.5:9b                   6.6 GB  9.7B   Q4_K_M  ctx 256K  vision completion tools thinking
+  qwen3.6:27b                 17.4 GB  27.8B  Q4_K_M  ctx 256K  vision completion tools thinking
+  qwen2.5-coder:14b            9.0 GB  14.8B  Q4_K_M  ctx 32K   completion tools insert
+```
+
+`/api/tags` turned out to carry the most useful field in this milestone: `capabilities`. The model
+advertises `tools`, which is precisely what milestone 5's research loop depends on, and `thinking`,
+which says whether `think:false` is doing anything at all. Checking beats assuming, and a model that
+was never pulled now fails at `-check` rather than as a 404 in the middle of a task.
+
+It also decided the default. The Qwen3.5 line goes 4B, 9B, then straight to 27B — the 14B the
+original design assumed is gone — and 27B at Q4_K_M wants about 17GB, which doesn't fit in 16GB
+alongside a KV cache. So the default is the 9B, and the 27B stays as a heavy tier for work where slow
+is acceptable.
+
 ## What I'm taking into milestone 3
 
 - `omitempty` only where the receiver's default matches Go's zero value. `stream: false` has to be on

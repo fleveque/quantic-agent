@@ -240,10 +240,11 @@ Retention: `tool_calls` responses can be large; plan a compaction policy before 
 
 | Concern | Choice | Reasoning |
 |---|---|---|
-| Inference server | Ollama | Simplest to operate; model management and a tool-calling API out of the box. `llama.cpp server` remains the escape hatch ([llm-kit](https://github.com/fleveque/llm-kit)). |
-| Primary model | Qwen2.5-14B-Instruct (Q4/Q5) | Fits 16GB VRAM with usable context; real tool-calling support. |
-| Fast model | Qwen3-8B | Translation passes and latency-sensitive work; "thinking" mode useful for QA reasoning. |
-| Heavy model | 32B @ Q3, partial RAM offload | Occasional batch work where slow is acceptable. |
+| Inference server | Ollama | Three model tiers behind one endpoint with load/unload on demand, embeddings on the same server, and per-model capability metadata. `llama.cpp` stays the escape hatch ([llm-kit](https://github.com/fleveque/llm-kit)) with explicit triggers — [decision 0004](decisions/0004-ollama-now-llama-cpp-on-a-trigger.md). |
+| Primary model | Qwen3.5-9B, Q4_K_M (6.6GB) | Fits entirely in 16GB with ~9GB left for KV cache, so long research contexts stay on the GPU. Advertises `tools` and `thinking`. |
+| Quality option | Qwen3.5-9B, Q8_0 (11GB) | Same model, near-lossless quantisation, still fully resident — trades context headroom for fidelity. Choose by measurement, not by argument. |
+| Heavy model | Qwen3.6-27B, Q4_K_M (17GB) | Over the 16GB line, so some layers spill to RAM. Reserved for occasional deep work where slow is acceptable. |
+| Fast model | Qwen3.5-4B (3.4GB) | Mechanical passes — data-QA triage, classification — where a 9B is overkill. |
 | Embeddings | `nomic-embed-text` via Ollama | Small, fast, good enough for a few thousand chunks. |
 | Model I/O | JSON-schema-constrained decoding | Local models are flakier at native tool-calling than frontier models; constrained output is the reliable floor, native tool-calling an optimisation. |
 | Tool schemas | Generated from Go structs by reflection | Single source of truth; the Go type *is* the schema. |
@@ -261,6 +262,24 @@ explicitly rather than relying on a default, and a model with no thinking mode a
 ignores it.
 
 **Hardware:** 64GB RAM, RTX 4070 Ti Super (16GB VRAM).
+
+**KV cache before quantisation.** At long research contexts the KV cache outgrows the weights, so
+`OLLAMA_KV_CACHE_TYPE=q8_0` (about half the cache memory, needs flash attention) is the first lever to
+pull before trading model size away. It fails quietly on architectures without flash attention
+support, so it is a thing to verify on the target machine rather than assume.
+
+**Sizing the model to the card.** The Qwen3.5 line runs 0.8B, 2B, 4B, 9B, then jumps to 27B — there is
+no 14B any more, which is what the original Qwen2.5-14B plan assumed. At Q4_K_M the 27B needs about
+17GB, so on a 16GB card it cannot hold the weights *and* a KV cache; a few layers spill to system RAM
+and throughput drops. That leaves two honest candidates for the primary model, the 9B at Q4_K_M and
+the same 9B at Q8_0, and one open question: whether a partially offloaded 27B is fast enough to be
+worth its quality on this specific card. That is a measurement on the target machine, not a judgement
+call — see [open question 9](#5-open-questions).
+
+**Development is not deployment.** The agent is written on one machine and runs on another, so no
+model name, host or path is baked into the binary. `-model` / `QUANTIC_MODEL` and `-ollama` /
+`OLLAMA_HOST` carry them, and `agent -check` prints what the server it is pointed at actually has,
+including each model's `capabilities` — the `tools` entry is what milestone 5 depends on.
 
 ## 5. Open questions
 
@@ -286,6 +305,11 @@ ignores it.
    `embed`, not stored in the database. They must contain no Quantic-internal content (N4).
 7. **Chunking strategy for filings.** 10-Ks are long and structured. Naive fixed-size chunking will
    split tables badly. Deferred until milestone 10.
+9. **Which primary model, measured on the target box.** Qwen3.5-9B Q4_K_M (fully resident, most
+   context), the same 9B at Q8_0 (fully resident, best fidelity for its size), or Qwen3.6-27B Q4_K_M
+   with partial RAM offload (best model, unknown speed). The deciding numbers are tokens/second at a
+   realistic research-context length and whether a 27B run finishes inside the loop's wall-clock
+   budget. Nothing in the code depends on the answer — it is one flag.
 8. **Can a 14B model reliably write prose with no figures in it?** The format contract forbids
    numbers in prose entirely. Small models will violate this. The validator catches it and retries,
    but if the violation rate is high the writing prompt needs restructuring — possibly generating
