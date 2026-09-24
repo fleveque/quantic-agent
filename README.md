@@ -7,9 +7,9 @@ pulls **real financial data** from Quantic's MCP server, and turns it into draft
 reports and small code changes — delivered as **pull requests and review-queue entries, never as
 anything published automatically**.
 
-> **Status: milestone 1.** The module builds, the binary runs and does nothing yet, and the first real
-> code is the deterministic calculator tools with their tests. Slow on purpose — the project doubles as
-> my way of learning Go in public, so the commit history *is* the learning record.
+> **Status: milestone 2.** The agent talks to the local model: `agent -check` reports the server
+> version, `agent -ask` sends a prompt and prints the reply. No scheduled tasks yet. Slow on purpose —
+> the project doubles as my way of learning Go in public, so the commit history *is* the learning record.
 > See the [roadmap](#roadmap) for where it's going and [docs/lessons](docs/lessons) for what each step taught me.
 
 ---
@@ -102,6 +102,7 @@ Delivery tools live outside the loop entirely. See
 | Package | Responsibility |
 |---|---|
 | `cmd/agent` | Entrypoint, flag/config parsing, daemon loop and graceful shutdown |
+| `cmd/bench` | Measures prompt/generation throughput and GPU residency per model, on the machine it runs on |
 | `internal/llm` | Local model client (Ollama HTTP API), tool-call schema, structured-output decoding |
 | `internal/mcp` | Client for Quantic's MCP server — the only source of financial facts |
 | `internal/agent` | The research loop: tool dispatch, budget accounting, retries, phase state machine |
@@ -119,9 +120,11 @@ Delivery tools live outside the loop entirely. See
 - **Inference: Ollama** over raw `llama.cpp server`, for its tool-calling API and model management.
   (I already maintain [llm-kit](https://github.com/fleveque/llm-kit) for the llama.cpp path if I need
   more control later.)
-- **Model: Qwen2.5-14B-Instruct** at Q4/Q5 — fits comfortably in 16GB VRAM with room for context, and
-  has genuine tool-calling support. Fallback to Qwen3-8B for latency-sensitive tasks; 32B at Q3 with
-  partial RAM offload for occasional heavy batch work.
+- **Model: Qwen3.5-9B** at Q4_K_M — the largest Qwen that fits *entirely* in 16GB VRAM with room left
+  for a long-context KV cache, and it advertises the `tools` capability the research loop needs. The
+  27B is the quality ceiling but wants ~17GB, so it spills to RAM; it stays as the heavy tier for
+  occasional deep work. Nothing is baked in: `-model` and `QUANTIC_MODEL` choose, and `agent -check`
+  reports what the target machine actually has.
 - **Structured output over native tool-calling.** Local models are noticeably flakier at tool-calling
   than frontier models. The plan is to lean on JSON-schema-constrained decoding and treat native
   tool-calling as an optimisation, not a foundation.
@@ -131,6 +134,9 @@ Delivery tools live outside the loop entirely. See
 
 Ryzen-class desktop, 64GB RAM, NVIDIA RTX 4070 Ti Super (16GB VRAM). The agent is designed to run
 opportunistically: work while the machine is on, checkpoint state, resume cleanly.
+
+That machine is the deployment target, not where this is written, so the binary assumes nothing about
+which models are present — `agent -check` asks the server it's pointed at.
 
 ---
 
@@ -181,8 +187,8 @@ the point is learning Go, not just having an agent.
 | # | Milestone | Go ground covered |
 |---|---|---|
 | 0 | Repo, design, decisions | — |
-| 1 | Hello, module: layout, `cmd/` vs `internal/`, first test *(you are here)* | modules, packages, visibility, `go test` |
-| 2 | Ollama client: send a prompt, decode the response | structs, JSON tags, interfaces, `net/http` |
+| 1 | Hello, module: layout, `cmd/` vs `internal/`, first test | modules, packages, visibility, `go test` |
+| 2 | Ollama client: send a prompt, decode the response *(you are here)* | structs, JSON tags, interfaces, `net/http` |
 | 3 | Error handling across the LLM boundary | `error` values, wrapping, `errors.Is/As`, sentinels |
 | 4 | Timeouts and cancellation for slow generations | `context`, deadlines, graceful shutdown |
 | 5 | First real tool: `dividend_calendar` end to end | schema from structs, reflection, MCP auth |
@@ -209,7 +215,14 @@ gofmt -l .              # lists unformatted files; empty output is a pass
 go vet ./...
 go test -race ./...
 go run ./cmd/agent -version
+go run ./cmd/agent -check              # is the model server up?
+go run ./cmd/agent -ask "say hello"    # one prompt, one reply
+go run ./cmd/bench                     # tokens/second and GPU residency per model
 ```
+
+`cmd/bench` is meant for the machine the agent will actually run on: it reports prompt and
+generation rates per model and context size, and how much of each model stayed in VRAM. Numbers from
+a development laptop say nothing useful about the deployment box.
 
 ## Lessons
 

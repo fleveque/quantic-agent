@@ -294,4 +294,4 @@ security fixes. CI reads its version from `go.mod`, so the bump is one line —
 ---
 
 **Previous:** [Lesson 00 — Project layout, modules, and the `internal` rule](00-project-layout-and-modules.md) ·
-**Next:** Lesson 02 — structs, JSON tags, and the Ollama client *(not written yet)*
+**Next:** [Lesson 02 — Structs, tags, and one HTTP call](02-structs-tags-and-one-http-call.md)
