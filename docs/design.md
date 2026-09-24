@@ -252,6 +252,14 @@ Retention: `tool_calls` responses can be large; plan a compaction policy before 
 | Logging | `log/slog` | Stdlib structured logging; feeds N3. |
 | Config | YAML + env, flags for overrides | Secrets via env only, never committed. |
 
+**Thinking models.** The Qwen3.5-era models run a reasoning pass before answering, returned in a
+separate `thinking` field. Both phases send `think:false`. Reasoning text is not a source: it never
+enters the manifest, never reaches a draft, and is not something N1 could validate even in principle.
+It is also expensive — a thinking reply spends its token budget on reasoning first, so a truncated
+one can arrive with a full `thinking` field and an empty answer. Requests carry `think:false`
+explicitly rather than relying on a default, and a model with no thinking mode accepts the field and
+ignores it.
+
 **Hardware:** 64GB RAM, RTX 4070 Ti Super (16GB VRAM).
 
 ## 5. Open questions

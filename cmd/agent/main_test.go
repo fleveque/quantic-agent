@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 )
@@ -59,5 +61,65 @@ func TestRun(t *testing.T) {
 				t.Errorf("stderr = %q, want it to contain %q", stderr.String(), tt.wantStderr)
 			}
 		})
+	}
+}
+
+func TestRunAsk(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"model":"quantic-9b:latest","response":"ok","done":true,` +
+			`"done_reason":"stop","eval_count":2,"eval_duration":205098000}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	var stdout, stderr bytes.Buffer
+	code := run([]string{"-ollama", srv.URL, "-ask", "Reply with exactly: ok"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0 (stderr: %q)", code, stderr.String())
+	}
+	if got := stdout.String(); got != "ok\n" {
+		t.Errorf("stdout = %q, want %q", got, "ok\n")
+	}
+	// The run line goes to stderr so that stdout stays pipeable.
+	if got := stderr.String(); !strings.Contains(got, "2 tokens") {
+		t.Errorf("stderr = %q, want it to report the token count", got)
+	}
+}
+
+func TestRunCheck(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"version":"0.30.3"}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	var stdout, stderr bytes.Buffer
+	code := run([]string{"-ollama", srv.URL, "-check"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0 (stderr: %q)", code, stderr.String())
+	}
+	if got := stdout.String(); !strings.Contains(got, "ollama 0.30.3") {
+		t.Errorf("stdout = %q, want it to report the server version", got)
+	}
+}
+
+func TestRunReportsAnUnreachableServer(t *testing.T) {
+	// A server that is closed before the call: its port is guaranteed to be
+	// one nothing is listening on.
+	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	deadURL := srv.URL
+	srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	code := run([]string{"-ollama", deadURL, "-ask", "hi"}, &stdout, &stderr)
+
+	if code != 1 {
+		t.Errorf("exit code = %d, want 1", code)
+	}
+	if stdout.Len() > 0 {
+		t.Errorf("stdout = %q, want it empty on failure", stdout.String())
+	}
+	if got := stderr.String(); !strings.HasPrefix(got, "agent:") {
+		t.Errorf("stderr = %q, want it to start with the program name", got)
 	}
 }

@@ -11,6 +11,7 @@ where I found it non-obvious.
 |---|---|---|---|
 | [00](00-project-layout-and-modules.md) | Project layout, modules, and the `internal` rule | 0 — repo & design | [Modules and the `internal` rule](https://claude.ai/code/artifact/bd329fad-14ba-44b7-8188-bd98cf419424) |
 | [01](01-a-binary-a-package-and-go-test.md) | A binary, a package, and `go test` | 1 — first code | [A binary, a package, and `go test`](https://claude.ai/artifact/PuuxbeGuttxWhboXDxbZMi) |
+| [02](02-structs-tags-and-one-http-call.md) | Structs, tags, and one HTTP call | 2 — the model client | [Structs, tags, and one HTTP call](https://claude.ai/artifact/4QGaudzoGjNAPto7ZcxgpD) |
 | [10](10-vector-search-without-a-vector-db.md) | Vector search without a vector database | 10 — retrieval | [Vector search without a vector database](https://claude.ai/code/artifact/4cf71989-6588-4864-b3bc-314781a156b1) |
 
 Lesson 10 is out of order deliberately — it was written early because the question came up, not
