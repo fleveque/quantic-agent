@@ -292,7 +292,8 @@ already installed on the development laptop.
 
 **Development is not deployment.** The agent is written on one machine and runs on another, so no
 model name, host or path is baked into the binary. `-model` / `QUANTIC_MODEL` and `-ollama` /
-`OLLAMA_HOST` carry them, and `agent -check` prints what the server it is pointed at actually has,
+`OLLAMA_HOST` carry them ([runbook](target-machine.md)), and `agent -check` prints what the server it
+is pointed at actually has,
 including each model's `capabilities` — the `tools` entry is what milestone 5 depends on.
 
 Keep the target's Ollama current. Version floors per model are undocumented, and the desktop's 0.24.0
