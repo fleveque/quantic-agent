@@ -21,9 +21,10 @@ import (
 // (milestone 13). Until then every build reports "dev".
 var version = "dev"
 
-// defaultModel is the model chosen for the target hardware (design §4): the
-// largest Qwen that fits entirely in 16GB of VRAM with room left for a long
-// context. Development happens on a different machine, so both flags below
+// defaultModel is the safe choice for the target hardware (design §4): it fits
+// any 16GB card with room to spare. The primary candidate, Qwen3.8-27B at
+// about 3.5 bits per weight, replaces it once cmd/bench confirms it on the
+// real card. Development happens on a different machine, so both flags below
 // read an environment variable first and nothing is baked in.
 const defaultModel = "qwen3.5:9b"
 
@@ -78,7 +79,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 		selected := false
 		for _, m := range models {
 			marker := " "
-			if m.Name == client.Model() {
+			if strings.EqualFold(m.Name, client.Model()) {
 				marker, selected = "*", true
 			}
 			fmt.Fprintf(stdout, "%s %-26s %5.1f GB  %-6s %-7s ctx %-5s %s\n",
@@ -87,7 +88,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 				strings.Join(m.Capabilities, " "))
 		}
 		// The agent runs where its developer isn't sitting, so a model that
-		// was never pulled has to be loud now rather than 404 mid-task.
+		// was never pulled has to be loud now rather than 404 mid-task. Names
+		// compare case-insensitively because that is how Ollama resolves them.
 		if !selected {
 			fmt.Fprintf(stderr, "agent: %s is not on this server\n", client.Model())
 			return 1
