@@ -120,12 +120,13 @@ Delivery tools live outside the loop entirely. See
 - **Inference: Ollama** over raw `llama.cpp server`, for its tool-calling API and model management.
   (I already maintain [llm-kit](https://github.com/fleveque/llm-kit) for the llama.cpp path if I need
   more control later.)
-- **Model: Qwen3.8-27B at ≈3.5 bits** (`UD-IQ3_S`, 12GB, from Hugging Face) is the primary candidate —
-  the best current Qwen that fits *entirely* in 16GB VRAM, made viable by hybrid attention that keeps a
-  KV cache on only a quarter of its layers. It has to prove itself on the real card first, so the
-  default stays **Qwen3.5-9B** until `cmd/bench` (speed, residency) and milestone 5 (tool-call
-  validity) say otherwise. Nothing is baked in: `-model` and `QUANTIC_MODEL` choose, and `agent -check`
-  reports what the target machine actually has.
+- **Model: Qwen3.5-9B by default, chosen by measurement.** On the target card it stays entirely in
+  VRAM up to 64K context and is the fastest candidate by a wide margin. Bigger models are candidates,
+  not defaults: a mixture-of-experts `qwen3.6:35b` runs fast even half in system RAM, and Qwen3.8-27B
+  at ≈3.5 bits fits only at short contexts. What decides is quality on the agent's own tasks, measured
+  from milestone 5 — and re-measured as new models appear
+  ([decision 0005](docs/decisions/0005-default-model-by-measurement.md)). Nothing is baked in:
+  `-model` and `QUANTIC_MODEL` choose, and `agent -check` reports what the target machine actually has.
 - **Structured output over native tool-calling.** Local models are noticeably flakier at tool-calling
   than frontier models. The plan is to lean on JSON-schema-constrained decoding and treat native
   tool-calling as an optimisation, not a foundation.
