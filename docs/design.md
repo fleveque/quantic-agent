@@ -224,7 +224,8 @@ The interesting shape: **one GPU, many network calls.**
   needs most of the VRAM. Both the agent and Ollama must be easy to stop, start and restart, and neither
   may lose work when stopped. So: `SIGTERM` is a clean stop at the next checkpoint, and an unreachable
   Ollama is a reason to wait, not to fail — the run stays queued until the server is back. The
-  runbook has the commands ([target machine §8](target-machine.md#8-freeing-the-gpu)).
+  client reports that case as `llm.ErrUnavailable`, distinct from every other failure, and the
+  agent exits with status 3 for it so a scheduler knows a retry is safe. The runbook has the commands ([target machine §8](target-machine.md#8-freeing-the-gpu)).
 
 ### 3.7 Storage
 

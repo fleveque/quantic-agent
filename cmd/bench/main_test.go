@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -186,5 +187,80 @@ func TestRunFlagsAShortGenerationSample(t *testing.T) {
 	}
 	if got := stdout.String(); !strings.Contains(got, "stopped after 100 of 128 tokens") {
 		t.Errorf("table = %q, want the short sample flagged", got)
+	}
+}
+
+// If the server goes away mid-run, the benchmark stops asking and reports
+// what it had already measured, instead of failing every remaining request.
+func TestRunStopsWhenTheServerGoesAway(t *testing.T) {
+	// The handler runs on the server's goroutines, so shared state needs a lock.
+	var (
+		mu        sync.Mutex
+		generates int
+		asked     []string // the model named in each generate request
+	)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/tags":
+			w.Write([]byte(`{"models":[{"name":"first:latest"},{"name":"second:latest"}]}`))
+		case "/api/ps":
+			w.Write([]byte(`{"models":[]}`))
+		case "/api/generate":
+			var body struct {
+				Model string `json:"model"`
+			}
+			json.NewDecoder(r.Body).Decode(&body)
+
+			mu.Lock()
+			generates++
+			n := generates
+			asked = append(asked, body.Model)
+			mu.Unlock()
+
+			// Warm-up and the first measurement succeed. From the third
+			// request on, the connection is dropped unanswered, the way a
+			// restarting Ollama drops it.
+			if n >= 3 {
+				conn, _, err := w.(http.Hijacker).Hijack()
+				if err != nil {
+					t.Errorf("hijacking the connection: %v", err)
+					return
+				}
+				conn.Close()
+				return
+			}
+			w.Write([]byte(`{"response":"done","done":true,"prompt_eval_count":10,` +
+				`"prompt_eval_duration":1000000,"eval_count":10,"eval_duration":1000000}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	var stdout, stderr bytes.Buffer
+	code := run([]string{"-ollama", srv.URL, "-models", "first:latest,second:latest",
+		"-contexts", "4096,8192", "-json"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0 with a partial result (stderr: %q)", code, stderr.String())
+	}
+	var results []result
+	if err := json.Unmarshal(stdout.Bytes(), &results); err != nil {
+		t.Fatalf("decoding output: %v\n%s", err, stdout.String())
+	}
+	if len(results) != 1 {
+		t.Errorf("got %d results, want the 1 measured before the server went away", len(results))
+	}
+	// Not an exact request count: when a connection drops, Go's HTTP
+	// transport sometimes resends the request once by itself. What matters
+	// is that the second model is never started.
+	mu.Lock()
+	defer mu.Unlock()
+	for _, m := range asked {
+		if m == "second:latest" {
+			t.Errorf("the second model was requested after the server went away (requests: %v)", asked)
+			break
+		}
+	}
+	if got := stderr.String(); !strings.Contains(got, "model server unavailable") {
+		t.Errorf("stderr = %q, want it to report the server as unavailable", got)
 	}
 }

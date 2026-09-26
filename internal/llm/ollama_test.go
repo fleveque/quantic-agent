@@ -2,11 +2,14 @@ package llm_test
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -173,31 +176,41 @@ func TestVersion(t *testing.T) {
 }
 
 func TestServerErrors(t *testing.T) {
+	// Every body here is what a real Ollama 0.34.4 sent for that request.
 	tests := []struct {
-		name        string
-		status      int
-		body        string
-		wantInError []string
+		name          string
+		status        int
+		body          string
+		wantMessage   string
+		wantNotFound  bool
+		wantInMessage []string
 	}{
 		{
-			name:        "json error body",
-			status:      http.StatusNotFound,
-			body:        `{"error":"model 'no-such-model:latest' not found"}`,
-			wantInError: []string{"404", "no-such-model:latest", "not found"},
+			name:         "unknown model",
+			status:       http.StatusNotFound,
+			body:         string(fixture(t, "generate-model-not-found.json")),
+			wantMessage:  "model 'no-such-model:latest' not found",
+			wantNotFound: true,
 		},
 		{
 			// A mistyped path never reaches Ollama's handlers, so the body is
-			// the HTTP mux's plain text rather than JSON.
+			// the router's plain text, and the 404 is not about a model.
 			name:        "plain text error body",
 			status:      http.StatusNotFound,
 			body:        "404 page not found\n",
-			wantInError: []string{"404", "page not found"},
+			wantMessage: "404 page not found",
+		},
+		{
+			name:        "malformed request",
+			status:      http.StatusBadRequest,
+			body:        `{"error":"invalid character 'n' looking for beginning of object key string"}`,
+			wantMessage: "invalid character 'n' looking for beginning of object key string",
 		},
 		{
 			name:        "empty error body",
 			status:      http.StatusInternalServerError,
 			body:        "",
-			wantInError: []string{"500"},
+			wantMessage: "",
 		},
 	}
 
@@ -213,12 +226,85 @@ func TestServerErrors(t *testing.T) {
 			if err == nil {
 				t.Fatal("Generate returned no error, want one")
 			}
-			for _, want := range tt.wantInError {
-				if !strings.Contains(err.Error(), want) {
-					t.Errorf("error %q, want it to mention %q", err, want)
-				}
+
+			var apiErr *llm.APIError
+			if !errors.As(err, &apiErr) {
+				t.Fatalf("error %q is not an *llm.APIError", err)
+			}
+			if apiErr.StatusCode != tt.status {
+				t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, tt.status)
+			}
+			if apiErr.Message != tt.wantMessage {
+				t.Errorf("Message = %q, want %q", apiErr.Message, tt.wantMessage)
+			}
+			if got := errors.Is(err, llm.ErrModelNotFound); got != tt.wantNotFound {
+				t.Errorf("errors.Is(err, ErrModelNotFound) = %v, want %v", got, tt.wantNotFound)
+			}
+			// The server answered, so whatever went wrong, it isn't absent.
+			if errors.Is(err, llm.ErrUnavailable) {
+				t.Errorf("errors.Is(err, ErrUnavailable) = true for a server that replied")
+			}
+			// The message still reads as one line with the status in it.
+			if want := strconv.Itoa(tt.status); !strings.Contains(err.Error(), want) {
+				t.Errorf("error %q, want it to mention %s", err, want)
 			}
 		})
+	}
+}
+
+// deadAddr is an address nothing listens on, as with a stopped Ollama. Port 1
+// is privileged and outside the range the OS hands out to test servers. The
+// port of a closed httptest server is not safe for this: go test runs package
+// binaries in parallel, and another one's server can be given that port a
+// moment later.
+const deadAddr = "http://127.0.0.1:1"
+
+func TestUnavailableWhenNothingListens(t *testing.T) {
+	_, err := llm.New(deadAddr, "m").Version()
+
+	if !errors.Is(err, llm.ErrUnavailable) {
+		t.Fatalf("errors.Is(err, ErrUnavailable) = false for %q", err)
+	}
+	// Both %w verbs matter: the network cause is still reachable too.
+	if !errors.Is(err, syscall.ECONNREFUSED) {
+		t.Errorf("errors.Is(err, ECONNREFUSED) = false for %q", err)
+	}
+	var apiErr *llm.APIError
+	if errors.As(err, &apiErr) {
+		t.Errorf("errors.As found an *APIError in %q, but no reply was received", err)
+	}
+}
+
+func TestUnavailableWhenConnectionDrops(t *testing.T) {
+	// The server accepts the connection and closes it without replying, as
+	// happens when Ollama restarts in the middle of a request.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, _, err := w.(http.Hijacker).Hijack()
+		if err != nil {
+			t.Errorf("hijacking the connection: %v", err)
+			return
+		}
+		conn.Close()
+	}))
+	t.Cleanup(srv.Close)
+
+	_, err := llm.New(srv.URL, "m").Generate(llm.GenerateRequest{Prompt: "hi"})
+
+	if !errors.Is(err, llm.ErrUnavailable) {
+		t.Errorf("errors.Is(err, ErrUnavailable) = false for %q", err)
+	}
+}
+
+func TestUnknownHostIsNotUnavailable(t *testing.T) {
+	// .invalid is reserved and never resolves. An unresolvable name is almost
+	// always a typo in OLLAMA_HOST, which should fail rather than be waited on.
+	_, err := llm.New("http://no-such-host.invalid:11434", "m").Version()
+
+	if err == nil {
+		t.Fatal("Version returned no error, want one")
+	}
+	if errors.Is(err, llm.ErrUnavailable) {
+		t.Errorf("errors.Is(err, ErrUnavailable) = true for %q, want an ordinary failure", err)
 	}
 }
 
@@ -234,6 +320,11 @@ func TestGenerateRejectsUnparseableReply(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "decoding") {
 		t.Errorf("error %q, want it to mention decoding", err)
+	}
+	// A reply that arrived but made no sense is neither kind of known failure.
+	var apiErr *llm.APIError
+	if errors.As(err, &apiErr) || errors.Is(err, llm.ErrUnavailable) {
+		t.Errorf("error %q classified as an API or availability error, want neither", err)
 	}
 }
 
