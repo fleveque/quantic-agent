@@ -27,6 +27,12 @@ learning record. Start with [README.md](README.md) and [docs/design.md](docs/des
   in the author's first person — someone coming to Go from Elixir and Ruby — plus a formatted page
   published as an artifact and linked from the lesson and `docs/lessons/README.md`. The existing pages
   share one stylesheet; reuse it.
+- **…and a code walkthrough** (from milestone 2): a second artifact that goes through every file the
+  milestone's PR added or changed, in reading order, as a tech lead mentoring someone new to Go: what
+  each part does, why it's written that way, what the standard library is doing, and why each pointer
+  is a pointer. Excerpts are copied verbatim from a named commit; "try it" experiments show real
+  outputs. Compare with Ruby or Elixir only where it genuinely helps. Linked from the lesson and the
+  lessons README.
 - **Decisions are ADRs** in `docs/decisions/NNNN-*.md`.
 - **`main` is protected.** Branch → PR → CI green → the user merges. Never merge. Before pushing to an
   existing branch, check its PR isn't already merged — a commit once landed on a merged branch and
