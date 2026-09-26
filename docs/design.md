@@ -142,6 +142,8 @@ context window at call time. Framed honestly, it earns its place in three specif
 2. **Don't-repeat-yourself.** Retrieve what was recently written about a ticker so week 4's digest
    doesn't rehash week 1's angle.
 3. **Filings and news text.** Chunked 10-K and press-release text makes valuation write-ups richer.
+   Where that text comes from is [open question 11](#5-open-questions): trusted sources only, never
+   open browsing.
 
 **The hard line: never retrieve a number.** Retrieved text is quotable as *language*; every figure
 still comes from a live tool call. Vector stores have no freshness guarantee, and this is precisely
@@ -368,6 +370,16 @@ refused Qwen3.5 outright with a `412: requires a newer version of Ollama`.
     6–50GB, and a scheduled pull would take disk space and the GPU without anyone asking. The likely
     answer is that the agent proposes candidates and a human pulls them, after which the agent runs the
     evaluation and opens the PR. Needs the milestone 5 evaluation set first.
+11. **Where filing and news text comes from.** §3.4 plans to retrieve 10-K and press-release text for
+    valuation write-ups, but nothing names the source. Open web browsing is ruled out: a page can carry
+    instructions aimed at the model (prompt injection, which small local models resist poorly), a
+    figure from an arbitrary page would look like a recorded tool call without being trustworthy
+    (N1), and it would widen the research allowlist from a known set to the whole internet. The likely
+    answer is a short list of trusted sources, each its own read-only tool in the allowlist — SEC
+    EDGAR for filings, a company's own investor-relations releases — with fetched text treated as
+    untrusted input: stored and embedded as language, never followed as instructions, never a source
+    for a number. Open: which sources, whether the text comes from Quantic's MCP server rather than
+    the agent fetching it, and how non-US issuers are covered. *Needed by milestone 10.*
 
 ## 6. Explicit non-goals
 
