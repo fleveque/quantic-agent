@@ -4,22 +4,24 @@ A local Go agent that drafts data-grounded content for Quantic using a local mod
 It doubles as the author's way of learning Go in public: the commit history and `docs/lessons` are the
 learning record. Start with [README.md](README.md) and [docs/design.md](docs/design.md).
 
-## Status — 2026-09-24
+## Status — 2026-09-26
 
 - Milestones 0–2 merged (PRs #1–#4): repo and design, first binary and calculator tools, the Ollama
   client (`internal/llm`), `agent -check`/`-ask`, and `cmd/bench`.
-- Work has moved from the development laptop (no NVIDIA GPU) to the target desktop (RTX 4070 Ti
-  Super, 16GB). Setup and the benchmark are in [docs/target-machine.md](docs/target-machine.md).
+- Running on the target desktop (RTX 4070 Ti Super 16GB, 64GB RAM); runbook in
+  [docs/target-machine.md](docs/target-machine.md).
+- Open question 9 answered by measurement ([ADR 0005](docs/decisions/0005-default-model-by-measurement.md)):
+  `qwen3.5:9b` stays the default; `qwen3.6:35b` (MoE) and Qwen3.8-27B `UD-IQ3_S` are candidates, decided
+  on task quality from milestone 5. Raw results in `docs/benchmarks/`.
 
 ## Next, in order
 
-1. **Benchmark results → open question 9.** If `bench.json` / `bench-kvq8.json` exist or the user
-   pastes results: decide the primary model (Qwen3.8-27B `UD-IQ3_S` / `UD-Q3_K_XL` vs `qwen3.5:9b`),
-   record it in design §4 and §5, change `defaultModel` in `cmd/agent/main.go` only if the 27B wins,
-   note the `tools` capability each model reports, and keep the raw files under `docs/benchmarks/`.
-   Milestone 8's budgets (design §3.2) should come from these numbers.
-2. **Milestone 3 — errors across the LLM boundary**: sentinel errors, `%w` wrapping, `errors.Is`/`As`.
-   `internal/llm` returns plain `fmt.Errorf` values on purpose; that's the "before" picture.
+1. **Milestone 3 — errors across the LLM boundary**: sentinel errors, `%w` wrapping, `errors.Is`/`As`.
+   `internal/llm` returns plain `fmt.Errorf` values on purpose; that's the "before" picture. Include a
+   distinguishable "Ollama unreachable" error: design §3.6 requires the agent to wait, not fail, when
+   the server is stopped.
+2. Milestone 5 must leave behind an evaluation set that runs against any model name (ADR 0005), the
+   basis of the model-upkeep task (design §1, open question 10).
 
 ## Conventions
 
@@ -38,6 +40,10 @@ learning record. Start with [README.md](README.md) and [docs/design.md](docs/des
 - **Claims are verified by running them.** Test fixtures are payloads captured from a real Ollama
   (`internal/llm/testdata`). Lesson outputs are real outputs.
 - **Nothing machine-specific in the binary**: `-model`/`QUANTIC_MODEL`, `-ollama`/`OLLAMA_HOST`.
+- **Models are used as published** (Ollama library or `hf.co` pulls). No hand-built variants via
+  `ollama create`; new models arrive too often to maintain them.
+- **The GPU is shared with the author.** Anything long-running must stop cleanly and tolerate a stopped
+  Ollama (design §3.6, runbook §8).
 - The design's non-negotiables (design §2) — no invented numbers, no autonomous publishing — are not
   up for convenience trade-offs.
 

@@ -1,0 +1,58 @@
+[
+  {
+    "model": "qwen3.6:35b",
+    "context_tokens": 8192,
+    "prompt_tokens": 6321,
+    "prompt_tokens_per_second": 1252.2197630826358,
+    "generated_tokens": 128,
+    "generated_tokens_per_second": 68.198577207183,
+    "total_seconds": 6.962037349,
+    "load_seconds": 25.030637673,
+    "size_bytes": 23053383759,
+    "vram_bytes": 13090926099,
+    "fraction_on_gpu": 0.5678526951120277,
+    "generated_tokens_requested": 128
+  },
+  {
+    "model": "qwen3.6:35b",
+    "context_tokens": 32768,
+    "prompt_tokens": 25154,
+    "prompt_tokens_per_second": 1258.63787401182,
+    "generated_tokens": 128,
+    "generated_tokens_per_second": 73.17007641128214,
+    "total_seconds": 45.381683307,
+    "load_seconds": 25.030637673,
+    "size_bytes": 23898536014,
+    "vram_bytes": 13362580683,
+    "fraction_on_gpu": 0.5591380440698153,
+    "generated_tokens_requested": 128
+  },
+  {
+    "model": "qwen3.6:27b",
+    "context_tokens": 8192,
+    "prompt_tokens": 6323,
+    "prompt_tokens_per_second": 1049.5307818929632,
+    "generated_tokens": 128,
+    "generated_tokens_per_second": 10.042798011400459,
+    "total_seconds": 18.842280599,
+    "load_seconds": 16.850940802,
+    "size_bytes": 17436319412,
+    "vram_bytes": 13062803290,
+    "fraction_on_gpu": 0.7491720575507429,
+    "generated_tokens_requested": 128
+  },
+  {
+    "model": "qwen3.6:27b",
+    "context_tokens": 32768,
+    "prompt_tokens": 25158,
+    "prompt_tokens_per_second": 901.5603142882688,
+    "generated_tokens": 128,
+    "generated_tokens_per_second": 6.39087670396126,
+    "total_seconds": 57.13187192,
+    "load_seconds": 16.850940802,
+    "size_bytes": 19143610855,
+    "vram_bytes": 13049874349,
+    "fraction_on_gpu": 0.6816830141316619,
+    "generated_tokens_requested": 128
+  }
+]

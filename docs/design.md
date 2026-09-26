@@ -11,12 +11,21 @@ Companion documents: [content plan](content.md) · [format & rendering](renderin
 ## 1. Problem
 
 Quantic (quantic.finance) is a dividend-portfolio tracker: Elixir/Phoenix monolith, real users, real
-money decisions. Two recurring jobs are repetitive, LLM-shaped, and intolerant of hallucination:
+money decisions. Recurring jobs that are repetitive, LLM-shaped, and intolerant of hallucination:
 
 1. **Content.** Recurring, data-grounded publishing — a weekly dividend digest, raise/cut notes,
    valuation write-ups — across seven locales. See the [content plan](content.md).
 2. **Data quality.** Watching a large instrument universe for nulls, outliers, impossible dates and
    suspicious dividend histories.
+
+The agent is meant to keep running and take on more jobs of this kind, not only to write articles. One
+is about the agent itself:
+
+3. **Model upkeep.** Open models improve every few months, and a newer model is often better than an
+   older, bigger one. Watch for new candidates, measure them on this machine and on this agent's own
+   tasks, and propose a change of default — as a PR carrying the numbers, never by switching itself
+   (N2). See [decision 0005](decisions/0005-default-model-by-measurement.md) for the evaluation routine,
+   and [open question 10](#5-open-questions).
 
 Frontier-model APIs would work but cost per token and send portfolio-adjacent data to a third party.
 A local model on owned hardware removes both constraints, at the cost of lower model quality — which
@@ -209,6 +218,11 @@ The interesting shape: **one GPU, many network calls.**
   practice by the same GPU semaphore — a good place to learn what a bottleneck actually costs.
 - The daemon is opportunistic: the machine is not always on. State is checkpointed in SQLite after
   each phase so an interrupted run resumes rather than restarts.
+- **The GPU is shared, not owned.** The desktop is also the author's machine, and sometimes the author
+  needs most of the VRAM. Both the agent and Ollama must be easy to stop, start and restart, and neither
+  may lose work when stopped. So: `SIGTERM` is a clean stop at the next checkpoint, and an unreachable
+  Ollama is a reason to wait, not to fail — the run stays queued until the server is back. The
+  runbook has the commands ([target machine §8](target-machine.md#8-freeing-the-gpu)).
 
 ### 3.7 Storage
 
@@ -241,9 +255,8 @@ Retention: `tool_calls` responses can be large; plan a compaction policy before 
 | Concern | Choice | Reasoning |
 |---|---|---|
 | Inference server | Ollama | Three model tiers behind one endpoint with load/unload on demand, embeddings on the same server, and per-model capability metadata. `llama.cpp` stays the escape hatch ([llm-kit](https://github.com/fleveque/llm-kit)) with explicit triggers — [decision 0004](decisions/0004-ollama-now-llama-cpp-on-a-trigger.md). |
-| Primary candidate | Qwen3.8-27B, `UD-IQ3_S` (12.0GB, ≈3.45 bits/weight) | The largest current Qwen that fits *entirely* in 16GB. Hybrid attention keeps a KV cache on only 16 of its 64 layers, so context stays affordable beside the weights. From `hf.co/unsloth/Qwen3.8-27B-GGUF`. |
-| Quality step | Qwen3.8-27B, `UD-Q3_K_XL` (13.1GB) | More bits per weight, about 1GB less room for context. |
-| Safe default | Qwen3.5-9B, Q4_K_M (6.6GB) | Fits with ~9GB to spare. The default until `cmd/bench` confirms a 27B on the real card. |
+| Default model | Qwen3.5-9B, Q4_K_M (6.6GB) | Measured on the target card: 100% on GPU up to 64K context (8.0GB), about 80 generated and 4,400–5,000 prompt tokens/second — [decision 0005](decisions/0005-default-model-by-measurement.md). |
+| Candidates | `qwen3.6:35b` (MoE); Qwen3.8-27B `UD-IQ3_S` | The MoE writes at ~70 tokens/second even with 44% of itself in system RAM; the dense 27B fits fully only at 8K. Decided on task quality from milestone 5, not on speed or size. |
 | Fast model | Qwen3.5-4B (3.4GB) | Mechanical passes — data-QA triage, classification — where a 9B is overkill. |
 | Embeddings | `nomic-embed-text` via Ollama | Small, fast, good enough for a few thousand chunks. |
 | Model I/O | JSON-schema-constrained decoding | Local models are flakier at native tool-calling than frontier models; constrained output is the reliable floor, native tool-calling an optimisation. |
@@ -268,7 +281,8 @@ ignores it.
 pull before trading model size away. It fails quietly on architectures without flash attention
 support, so it is a thing to verify on the target machine rather than assume.
 
-**Sizing the model to the card.** The newest Qwen at this size is **Qwen3.8-27B**. Ollama's own library
+**Sizing the model to the card** — the reasoning before measurement; the measured outcome is in
+[decision 0005](decisions/0005-default-model-by-measurement.md). The newest Qwen at this size is **Qwen3.8-27B**. Ollama's own library
 publishes it only at Q4_K_M (18GB), which cannot hold weights *and* a KV cache in 16GB. But Unsloth
 publishes sub-4-bit GGUFs on Hugging Face, which Ollama pulls directly
 ([decision 0004](decisions/0004-ollama-now-llama-cpp-on-a-trigger.md)): `UD-IQ3_S` is 12.0GB,
@@ -323,6 +337,11 @@ refused Qwen3.5 outright with a `412: requires a newer version of Ollama`.
    `embed`, not stored in the database. They must contain no Quantic-internal content (N4).
 7. **Chunking strategy for filings.** 10-Ks are long and structured. Naive fixed-size chunking will
    split tables badly. Deferred until milestone 10.
+8. **Can a 14B model reliably write prose with no figures in it?** The format contract forbids
+   numbers in prose entirely. Small models will violate this. The validator catches it and retries,
+   but if the violation rate is high the writing prompt needs restructuring — possibly generating
+   prose and data in separate calls. This is the likeliest place the accept-rate metric first bites.
+
 9. **Which primary model, measured on the target box.** Qwen3.8-27B at `UD-IQ3_S` or `UD-Q3_K_XL`
    (best model that fits, reduced precision) against Qwen3.5-9B Q4_K_M (fits easily, most context).
    The deciding numbers are tokens/second and GPU residency at realistic research-context lengths —
@@ -337,10 +356,18 @@ refused Qwen3.5 outright with a `412: requires a newer version of Ollama`.
    because Ollama's prefix cache otherwise reports cached tokens as if it had processed them, and
    every request sets `num_ctx`, because the server defaults to a 4096-token window whatever the
    model supports and silently truncates a longer prompt.
-8. **Can a 14B model reliably write prose with no figures in it?** The format contract forbids
-   numbers in prose entirely. Small models will violate this. The validator catches it and retries,
-   but if the violation rate is high the writing prompt needs restructuring — possibly generating
-   prose and data in separate calls. This is the likeliest place the accept-rate metric first bites.
+
+   *Answered 2026-09-26 by measurement* — [decision 0005](decisions/0005-default-model-by-measurement.md).
+   The 9B stays the default. The 27B fits entirely only at 8K, and a mixture-of-experts model
+   (`qwen3.6:35b`) turned out to be the more interesting candidate: spilling into system RAM costs it
+   little. Quality decides between them from milestone 5.
+
+10. **Model upkeep as a task.** How the agent learns a new model exists (Ollama library, Hugging Face
+    feeds, a hand-maintained list), and whether it may pull one itself. Today pulling is a deliberate
+    manual step ([runbook §3](target-machine.md#3-pull-the-candidate-models-34gb)): models are
+    6–50GB, and a scheduled pull would take disk space and the GPU without anyone asking. The likely
+    answer is that the agent proposes candidates and a human pulls them, after which the agent runs the
+    evaluation and opens the PR. Needs the milestone 5 evaluation set first.
 
 ## 6. Explicit non-goals
 

@@ -36,16 +36,19 @@ go test -race ./...
 `-race` builds with cgo, so it needs a C compiler. If it complains, install `gcc` or run
 `go test ./...` without it — CI runs the race build either way.
 
-## 3. Pull the candidate models (~32GB)
+## 3. Pull the candidate models (~34GB)
 
-The agent never downloads models itself. That's deliberate: these are 6–13GB each, and model choice is
+The agent never downloads models itself. That's deliberate: these are 6–14GB each, and model choice is
 explicit configuration, so pulling is an explicit step.
 
 ```sh
 ollama pull qwen3.5:9b                                   # 6.6 GB  — the safe default
-ollama pull hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S      # 12.0 GB — primary candidate, ~3.45 bits/weight
-ollama pull hf.co/unsloth/Qwen3.8-27B-GGUF:UD-Q3_K_XL    # 13.1 GB — quality step, less room for context
+ollama pull hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S      # 13.0 GB — primary candidate, ~3.45 bits/weight
+ollama pull hf.co/unsloth/Qwen3.8-27B-GGUF:UD-Q3_K_XL    # 14.1 GB — quality step, less room for context
 ```
+
+Sizes are decimal GB, as `ollama list` and `agent -check` print them. `-check` shows `UD-Q3_K_XL` as
+`Q3_K_L`: that's the file-type label in the GGUF, since Unsloth's dynamic mixes have no code of their own.
 
 ## 4. Check what the server has
 
@@ -90,6 +93,11 @@ truncates anything longer).
 
 ## 6. Does KV cache quantisation engage?
 
+*Optional, not run yet.* The default model doesn't need it, and the setting is server-wide, so it also
+changes every other model on the machine
+([decision 0005](decisions/0005-default-model-by-measurement.md)). Run it when a candidate wins on
+quality but needs more context than fits.
+
 At long contexts the KV cache outgrows the weights, and `q8_0` roughly halves it. The setting belongs
 to the Ollama **server**, and it only works where flash attention is active — otherwise it silently
 falls back to f16. So run the benchmark a second time with it on and compare:
@@ -117,6 +125,32 @@ Keep both files as evidence — `docs/benchmarks/YYYY-MM-DD-bench.json` — and 
 
 Speed and fit are only half the answer for a sub-4-bit model: tool-call accuracy is the other half,
 and that gets measured once milestone 5 exists.
+
+**Results, 2026-09-26:** [decision 0005](decisions/0005-default-model-by-measurement.md). The 9B stays
+the default; the raw files are in [`benchmarks/`](benchmarks/). To evaluate a new model later, the same
+steps apply: pull it, `agent -check` for `tools`, then `cmd/bench -models <name>`. A mixture-of-experts
+model can be worth measuring even when it's bigger than the card — see the decision for why.
+
+## 8. Freeing the GPU
+
+The desktop is shared: sometimes something else needs most of the 16GB. From lightest to heaviest:
+
+```sh
+ollama ps                        # what's loaded, and how much VRAM it holds
+ollama stop <model>              # unload it now; no sudo. The next request reloads it.
+sudo systemctl stop ollama       # stop the server entirely
+sudo systemctl start ollama      # bring it back
+sudo systemctl restart ollama    # after changing its environment (section 6)
+```
+
+Unloading is usually enough. Ollama also unloads an idle model by itself after 5 minutes
+(`OLLAMA_KEEP_ALIVE`). `Restart=always` in the unit restarts Ollama after a crash, but not after an
+explicit `stop`. The server is `enabled`, so it comes back at boot; `sudo systemctl disable --now
+ollama` keeps it off until you `enable --now` it again.
+
+The agent is a one-shot command for now, so there is nothing to stop. Once it runs as a service
+(milestone 13) it gets its own unit, and the design requires that stopping it loses no work and that a
+stopped Ollama makes it wait rather than fail ([design §3.6](design.md#36-concurrency-model)).
 
 ---
 
