@@ -4,7 +4,8 @@
 wire message, a tag per field, and four decisions about JSON that the compiler is perfectly happy to
 let you get wrong.
 
-*Also readable as a [formatted page](https://claude.ai/artifact/4QGaudzoGjNAPto7ZcxgpD).*
+*Also readable as a [formatted page](https://claude.ai/artifact/4QGaudzoGjNAPto7ZcxgpD). For the code itself,
+file by file and line by line, see the [walkthrough](https://claude.ai/artifact/F87xnvzrSKtwqnwsNS6ipT).*
 
 ---
 
