@@ -263,4 +263,4 @@ context. It's now the primary candidate, pending `cmd/bench` on the real card; s
 ---
 
 **Previous:** [Lesson 01 — A binary, a package, and `go test`](01-a-binary-a-package-and-go-test.md) ·
-**Next:** Lesson 03 — errors across the LLM boundary *(not written yet)*
+**Next:** [Lesson 03 — Errors you can ask questions of](03-errors-you-can-ask-questions-of.md)

@@ -139,23 +139,68 @@ func TestRunCheckFlagsAMissingModel(t *testing.T) {
 }
 
 func TestRunReportsAnUnreachableServer(t *testing.T) {
-	// A server that is closed before the call: its port is guaranteed to be
-	// one nothing is listening on.
-	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
-	deadURL := srv.URL
-	srv.Close()
+	// Nothing listens on port 1, as with a stopped Ollama. (A closed test
+	// server's port is not safe: a test binary running in parallel can be
+	// given it a moment later, and then the "dead" server answers.)
+	const deadURL = "http://127.0.0.1:1"
+
+	for _, args := range [][]string{
+		{"-ollama", deadURL, "-ask", "hi"},
+		{"-ollama", deadURL, "-check"},
+	} {
+		var stdout, stderr bytes.Buffer
+		code := run(args, &stdout, &stderr)
+
+		// 3, not 1: nothing was attempted, so a scheduler can retry the run.
+		if code != 3 {
+			t.Errorf("%v: exit code = %d, want 3", args, code)
+		}
+		if stdout.Len() > 0 {
+			t.Errorf("%v: stdout = %q, want it empty on failure", args, stdout.String())
+		}
+		if got := stderr.String(); !strings.Contains(got, "Is Ollama running?") {
+			t.Errorf("%v: stderr = %q, want it to suggest checking the server", args, got)
+		}
+	}
+}
+
+func TestRunAskReportsAMissingModel(t *testing.T) {
+	// What Ollama 0.34.4 answers for a model it doesn't have.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte(`{"error":"model 'not-pulled:latest' not found"}`))
+	}))
+	t.Cleanup(srv.Close)
 
 	var stdout, stderr bytes.Buffer
-	code := run([]string{"-ollama", deadURL, "-ask", "hi"}, &stdout, &stderr)
+	code := run([]string{"-ollama", srv.URL, "-model", "not-pulled:latest", "-ask", "hi"}, &stdout, &stderr)
 
 	if code != 1 {
 		t.Errorf("exit code = %d, want 1", code)
 	}
-	if stdout.Len() > 0 {
-		t.Errorf("stdout = %q, want it empty on failure", stdout.String())
+	if got := stderr.String(); !strings.Contains(got, "ollama pull not-pulled:latest") {
+		t.Errorf("stderr = %q, want it to say how to pull the model", got)
 	}
-	if got := stderr.String(); !strings.HasPrefix(got, "agent:") {
-		t.Errorf("stderr = %q, want it to start with the program name", got)
+}
+
+func TestRunPointsAtTheServerLogOnAServerFailure(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	t.Cleanup(srv.Close)
+
+	var stdout, stderr bytes.Buffer
+	code := run([]string{"-ollama", srv.URL, "-ask", "hi"}, &stdout, &stderr)
+
+	if code != 1 {
+		t.Errorf("exit code = %d, want 1", code)
+	}
+	got := stderr.String()
+	if !strings.Contains(got, "500 Internal Server Error") {
+		t.Errorf("stderr = %q, want the status", got)
+	}
+	if !strings.Contains(got, "journalctl -u ollama") {
+		t.Errorf("stderr = %q, want it to point at the server's log", got)
 	}
 }
 

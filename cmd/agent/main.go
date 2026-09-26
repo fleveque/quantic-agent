@@ -1,11 +1,16 @@
 // Command agent is the quantic-agent daemon.
 //
-// It still has no scheduled tasks. What it can do as of milestone 2 is reach
-// the local model server: -check reports the server version, -ask sends one
-// prompt and prints the reply.
+// It still has no scheduled tasks. What it can do so far is reach the local
+// model server: -check reports the server version and its models, -ask sends
+// one prompt and prints the reply.
+//
+// Exit status: 0 success, 1 failure, 2 wrong usage, 3 the model server wasn't
+// there to answer. 3 means nothing was attempted, so a scheduler can simply
+// run the same command again later (design §3.6).
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -28,6 +33,14 @@ var version = "dev"
 // read an environment variable first and nothing is baked in.
 const defaultModel = "qwen3.5:9b"
 
+// Exit codes, as documented at the top of this file.
+const (
+	exitOK          = 0
+	exitFailed      = 1
+	exitUsage       = 2
+	exitUnavailable = 3
+)
+
 func main() {
 	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
 }
@@ -49,15 +62,15 @@ func run(args []string, stdout, stderr io.Writer) int {
 	if err := fs.Parse(args); err != nil {
 		// The flag package has already written the problem and the usage
 		// text to stderr. -h is a request, not a mistake.
-		if err == flag.ErrHelp {
-			return 0
+		if errors.Is(err, flag.ErrHelp) {
+			return exitOK
 		}
-		return 2
+		return exitUsage
 	}
 
 	if *showVersion {
 		fmt.Fprintln(stdout, "quantic-agent", version)
-		return 0
+		return exitOK
 	}
 
 	client := llm.New(*baseURL, *model)
@@ -66,15 +79,13 @@ func run(args []string, stdout, stderr io.Writer) int {
 	case *check:
 		serverVersion, err := client.Version()
 		if err != nil {
-			fmt.Fprintln(stderr, "agent:", err)
-			return 1
+			return fail(stderr, err, *baseURL, client.Model())
 		}
 		fmt.Fprintf(stdout, "ollama %s at %s\n", serverVersion, *baseURL)
 
 		models, err := client.Models()
 		if err != nil {
-			fmt.Fprintln(stderr, "agent:", err)
-			return 1
+			return fail(stderr, err, *baseURL, client.Model())
 		}
 		selected := false
 		for _, m := range models {
@@ -91,27 +102,51 @@ func run(args []string, stdout, stderr io.Writer) int {
 		// was never pulled has to be loud now rather than 404 mid-task. Names
 		// compare case-insensitively because that is how Ollama resolves them.
 		if !selected {
-			fmt.Fprintf(stderr, "agent: %s is not on this server\n", client.Model())
-			return 1
+			return fail(stderr, llm.ErrModelNotFound, *baseURL, client.Model())
 		}
-		return 0
+		return exitOK
 
 	case *ask != "":
 		// Thinking is suppressed: the agent wants the answer, and a
 		// reasoning trace is text nothing downstream is allowed to publish.
 		resp, err := client.Generate(llm.GenerateRequest{Prompt: *ask, Think: llm.Bool(false)})
 		if err != nil {
-			fmt.Fprintln(stderr, "agent:", err)
-			return 1
+			return fail(stderr, err, *baseURL, client.Model())
 		}
 		fmt.Fprintln(stdout, resp.Response)
 		fmt.Fprintf(stderr, "%s · %d tokens · %s%s\n",
 			resp.Model, resp.EvalCount, resp.EvalDuration.Round(time.Millisecond), truncationNote(resp))
-		return 0
+		return exitOK
 	}
 
 	fmt.Fprintln(stdout, "quantic-agent: no tasks defined yet")
-	return 0
+	return exitOK
+}
+
+// fail reports err and chooses the exit code. It decides by the kind of
+// error, which the llm package exposes as values, never by matching the
+// message text: messages are for people and can change.
+func fail(stderr io.Writer, err error, baseURL, model string) int {
+	switch {
+	case errors.Is(err, llm.ErrUnavailable):
+		fmt.Fprintf(stderr, "agent: no model server answering at %s. Is Ollama running?\n", baseURL)
+		fmt.Fprintln(stderr, "agent:", err)
+		return exitUnavailable
+
+	case errors.Is(err, llm.ErrModelNotFound):
+		fmt.Fprintf(stderr, "agent: %s is not on this server. Pull it with: ollama pull %s\n", model, model)
+		return exitFailed
+	}
+
+	fmt.Fprintln(stderr, "agent:", err)
+
+	// A 5xx means the server itself failed, such as a model that couldn't be
+	// loaded. The reason is in its log, not in the reply.
+	var apiErr *llm.APIError
+	if errors.As(err, &apiErr) && apiErr.StatusCode >= 500 {
+		fmt.Fprintln(stderr, "agent: the model server failed; its log has the cause (journalctl -u ollama)")
+	}
+	return exitFailed
 }
 
 // shortCount renders a context length the way model cards do: 262144 as 256K.
