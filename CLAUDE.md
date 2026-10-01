@@ -13,13 +13,14 @@ learning record. Start with [README.md](README.md) and [docs/design.md](docs/des
 - Open question 9 answered by measurement ([ADR 0005](docs/decisions/0005-default-model-by-measurement.md)):
   `qwen3.5:9b` stays the default; `qwen3.6:35b` (MoE) and Qwen3.8-27B `UD-IQ3_S` are candidates, decided
   on task quality from milestone 5. Raw results in `docs/benchmarks/`.
+- Milestone 3 (errors across the LLM boundary): `llm.ErrUnavailable`, `llm.ErrModelNotFound` and
+  `*llm.APIError`; `agent` exits 3 when the server isn't there. Lesson 03 and walkthrough 03.
 
 ## Next, in order
 
-1. **Milestone 3 — errors across the LLM boundary**: sentinel errors, `%w` wrapping, `errors.Is`/`As`.
-   `internal/llm` returns plain `fmt.Errorf` values on purpose; that's the "before" picture. Include a
-   distinguishable "Ollama unreachable" error: design §3.6 requires the agent to wait, not fail, when
-   the server is stopped.
+1. **Milestone 4 — timeouts and cancellation**: `context` through `internal/llm`
+   (`http.NewRequestWithContext`), replacing the blunt 5-minute `http.Client.Timeout`; graceful
+   shutdown on `SIGTERM` (design §3.6). A timeout must stay distinct from `ErrUnavailable`.
 2. Milestone 5 must leave behind an evaluation set that runs against any model name (ADR 0005), the
    basis of the model-upkeep task (design §1, open question 10).
 

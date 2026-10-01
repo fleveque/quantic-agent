@@ -4,21 +4,73 @@
 // generation, never streamed, so a reply is one JSON object rather than a
 // sequence of them. Tool schemas arrive in milestone 5 and context deadlines
 // in milestone 4; this is the plain request/response floor underneath both.
+//
+// Failures come back as errors a caller can tell apart without reading their
+// text: ErrUnavailable when the server isn't there to answer, ErrModelNotFound
+// when it is but lacks the model, and *APIError for any other refusal. All of
+// them arrive wrapped, so test for them with errors.Is and errors.As.
 package llm
 
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"slices"
 	"strings"
+	"syscall"
 	"time"
 )
 
 // DefaultBaseURL is where Ollama listens unless told otherwise.
 const DefaultBaseURL = "http://localhost:11434"
+
+// The kinds of failure a caller acts on differently. They are always
+// returned wrapped in more context, so compare with errors.Is, never ==.
+var (
+	// ErrUnavailable means no reply came back because the server wasn't there
+	// to give one: nothing listening at the address, or the connection
+	// dropped before a response. That is what a stopped or restarting Ollama
+	// looks like, and design §3.6 treats it as "wait and retry", not as a
+	// failure of the task.
+	ErrUnavailable = errors.New("model server unavailable")
+
+	// ErrModelNotFound means the server answered but has no such model: it
+	// was never pulled on this machine, or the name is misspelt.
+	ErrModelNotFound = errors.New("model not found")
+)
+
+// APIError is a reply whose status wasn't 200 OK: the server was reached and
+// said no. errors.As pulls it out of a wrapped chain when a caller needs the
+// details, such as the status code.
+type APIError struct {
+	Method     string
+	Path       string
+	StatusCode int
+
+	// Message is the server's explanation: the "error" field of a JSON body,
+	// or the raw text of a body that isn't JSON. Empty if there was none.
+	Message string
+
+	// Err is the sentinel for a failure the client recognises
+	// (ErrModelNotFound), or nil. Unwrap exposes it, so errors.Is(err,
+	// ErrModelNotFound) sees through an *APIError.
+	Err error
+}
+
+func (e *APIError) Error() string {
+	s := fmt.Sprintf("llm: %s %s: %d %s", e.Method, e.Path, e.StatusCode, http.StatusText(e.StatusCode))
+	if e.Message != "" {
+		s += ": " + e.Message
+	}
+	return s
+}
+
+// Unwrap is what errors.Is and errors.As call to look inside an error.
+func (e *APIError) Unwrap() error { return e.Err }
 
 // Client is a handle on one Ollama server and one model.
 type Client struct {
@@ -167,6 +219,11 @@ func (c *Client) get(path string, out any) error {
 func (c *Client) do(req *http.Request, out any) error {
 	resp, err := c.http.Do(req)
 	if err != nil {
+		// Two %w verbs wrap both errors: callers can ask errors.Is about our
+		// sentinel and about the network error underneath it.
+		if unreachable(err) {
+			return fmt.Errorf("llm: %s %s: %w: %w", req.Method, req.URL.Path, ErrUnavailable, err)
+		}
 		return fmt.Errorf("llm: %s %s: %w", req.Method, req.URL.Path, err)
 	}
 	// Close every body, including the ones we never read: an unclosed body
@@ -174,7 +231,7 @@ func (c *Client) do(req *http.Request, out any) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("llm: %s %s: %s", req.Method, req.URL.Path, serverError(resp))
+		return apiError(req, resp)
 	}
 	if err := json.NewDecoder(resp.Body).Decode(out); err != nil {
 		return fmt.Errorf("llm: decoding %s reply: %w", req.URL.Path, err)
@@ -182,22 +239,59 @@ func (c *Client) do(req *http.Request, out any) error {
 	return nil
 }
 
-// serverError turns a failed response into something readable. Ollama reports
-// most failures as {"error": "..."}, but a mistyped path is answered by the
-// HTTP mux in plain text, so the body is only treated as JSON if it parses.
-func serverError(resp *http.Response) string {
+// unreachable reports whether a transport error means the server wasn't there
+// to answer. Three cases were reproduced: connection refused (nothing
+// listening), EOF (the connection closed before a reply, as a restart does)
+// and network unreachable (no route to the server's address). A reset
+// connection and an unreachable host are the same situation seen from
+// elsewhere. A DNS failure is left out on purpose: an unknown host is far more
+// often a typo in OLLAMA_HOST than a machine that's off, and a typo should fail
+// loudly rather than be waited on. So is a timeout: a slow server is not a
+// missing one (milestone 4).
+func unreachable(err error) bool {
+	// Checked first, so the rule is about the name failing to resolve and
+	// doesn't depend on what a *net.DNSError happens to wrap.
+	var dnsErr *net.DNSError
+	if errors.As(err, &dnsErr) {
+		return false
+	}
+	for _, cause := range []error{
+		syscall.ECONNREFUSED, syscall.ECONNRESET,
+		syscall.EHOSTUNREACH, syscall.ENETUNREACH,
+		io.EOF,
+	} {
+		if errors.Is(err, cause) {
+			return true
+		}
+	}
+	return false
+}
+
+// apiError describes a reply that wasn't 200 OK. Ollama reports most failures
+// as {"error": "..."}, but a mistyped path is answered by the router in front
+// of its handlers in plain text, so the body is only treated as JSON if it
+// parses. That difference is also how a missing model is told apart from a
+// missing endpoint: both are 404s, and only Ollama's own says why.
+func apiError(req *http.Request, resp *http.Response) *APIError {
+	e := &APIError{Method: req.Method, Path: req.URL.Path, StatusCode: resp.StatusCode}
+
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 4<<10))
-	if err != nil || len(bytes.TrimSpace(body)) == 0 {
-		return resp.Status
+	if err != nil {
+		return e
 	}
 
 	var wire struct {
 		Error string `json:"error"`
 	}
 	if json.Unmarshal(body, &wire) == nil && wire.Error != "" {
-		return fmt.Sprintf("%s: %s", resp.Status, wire.Error)
+		e.Message = wire.Error
+		if resp.StatusCode == http.StatusNotFound && strings.Contains(wire.Error, "not found") {
+			e.Err = ErrModelNotFound
+		}
+		return e
 	}
-	return fmt.Sprintf("%s: %s", resp.Status, bytes.TrimSpace(body))
+	e.Message = string(bytes.TrimSpace(body))
+	return e
 }
 
 // Bool, Float64 and Int return pointers to their argument, for the option

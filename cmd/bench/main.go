@@ -9,6 +9,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -60,7 +61,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 	asJSON := fs.Bool("json", false, "emit results as JSON instead of a table")
 
 	if err := fs.Parse(args); err != nil {
-		if err == flag.ErrHelp {
+		if errors.Is(err, flag.ErrHelp) {
 			return 0
 		}
 		return 2
@@ -85,6 +86,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 	}
 
 	var results []result
+	// The label lets the inner loop stop the outer one.
+models:
 	for _, name := range wanted {
 		if !slices.ContainsFunc(present, func(p string) bool { return strings.EqualFold(p, name) }) {
 			fmt.Fprintf(stderr, "bench: %s is not on this server, skipping\n", name)
@@ -102,6 +105,9 @@ func run(args []string, stdout, stderr io.Writer) int {
 		})
 		if err != nil {
 			fmt.Fprintf(stderr, "bench: %s: %v\n", name, err)
+			if errors.Is(err, llm.ErrUnavailable) {
+				break models
+			}
 			continue
 		}
 
@@ -109,6 +115,11 @@ func run(args []string, stdout, stderr io.Writer) int {
 			r, err := measure(loaded, name, ctx, *predict, warm.LoadDuration)
 			if err != nil {
 				fmt.Fprintf(stderr, "bench: %s at %d: %v\n", name, ctx, err)
+				// Every later request would fail the same way. Stop, and
+				// report what was measured before the server went away.
+				if errors.Is(err, llm.ErrUnavailable) {
+					break models
+				}
 				continue
 			}
 			results = append(results, r)
