@@ -144,8 +144,15 @@ The calculators return **full double precision and never round**. 1.50 → 1.55 
 is presentation, so the template does it — which means the figure the validator compares is exactly
 the figure the tool returned, with no rounding rule duplicated between the agent and Elixir. A
 calculator also refuses inputs it can't answer honestly: `pct_change` from a zero or negative base
-returns an error rather than `Inf` or a percentage whose sign reads backwards. Built in Go in
-[`internal/tools`](https://github.com/fleveque/quantic-agent-go/blob/main/internal/tools/calc.go), milestone 1.
+raises an error rather than returning `Inf` or a percentage whose sign reads backwards.
+
+**As built (milestone 1, [`quantic_agent/tools.py`](../src/quantic_agent/tools.py)).** `pct_change`,
+`diff` and `total` (named so it doesn't hide Python's `sum`). A zero base would raise
+`ZeroDivisionError` anyway, where Go returned `+Inf`; the explicit check still runs first, so both
+refusals are the same `ValueError`. `total` uses the built-in `sum`, which since Python 3.12
+compensates for rounding as it adds: ten 0.1s total 1.0, where Go's loop gave 0.9999999999999999.
+So the two versions can differ in the last digit for the same inputs, and the manifest records
+whichever the running version returned.
 
 **Hard case — false positives.** Years, list positions, "top 10", version numbers. Needs a small
 ignore-list and a notion of "numbers that are not claims". Table-driven tests (`pytest.mark.parametrize`) will earn their keep.

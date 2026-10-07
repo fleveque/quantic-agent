@@ -16,22 +16,13 @@ jobs:
     name: test
     runs-on: ubuntu-latest
 
-    # `test` is a required check from the start, so the branch protection is
-    # final now. Until milestone 0 adds pyproject.toml there is no Python to
-    # check, and every Python step is skipped; from then on they all run.
-    # (hashFiles only works inside steps, hence the condition on each one.)
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: No Python project yet
-        if: hashFiles('pyproject.toml') == ''
-        run: echo "No pyproject.toml yet; the Python checks start with milestone 0."
-
       # uv reads the Python version from .python-version and installs it, and
       # caches the environment keyed on uv.lock.
       - name: Set up uv
-        if: hashFiles('pyproject.toml') != ''
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
@@ -39,25 +30,20 @@ jobs:
       # --locked fails if uv.lock is out of date with pyproject.toml, so CI
       # tests exactly the dependencies that were committed.
       - name: Install
-        if: hashFiles('pyproject.toml') != ''
         run: uv sync --locked
 
       - name: Check formatting
-        if: hashFiles('pyproject.toml') != ''
         run: uv run ruff format --check .
 
       - name: Lint
-        if: hashFiles('pyproject.toml') != ''
         run: uv run ruff check .
 
       # Python's types are optional; pyright in strict mode makes them
       # required, the closest thing to Go's compiler for this codebase.
       - name: Type check
-        if: hashFiles('pyproject.toml') != ''
         run: uv run pyright
 
       - name: Test
-        if: hashFiles('pyproject.toml') != ''
         run: uv run pytest
 
   docs:

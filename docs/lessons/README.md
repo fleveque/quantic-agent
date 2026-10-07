@@ -12,6 +12,7 @@ Ruby that turned out wrong, and what changed from the Go version and why.
 | # | Lesson | Milestone | Read online | Code walkthrough |
 |---|---|---|---|---|
 | [00](00-layout-packages-and-privacy-by-convention.md) | Layout, packages, and privacy by convention | 0 — layout and design | [Layout, packages and privacy](https://claude.ai/artifact/2gGJyhaVj83SxVquTc4ATD) | [The layout, line by line](https://claude.ai/artifact/CoifveReWASLXJkBjt9aj9) |
+| [01](01-a-command-a-module-and-pytest.md) | A command, a module, and pytest | 1 — first code and tests | — | — |
 
 Lessons tell the story of a milestone: what surprised me and why. Walkthroughs go through the code
 itself in reading order, the way a tech lead would with a new teammate. Formatted pages are built

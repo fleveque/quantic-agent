@@ -215,4 +215,4 @@ style leans flat, the same way Go's does. Leaning towards one module per Go pack
 
 ---
 
-**Next:** Lesson 01, with milestone 1.
+**Next:** [Lesson 01 — A command, a module, and pytest](01-a-command-a-module-and-pytest.md)
