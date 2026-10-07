@@ -4,9 +4,10 @@ A local agent that drafts data-grounded content and data-quality reports for
 [Quantic](https://quantic.finance), using local models through Ollama. Every figure traces to a real
 tool call; nothing ships without a human.
 
-> **Status: milestone 1.** The design, decisions and benchmarks are carried over from the Go version,
-> and the first code is in: a `quantic-agent` command with nothing to do yet, and the deterministic
-> calculators the research loop will call for derived figures, with their tests. The agent was first built in Go, up to milestone 8:
+> **Status: milestone 2.** The design, decisions and benchmarks are carried over from the Go version.
+> The agent reaches the local model server: `quantic-agent --check` reports the server and its models,
+> `--ask` sends one prompt, and `quantic-bench` measures speed and GPU residency per model. The
+> deterministic calculators the research loop will call for derived figures are in, with their tests. The agent was first built in Go, up to milestone 8:
 > [quantic-agent-go](https://github.com/fleveque/quantic-agent-go), now archived. It continues here
 > in Python, chosen for what comes next: retrieval, document handling, model evaluation and
 > experimenting with local models ([decision 0007](docs/decisions/0007-continue-in-python.md)).
@@ -72,8 +73,8 @@ Python with Go. Milestones 0–8 are ports of the Go version; the lessons say wh
 | # | Milestone | Python ground covered |
 |---|---|---|
 | 0 | Layout and design | `pyproject.toml`, `uv`, packages and `sys.path`, `src/` layout, privacy by convention |
-| 1 | First code and tests *(you are here)* | modules, functions and types, `pytest`, a command entry point |
-| 2 | The Ollama client | `httpx`, Pydantic models, JSON at a boundary |
+| 1 | First code and tests | modules, functions and types, `pytest`, a command entry point |
+| 2 | The Ollama client *(you are here)* | `httpx`, Pydantic models, JSON at a boundary |
 | 3 | Errors the agent can tell apart | exceptions, hierarchies, chaining |
 | 4 | Timeouts and cancellation | deadlines, cancellation, signals, clean shutdown |
 | 5 | The first tool: MCP client, schemas from types | JSON Schema from Pydantic, Streamable HTTP and SSE |
@@ -100,7 +101,13 @@ uv run ruff check .
 uv run pyright               # strict
 uv run pytest
 uv run quantic-agent --version
+uv run quantic-agent --check                 # is the model server up, and what does it have?
+uv run quantic-agent --ask "say hello"       # one prompt, one reply
+uv run quantic-bench                         # tokens/second and GPU residency per model
 ```
+
+`--ollama` / `OLLAMA_HOST` and `--model` / `QUANTIC_MODEL` choose the server and the model; nothing
+about the machine is baked in.
 
 CI also checks that relative links in the docs resolve. Setting up the machine the agent runs on is in
 the [runbook](docs/target-machine.md).

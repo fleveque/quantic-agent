@@ -1,4 +1,5 @@
 import pytest
+from conftest import FakeOllama, Reply
 
 from quantic_agent.cli import main
 
@@ -31,3 +32,87 @@ def test_unknown_option(capsys: pytest.CaptureFixture[str]) -> None:
     out, err = capsys.readouterr()
     assert out == ""
     assert "unrecognized arguments: --publish" in err
+
+
+TAGS = (
+    b'{"models":[{"name":"qwen3.5:9b","size":6594474711,'
+    b'"details":{"parameter_size":"9.7B","quantization_level":"Q4_K_M",'
+    b'"context_length":262144},"capabilities":["completion","tools","thinking"]}]}'
+)
+
+
+def test_ask(ollama: FakeOllama, capsys: pytest.CaptureFixture[str]) -> None:
+    ollama.replies["/api/generate"] = Reply(
+        b'{"model":"quantic-9b:latest","response":"ok","done":true,'
+        b'"done_reason":"stop","eval_count":2,"eval_duration":205098000}'
+    )
+
+    assert main(["--ollama", ollama.url, "--ask", "Reply with exactly: ok"]) == 0
+    out, err = capsys.readouterr()
+    assert out == "ok\n"
+    # The run line goes to stderr so that stdout stays pipeable.
+    assert err == "quantic-9b:latest · 2 tokens · 205ms\n"
+    # Thinking is suppressed for every question.
+    assert ollama.bodies[0]["think"] is False
+
+
+def check_server(ollama: FakeOllama) -> None:
+    ollama.replies["/api/version"] = Reply(b'{"version":"0.30.3"}')
+    ollama.replies["/api/tags"] = Reply(TAGS)
+
+
+def test_check(ollama: FakeOllama, capsys: pytest.CaptureFixture[str]) -> None:
+    check_server(ollama)
+
+    assert main(["--ollama", ollama.url, "--model", "qwen3.5:9b", "--check"]) == 0
+    out = capsys.readouterr().out
+    for want in ["ollama 0.30.3", "* qwen3.5:9b", "6.6 GB", "256K", "tools"]:
+        assert want in out
+
+
+def test_check_fails_for_a_model_that_was_not_pulled(
+    ollama: FakeOllama, capsys: pytest.CaptureFixture[str]
+) -> None:
+    check_server(ollama)
+
+    # A model never pulled on the target machine has to fail here, not later
+    # in the middle of a task.
+    assert main(["--ollama", ollama.url, "--model", "not-pulled:latest", "--check"]) == 1
+    assert "not-pulled:latest is not on this server" in capsys.readouterr().err
+
+
+def test_check_matches_model_names_case_insensitively(
+    ollama: FakeOllama, capsys: pytest.CaptureFixture[str]
+) -> None:
+    check_server(ollama)
+
+    # Ollama resolves names case-insensitively, so --check must too, or it
+    # reports a perfectly usable model as missing.
+    assert main(["--ollama", ollama.url, "--model", "QWEN3.5:9B", "--check"]) == 0
+    assert "* qwen3.5:9b" in capsys.readouterr().out
+
+
+def test_an_unreachable_server(dead_url: str, capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["--ollama", dead_url, "--ask", "hi"]) == 1
+    out, err = capsys.readouterr()
+    assert out == ""
+    assert err.startswith("quantic-agent:")
+
+
+def test_the_server_and_model_come_from_the_environment(
+    ollama: FakeOllama, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    check_server(ollama)
+    # OLLAMA_HOST is conventionally host:port, with no scheme.
+    monkeypatch.setenv("OLLAMA_HOST", ollama.host_port)
+    monkeypatch.setenv("QUANTIC_MODEL", "qwen3.5:9b")
+
+    assert main(["--check"]) == 0
+    assert "* qwen3.5:9b" in capsys.readouterr().out
+
+
+def test_check_and_ask_are_one_or_the_other(capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit) as exit_:
+        main(["--check", "--ask", "hi"])
+    assert exit_.value.code == 2
+    assert "not allowed with argument" in capsys.readouterr().err
