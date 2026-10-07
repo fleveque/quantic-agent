@@ -6,6 +6,9 @@ milestone was mostly protocol: a hand-written MCP client, JSON-RPC, Server-Sent 
 official SDK does that, so the work moved: to the boundaries the SDK doesn't cover, and to what it
 costs.
 
+*Also readable as a [formatted page](https://claude.ai/artifact/T5ixXHQr63Bx6Nuzwj1GJj), with a [code walkthrough](https://claude.ai/artifact/JAHtPs3kXL3WZhwe4x1eiz) of every file the
+milestone added or changed.*
+
 ---
 
 ## What landed
