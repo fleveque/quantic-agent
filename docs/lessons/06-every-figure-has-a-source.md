@@ -6,6 +6,9 @@ to be one a tool returned, exactly, or the run says so and exits 4. The Go versi
 expressions and a recursive walk over decoded JSON, and both port almost line for line. What doesn't
 port is what Python's JSON values *are*: one of them made `true` count as the number 1.
 
+*Also readable as a [formatted page](https://claude.ai/artifact/P2UTWg28qBgcLkCVXDYbDP), with a [code walkthrough](https://claude.ai/artifact/3oJ654NbHc8nioJo7JHVkr) of every change the
+milestone made.*
+
 ---
 
 ## What landed
