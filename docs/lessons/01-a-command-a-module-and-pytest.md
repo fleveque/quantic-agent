@@ -5,6 +5,9 @@ calculators from [design §3.3](../design.md#33-provenance) that the research lo
 draft needs a derived figure. The same milestone as Go's, ported. Most of what Go made me write
 down, Python either does for me or does differently, and two of the differences change results.
 
+*Also readable as a [formatted page](https://claude.ai/artifact/PNf2nngL7T3FPAaPquhEcv), with a [code walkthrough](https://claude.ai/artifact/QvzKAQqd5Jee9C4Q5LUCBJ) of every file the
+milestone added or changed.*
+
 ---
 
 ## What landed
