@@ -1,8 +1,12 @@
 """The quantic-agent command.
 
-It still has no scheduled tasks. What it can do as of milestone 2 is reach the
-local model server: --check reports the server and its models, --ask sends one
+It still has no scheduled tasks. What it can do so far is reach the local
+model server: --check reports the server and its models, --ask sends one
 prompt and prints the reply.
+
+Exit status: 0 success, 1 failure, 2 wrong usage, 3 the model server wasn't
+there to answer. 3 means nothing was attempted, so a scheduler can simply run
+the same command again later (design §3.6).
 """
 
 import argparse
@@ -18,12 +22,18 @@ from quantic_agent import llm
 # options below read an environment variable first and nothing is baked in.
 DEFAULT_MODEL = "qwen3.5:9b"
 
+# Exit statuses, as documented at the top of this file. 2 is argparse's.
+EXIT_OK = 0
+EXIT_FAILED = 1
+EXIT_UNAVAILABLE = 3
+
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Runs the command and returns its exit status.
 
     A usage mistake, --help and --version end the run from inside argparse by
-    raising SystemExit (2 for a mistake, 0 for the others).
+    raising SystemExit (2 for a mistake, 0 for the others). Every other status
+    is returned.
     """
     parser = argparse.ArgumentParser(
         prog="quantic-agent",
@@ -53,7 +63,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if not args.check and args.ask is None:
         print("quantic-agent: no tasks defined yet")
-        return 0
+        return EXIT_OK
 
     with llm.Client(args.ollama, args.model) as client:
         try:
@@ -61,8 +71,35 @@ def main(argv: Sequence[str] | None = None) -> int:
                 return _check(client, args.ollama)
             return _ask(client, args.ask)
         except llm.LLMError as err:
-            print(f"quantic-agent: {err}", file=sys.stderr)
-            return 1
+            return _fail(err, args.ollama, args.model)
+
+
+def _fail(err: llm.LLMError, base_url: str, model: str) -> int:
+    """Reports err and chooses the exit status, by the kind of error: its
+    class, never its message, which is for people and can change."""
+    match err:
+        case llm.ServerUnavailableError():
+            _error(f"no model server answering at {base_url}. Is Ollama running?")
+            _error(str(err))
+            return EXIT_UNAVAILABLE
+        case llm.ModelNotFoundError():
+            _not_pulled(model)
+        case llm.APIError(status_code=status) if status >= 500:
+            # The server itself failed, such as a model it couldn't load. The
+            # reason is in its log, not in the reply.
+            _error(str(err))
+            _error("the model server failed; its log has the cause (journalctl -u ollama)")
+        case _:
+            _error(str(err))
+    return EXIT_FAILED
+
+
+def _not_pulled(model: str) -> None:
+    _error(f"{model} is not on this server. Pull it with: ollama pull {model}")
+
+
+def _error(message: str) -> None:
+    print(f"quantic-agent: {message}", file=sys.stderr)
 
 
 def _check(client: llm.Client, base_url: str) -> int:
@@ -82,9 +119,9 @@ def _check(client: llm.Client, base_url: str) -> int:
     # The agent runs where its developer isn't sitting, so a model that was
     # never pulled has to be loud now rather than a 404 mid-task.
     if not selected:
-        print(f"quantic-agent: {client.model} is not on this server", file=sys.stderr)
-        return 1
-    return 0
+        _not_pulled(client.model)
+        return EXIT_FAILED
+    return EXIT_OK
 
 
 def _ask(client: llm.Client, prompt: str) -> int:
@@ -96,7 +133,7 @@ def _ask(client: llm.Client, prompt: str) -> int:
     note = " · truncated: hit the token limit" if resp.truncated else ""
     ms = round(resp.eval_duration.total_seconds() * 1000)
     print(f"{resp.model} · {resp.eval_count} tokens · {ms}ms{note}", file=sys.stderr)
-    return 0
+    return EXIT_OK
 
 
 def short_count(n: int) -> str:

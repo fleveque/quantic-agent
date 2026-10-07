@@ -10,7 +10,7 @@ import argparse
 import os
 import secrets
 import sys
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from datetime import timedelta
 
 from pydantic import BaseModel, TypeAdapter
@@ -77,19 +77,27 @@ def main(argv: Sequence[str] | None = None) -> int:
     sizes: list[int] = args.contexts
     wanted = [m.strip() for m in args.models.split(",") if m.strip()]
 
-    results: list[Result] = []
     try:
         with llm.Client(args.ollama, "") as lister:
             present = {m.name.casefold() for m in lister.models()}
+    except llm.LLMError as err:
+        print(f"quantic-bench: {err}", file=sys.stderr)
+        return 1
+
+    results: list[Result] = []
+    try:
         for name in wanted:
             if name.casefold() not in present:
                 print(f"quantic-bench: {name} is not on this server, skipping", file=sys.stderr)
                 continue
             with llm.Client(args.ollama, name) as client:
-                results.extend(_measure_model(client, sizes, args.predict))
-    except llm.LLMError as err:
+                for result in _measure_model(client, sizes, args.predict):
+                    results.append(result)
+    except llm.ServerUnavailableError as err:
+        # Every later request would fail the same way. Stop, and report what
+        # was measured before the server went away.
         print(f"quantic-bench: {err}", file=sys.stderr)
-        return 1
+        print("quantic-bench: the model server went away; stopping", file=sys.stderr)
 
     if not results:
         print("quantic-bench: nothing measured", file=sys.stderr)
@@ -101,7 +109,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     return 0
 
 
-def _measure_model(client: llm.Client, sizes: list[int], predict: int) -> list[Result]:
+def _measure_model(client: llm.Client, sizes: list[int], predict: int) -> Iterator[Result]:
+    """Measures one model at each size, yielding each result as it's made.
+
+    A failure for one size is reported and the next size tried, except that
+    the server being unavailable propagates: the caller keeps every result
+    already yielded, and stops.
+    """
     # One untimed call first, so the measurements exclude loading the weights
     # and load time is reported once rather than smeared over the first size.
     try:
@@ -110,17 +124,21 @@ def _measure_model(client: llm.Client, sizes: list[int], predict: int) -> list[R
             think=False,
             options=llm.Options(num_predict=1, num_ctx=sizes[0]),
         )
+    except llm.ServerUnavailableError:
+        raise
     except llm.LLMError as err:
         print(f"quantic-bench: {client.model}: {err}", file=sys.stderr)
-        return []
+        return
 
-    results: list[Result] = []
     for ctx in sizes:
         try:
-            results.append(_measure(client, ctx, predict, warm.load_duration))
+            result = _measure(client, ctx, predict, warm.load_duration)
+        except llm.ServerUnavailableError:
+            raise
         except llm.LLMError as err:
             print(f"quantic-bench: {client.model} at {ctx}: {err}", file=sys.stderr)
-    return results
+            continue
+        yield result
 
 
 def _measure(client: llm.Client, ctx: int, predict: int, load: timedelta) -> Result:
