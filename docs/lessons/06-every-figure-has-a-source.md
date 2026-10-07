@@ -201,4 +201,5 @@ and what gets caught is arithmetic the model shouldn't be doing.
 
 ---
 
-**Previous:** [Lesson 05 — The first real tool](05-the-first-real-tool.md)
+**Previous:** [Lesson 05 — The first real tool](05-the-first-real-tool.md) ·
+**Next:** [Lesson 07 — A memory that can be audited](07-a-memory-that-can-be-audited.md)

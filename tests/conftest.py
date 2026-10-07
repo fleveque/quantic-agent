@@ -21,6 +21,20 @@ import pytest
 FIXTURES = Path(__file__).parent / "fixtures"
 
 
+@pytest.fixture(autouse=True)
+def isolated_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Every test gets its own run history, in its own temporary directory.
+
+    autouse: no test can forget it. The first version of milestone 7's tests
+    had no such fixture, and the --research tests wrote three fake runs into
+    the real ~/.local/state/quantic-agent, as Go's milestone 7 tests once did.
+    """
+    db = tmp_path / "state" / "agent.db"
+    monkeypatch.setenv("QUANTIC_AGENT_DB", str(db))
+    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
+    return db
+
+
 @pytest.fixture
 def anyio_backend() -> str:
     """Async tests (marked anyio) run on asyncio, which the agent uses."""

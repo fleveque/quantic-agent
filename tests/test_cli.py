@@ -2,10 +2,12 @@ import os
 import re
 import signal
 import threading
+from pathlib import Path
 
 import pytest
 from conftest import DEAD_URL, FakeMCP, FakeOllama, Reply, fixture
 
+from quantic_agent import store
 from quantic_agent.cli import main
 
 
@@ -228,3 +230,99 @@ def test_research_reports_figures_no_tool_returned(
     assert "1 figure(s) in the answer came from no tool result" in err
     assert "'180' (number 180)" in err
     assert "Oct 8" not in err
+
+
+def stored_runs(db_path: Path) -> list[store.Run]:
+    with store.Store(db_path) as db:
+        return [db.run(r.id) for r in db.runs(100)]
+
+
+def test_research_records_the_run(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    isolated_state: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    research_servers(ollama, quantic_mcp)
+
+    assert (
+        main(["--ollama", ollama.url, "--mcp", quantic_mcp.url, "--research", "next 10 days?"]) == 0
+    )
+    assert "run 1 answered" in capsys.readouterr().err
+
+    [run] = stored_runs(isolated_state)
+    assert (run.input, run.model, run.state) == (
+        "next 10 days?",
+        "qwen3.5:9b",
+        store.State.ANSWERED,
+    )
+    assert [(c.tool, c.arguments) for c in run.calls] == [("dividend_calendar", {"days": 10})]
+    assert run.draft is not None
+    assert run.draft.findings == []
+
+
+def test_runs_and_run_read_the_history_back(
+    ollama: FakeOllama, quantic_mcp: FakeMCP, capsys: pytest.CaptureFixture[str]
+) -> None:
+    research_servers(ollama, quantic_mcp)
+    main(["--ollama", ollama.url, "--mcp", quantic_mcp.url, "--research", "next 10 days?"])
+    capsys.readouterr()
+
+    # Neither needs the model server or Quantic.
+    assert main(["--runs"]) == 0
+    listing = capsys.readouterr().out
+    assert re.search(r"^1\s+\S+ \S+\s+answered\s+1\s+next 10 days\?$", listing, re.MULTILINE)
+
+    assert main(["--run", "1"]) == 0
+    shown = capsys.readouterr().out
+    assert 'call 0: dividend_calendar {"days": 10} →' in shown
+    assert "every figure traces to a stored tool result" in shown
+
+
+def test_run_rechecks_an_unverified_answer(
+    ollama: FakeOllama, quantic_mcp: FakeMCP, capsys: pytest.CaptureFixture[str]
+) -> None:
+    research_servers(ollama, quantic_mcp)
+    ollama.replies["/api/chat"] = [
+        Reply(fixture("chat-tool-call.json")),
+        Reply(b'{"model":"m","message":{"role":"assistant","content":"In 180 days."},"done":true}'),
+    ]
+    assert main(["--ollama", ollama.url, "--mcp", quantic_mcp.url, "--research", "q"]) == 4
+    capsys.readouterr()
+
+    # Re-checked against the stored results, not the tools as they are today.
+    assert main(["--run", "1"]) == 4
+    assert "'180' (number 180)" in capsys.readouterr().out
+
+
+def test_a_missing_run(capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["--run", "7"]) == 1
+    assert "there is no run 7" in capsys.readouterr().err
+
+
+def test_a_timed_out_run_is_recorded_as_failed(
+    ollama: FakeOllama, quantic_mcp: FakeMCP, isolated_state: Path
+) -> None:
+    research_servers(ollama, quantic_mcp)
+    quantic_mcp.tools["dividend_calendar"] = "hang"
+
+    args = ["--ollama", ollama.url, "--mcp", quantic_mcp.url, "--timeout", "0.5", "--research", "q"]
+    assert main(args) == 1
+
+    [run] = stored_runs(isolated_state)
+    assert (run.state, run.error) == (store.State.FAILED, "gave up after 0.5s")
+
+
+def test_an_interrupted_run_is_recorded(
+    ollama: FakeOllama, quantic_mcp: FakeMCP, isolated_state: Path
+) -> None:
+    research_servers(ollama, quantic_mcp)
+    quantic_mcp.tools["dividend_calendar"] = "hang"
+    threading.Timer(0.5, os.kill, (os.getpid(), signal.SIGTERM)).start()
+
+    assert main(["--ollama", ollama.url, "--mcp", quantic_mcp.url, "--research", "q"]) == 130
+
+    # Saved even though the task was being cancelled: the save is synchronous.
+    [run] = stored_runs(isolated_state)
+    assert run.state is store.State.INTERRUPTED
+    assert run.finished_at is not None

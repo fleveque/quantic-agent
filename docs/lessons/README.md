@@ -18,6 +18,7 @@ Ruby that turned out wrong, and what changed from the Go version and why.
 | [04](04-async-deadlines-and-letting-go.md) | Async, deadlines and letting go | 4 — timeouts and cancellation | [Async, deadlines and letting go](https://claude.ai/artifact/Rrre4qcYJJdAMwTrMw1RLq) | [Deadlines, line by line](https://claude.ai/artifact/LjytQhW7PHSoTDN8XDn5Ps) |
 | [05](05-the-first-real-tool.md) | The first real tool | 5 — MCP client, schemas from types | [The first real tool](https://claude.ai/artifact/T5ixXHQr63Bx6Nuzwj1GJj) | [The first tool, line by line](https://claude.ai/artifact/JAHtPs3kXL3WZhwe4x1eiz) |
 | [06](06-every-figure-has-a-source.md) | Every figure has a source | 6 — the provenance validator | [Every figure has a source](https://claude.ai/artifact/P2UTWg28qBgcLkCVXDYbDP) | [Provenance, line by line](https://claude.ai/artifact/3oJ654NbHc8nioJo7JHVkr) |
+| [07](07-a-memory-that-can-be-audited.md) | A memory that can be audited | 7 — SQLite: runs, drafts, audit log | [A memory that can be audited](https://claude.ai/artifact/GioJKqVLzs6r5fKFbgu2yn) | [The run history, line by line](https://claude.ai/artifact/BmisnMg62AC2VpT7TcbzW4) |
 
 Lessons tell the story of a milestone: what surprised me and why. Walkthroughs go through the code
 itself in reading order, the way a tech lead would with a new teammate. Formatted pages are built

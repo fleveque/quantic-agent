@@ -360,8 +360,18 @@ milestone 7 database: its versions move from `schema_migrations` into goose's `g
 one transaction. A test takes every migration down and back up. `0002` adds `phase`, `tokens` and
 `exhausted` to `runs`.
 
-**For Python**, milestone 7 chooses between hand-written migrations and a library (Alembic is the usual
-one). Either way the `flock` around migrating carries over: the collision is SQLite's, not Go's.
+**As built (milestone 7, [`store.py`](../src/quantic_agent/store.py)).** The same three tables as Go's
+milestone 7, with the same first migration, applied by about thirty hand-written lines: numbered SQL
+files shipped in the package, each applied once in its own transaction (`sqlite3` with
+`autocommit=True` and an explicit `BEGIN IMMEDIATE`; its default mode's `executescript` would commit
+a migration halfway). The `flock` is there from the start, not added later: measured with real
+processes, 5 of 80 opens of a new database failed without it, and one of 80 still failed with the WAL
+switch left outside it; with both inside, 0 of 400. Tool calls are written as they happen, through
+the loop's `on_call`. The store is synchronous and the agent async: a save takes milliseconds, and
+because cancellation only lands at an `await`, the save that records an interrupted run always
+completes (Go needed `context.WithoutCancel`). `--runs` lists runs and `--run N` re-checks one, at
+the same path and with the same `--db` / `QUANTIC_AGENT_DB` override. Whether to move to a migration
+library is milestone 8's question, as it was Go's.
 
 ### 3.8 Delivery
 
