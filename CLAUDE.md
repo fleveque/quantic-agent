@@ -15,12 +15,15 @@ starting point here.
   `tests/fixtures/ollama/`; lesson 02.
 - **Milestone 3 merged** (#4): `LLMError` with `ServerUnavailableError`, `APIError`,
   `ModelNotFoundError(APIError)`; exit 3 when unavailable; lesson 03.
-- **Milestone 4 in review** (branch `m4-deadlines-and-cancellation`): the agent is async (ADR 0008):
-  `httpx.AsyncClient`, no client timeout, `asyncio.timeout` per run (`--timeout`, 300s) or per bench
-  request (600s), Ctrl-C/SIGTERM cancel the main task, exit 130. Async tests use anyio's pytest
-  plugin (`pytestmark = pytest.mark.anyio`, backend asyncio in conftest). The fake server's
-  `Reply(hang=True)` waits for the client to hang up and counts it; signal tests send real signals
-  to the test process; lesson 04.
+- **Milestone 4 merged** (#5): async (ADR 0008), `asyncio.timeout`, Ctrl-C/SIGTERM exit 130; async
+  tests through anyio's plugin; lesson 04.
+- **Milestone 5 in review** (branch `m5-the-first-real-tool`): the official MCP SDK (ADR 0009) behind
+  `quantic_agent/quantic.py`; `llm.Client.chat` with tools; `tools.Tool` whose Pydantic arguments
+  model is the schema (strict, extra forbidden); `agent.Researcher` with `typing.Protocol`s and an
+  `on_call` callback per tool call; `--research`, `--mcp`/`QUANTIC_MCP_URL`; `quantic-evaltools`
+  (cases in `src/quantic_agent/eval_cases.json`); `network.unreachable` shared by both clients. The
+  fake MCP server (`quantic_mcp` fixture) replays `tests/fixtures/mcp/` for the real SDK; lesson 05.
+  Go's `QUANTIC_MCP_TOKEN` isn't ported: nothing authenticated is needed yet (ADR 0006).
 - design.md's "As built in Go" notes link to quantic-agent-go's code: turn each into an "As built"
   note about this repository's code as its milestone is ported (§3.3's calculators done). The
   runbook's run history is the Go version's until milestones 7 and 8 port it.
@@ -38,9 +41,8 @@ starting point here.
 
 ## Next, in order
 
-1. **Port milestones 5–8 from quantic-agent-go**, in order, one PR each, each with its lesson and
-   walkthrough: 5 the first
-   tool (MCP client, schemas from types), 6 provenance, 7 SQLite, 8 the research loop (the Go
+1. **Port milestones 6–8 from quantic-agent-go**, in order, one PR each, each with its lesson and
+   walkthrough: 6 provenance, 7 SQLite, 8 the research loop (the Go
    version's findings PRs included: numbers in words, today's date, `no_data`).
 2. **Milestone 9 — the worker pool**: serialised GPU, parallel I/O. The Week Ahead needs
    `get_stock` per company (amounts, yields), 20–40 calls paced under Quantic's 60/min limit.
@@ -98,6 +100,9 @@ starting point here.
   in all, with jitter.
 - A tool's output is a JSON document *inside* `content[0].text`: decode twice.
 - Tool refusals are results (`isError`); protocol mistakes are JSON-RPC errors (`-32602`).
+- With the SDK: use `mode="legacy"` (the default "auto" wastes a `server/discover` request per
+  session). Connection failures arrive as `ExceptionGroup`s around `httpx2` errors (flatten before
+  classifying); cancellation is not wrapped. The SDK's HTTP library is `httpx2`, not `httpx`.
 - The server's code is in `../quantic` on `main` (`lib/quantic_web/mcp/`). Fetch first: the local
   checkout lagged `origin/main` by three months.
 

@@ -9,6 +9,8 @@ authors = [{ name = "Francesc Leveque" }]
 requires-python = ">=3.14"
 dependencies = [
     "httpx>=0.28.1",
+    "httpx2>=2.13.1",
+    "mcp>=2.3.0",
     "pydantic>=2.13.5",
 ]
 
@@ -17,6 +19,7 @@ dependencies = [
 [project.scripts]
 quantic-agent = "quantic_agent.cli:main"
 quantic-bench = "quantic_agent.bench:main"
+quantic-evaltools = "quantic_agent.evaltools:main"
 
 # Tools for working on the agent, not for running it: `uv sync` installs them,
 # a built wheel doesn't carry them.

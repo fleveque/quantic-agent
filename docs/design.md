@@ -86,6 +86,13 @@ records tool calls regardless of *who* decided to make them, so the N1 guarantee
 loop intact. What a fixed pipeline actually buys is predictable cost, and that's what budgets are
 for. See [decision 0001](decisions/0001-agentic-research-constrained-writing.md).
 
+**As built (milestone 5, [`agent.py`](../src/quantic_agent/agent.py)).** The seed of the loop: the
+model is offered the allowlist (`dividend_calendar` only), its arguments are validated against each
+tool's Pydantic model, a mistake or a tool's refusal goes back to the model as the tool's result,
+calls are capped at four, and each call is recorded as it completes. Quantic is reached through the
+official MCP SDK ([decision 0009](decisions/0009-official-mcp-sdk.md)). No separate writer yet;
+milestone 8 adds it.
+
 **As built in Go (milestone 8, [`internal/agent`](https://github.com/fleveque/quantic-agent-go/tree/main/internal/agent)).** `Researcher.Research` is the loop;
 when the model stops asking for tools, whatever it says is discarded. `Writer.Write` is one model
 call with no tools, given the question and each successful call's result, labelled with the call
