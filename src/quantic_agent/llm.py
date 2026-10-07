@@ -4,8 +4,15 @@ The agent generates through Ollama (design §4): one HTTP call per generation,
 never streamed, so a reply is one JSON object rather than a sequence of them.
 Tool schemas arrive in milestone 5 and deadlines in milestone 4; this is the
 plain request/response floor underneath both.
+
+Failures are exceptions a caller can tell apart by class, never by message:
+ServerUnavailableError when the server isn't there to answer,
+ModelNotFoundError when it is but lacks the model, APIError for any other
+refusal. All are LLMErrors.
 """
 
+import errno
+from collections.abc import Iterator
 from datetime import datetime, timedelta
 from typing import Annotated, Self
 
@@ -16,12 +23,38 @@ DEFAULT_BASE_URL = "http://localhost:11434"
 
 
 class LLMError(Exception):
-    """Anything that went wrong talking to the model server.
+    """Anything that went wrong talking to the model server. Raised as itself
+    for a failure with no kind of its own, such as a reply that isn't valid;
+    the subclasses below are the kinds a caller acts on differently."""
 
-    One type for now: the message says what failed, and the original error is
-    chained as __cause__. Milestone 3 splits it into kinds a caller can tell
-    apart.
+
+class ServerUnavailableError(LLMError):
+    """No reply came back because the server wasn't there to give one: nothing
+    listening, the connection dropped or reset before a reply, or no route to
+    the address. That is what a stopped or restarting Ollama looks like, and
+    design §3.6 treats it as "wait and retry", not as a failure of the task.
+    The network error is chained as __cause__."""
+
+
+class APIError(LLMError):
+    """A reply whose status wasn't 200 OK: the server was reached and said no.
+
+    message is the server's explanation: the "error" field of a JSON body, or
+    the text of a body that isn't JSON. Empty if there was none.
     """
+
+    def __init__(self, method: str, path: str, status_code: int, message: str) -> None:
+        self.method = method
+        self.path = path
+        self.status_code = status_code
+        self.message = message
+        text = f"{method} {path}: {status_code} {httpx.codes.get_reason_phrase(status_code)}"
+        super().__init__(f"{text}: {message}" if message else text)
+
+
+class ModelNotFoundError(APIError):
+    """The server answered, and has no such model: it was never pulled on this
+    machine, or the name is misspelt. An APIError, so it carries the status."""
 
 
 def _from_nanoseconds(value: object) -> object:
@@ -214,27 +247,65 @@ class Client:
         try:
             resp = self._http.request(method, path, json=payload)
         except httpx.HTTPError as err:
-            raise LLMError(f"{method} {path}: {err}") from err
+            kind = ServerUnavailableError if _unreachable(err) else LLMError
+            raise kind(f"{method} {path}: {err}") from err
 
         # 200, not httpx.codes.OK: pyright types that enum member as the tuple
         # it is defined from, (200, "OK"), and calls the comparison always true.
         if resp.status_code != 200:
-            raise LLMError(f"{method} {path}: {_server_error(resp)}")
+            raise _api_error(method, path, resp)
         try:
             return reply.model_validate_json(resp.content)
         except ValidationError as err:
             raise LLMError(f"decoding {path} reply: {err}") from err
 
 
-def _server_error(resp: httpx.Response) -> str:
-    """A failed response, readably. Ollama reports most failures as
-    {"error": "..."}, but a mistyped path is answered in plain text, so the
-    body is only treated as JSON if it parses."""
-    status = f"{resp.status_code} {resp.reason_phrase}"
+def _causes(err: BaseException) -> Iterator[BaseException]:
+    """err, then what caused it, then what caused that. httpx raises its own
+    exception from httpcore's, which is raised from the operating system's."""
+    current: BaseException | None = err
+    while current is not None:
+        yield current
+        current = current.__cause__ or current.__context__
+
+
+def _unreachable(err: httpx.HTTPError) -> bool:
+    """Whether a transport error means the server wasn't there to answer.
+
+    Each case was reproduced: connection refused (nothing listening), reset by
+    the peer, network unreachable (no route), and a connection closed before
+    any reply, as a restart does (httpx's RemoteProtocolError; a server
+    answering malformed HTTP would raise it too, which a real Ollama doesn't).
+
+    Two are left out on purpose. A DNS failure: httpx raises the same
+    ConnectError as for a refused connection, so only the cause tells them
+    apart. Its cause is a socket.gaierror, whose error numbers are the
+    resolver's (-2, "Name or service not known"), never one checked below. An
+    unknown host is far more often a typo in OLLAMA_HOST than a machine that's
+    off, and a typo should fail, not be waited on. And a timeout: a slow
+    server is not a missing one (milestone 4).
+    """
+    causes = list(_causes(err))
+    if isinstance(err, httpx.RemoteProtocolError):
+        return True
+    return any(
+        isinstance(c, ConnectionRefusedError | ConnectionResetError)
+        or (isinstance(c, OSError) and c.errno in (errno.EHOSTUNREACH, errno.ENETUNREACH))
+        for c in causes
+    )
+
+
+def _api_error(method: str, path: str, resp: httpx.Response) -> APIError:
+    """The error for a reply that wasn't 200 OK. Ollama reports most failures
+    as {"error": "..."}, but a mistyped path is answered in plain text by the
+    router in front of its handlers. That difference is also how a missing
+    model is told apart from a missing endpoint: both are 404s, and only
+    Ollama's own says why."""
     text = resp.text[: 4 << 10].strip()
-    if not text:
-        return status
     try:
-        return f"{status}: {_ErrorBody.model_validate_json(text).error}"
+        message = _ErrorBody.model_validate_json(text).error
     except ValidationError:
-        return f"{status}: {text}"
+        return APIError(method, path, resp.status_code, text)
+    if resp.status_code == 404 and "not found" in message:
+        return ModelNotFoundError(method, path, resp.status_code, message)
+    return APIError(method, path, resp.status_code, message)

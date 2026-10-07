@@ -240,4 +240,5 @@ unchanged into `tests/fixtures/ollama/`.
 
 ---
 
-**Previous:** [Lesson 01 — A command, a module, and pytest](01-a-command-a-module-and-pytest.md)
+**Previous:** [Lesson 01 — A command, a module, and pytest](01-a-command-a-module-and-pytest.md) ·
+**Next:** [Lesson 03 — Exceptions you can tell apart](03-exceptions-you-can-tell-apart.md)

@@ -1,5 +1,5 @@
 import pytest
-from conftest import FakeOllama, Reply
+from conftest import DEAD_URL, FakeOllama, Reply
 
 from quantic_agent.cli import main
 
@@ -92,11 +92,38 @@ def test_check_matches_model_names_case_insensitively(
     assert "* qwen3.5:9b" in capsys.readouterr().out
 
 
-def test_an_unreachable_server(dead_url: str, capsys: pytest.CaptureFixture[str]) -> None:
-    assert main(["--ollama", dead_url, "--ask", "hi"]) == 1
+@pytest.mark.parametrize("action", [["--ask", "hi"], ["--check"]], ids=["ask", "check"])
+def test_an_unreachable_server_exits_3(
+    action: list[str], capsys: pytest.CaptureFixture[str]
+) -> None:
+    # 3, not 1: nothing was attempted, so a scheduler can retry the run.
+    assert main(["--ollama", DEAD_URL, *action]) == 3
     out, err = capsys.readouterr()
     assert out == ""
-    assert err.startswith("quantic-agent:")
+    assert "Is Ollama running?" in err
+
+
+def test_ask_says_how_to_pull_a_missing_model(
+    ollama: FakeOllama, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # What Ollama 0.34.4 answers for a model it doesn't have.
+    ollama.replies["/api/generate"] = Reply(
+        b'{"error":"model \'not-pulled:latest\' not found"}', 404
+    )
+
+    assert main(["--ollama", ollama.url, "--model", "not-pulled:latest", "--ask", "hi"]) == 1
+    assert "ollama pull not-pulled:latest" in capsys.readouterr().err
+
+
+def test_a_server_failure_points_at_its_log(
+    ollama: FakeOllama, capsys: pytest.CaptureFixture[str]
+) -> None:
+    ollama.replies["/api/generate"] = Reply(b"", 500)
+
+    assert main(["--ollama", ollama.url, "--ask", "hi"]) == 1
+    err = capsys.readouterr().err
+    assert "500 Internal Server Error" in err
+    assert "journalctl -u ollama" in err
 
 
 def test_the_server_and_model_come_from_the_environment(

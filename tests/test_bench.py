@@ -141,3 +141,29 @@ def test_every_filler_prompt_is_unique() -> None:
 
 def test_filler_prompt_is_about_the_size_asked() -> None:
     assert 4000 <= len(filler_prompt(1000)) < 4000 + 100
+
+
+def test_it_stops_when_the_server_goes_away(
+    ollama: FakeOllama, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # The warm-up and the first measurement succeed; from the third request
+    # on, the connection is dropped unanswered, as a restarting Ollama does.
+    measured = Reply(
+        b'{"model":"first:latest","response":"done","done":true,"prompt_eval_count":10,'
+        b'"prompt_eval_duration":1000000,"eval_count":10,"eval_duration":1000000}'
+    )
+    ollama.replies["/api/tags"] = Reply(
+        b'{"models":[{"name":"first:latest","size":1},{"name":"second:latest","size":1}]}'
+    )
+    ollama.replies["/api/ps"] = Reply(b'{"models":[]}')
+    ollama.replies["/api/generate"] = [measured, measured, Reply(drop=True)]
+
+    args = ["--models", "first:latest,second:latest", "--contexts", "4096,8192", "--json"]
+    assert main(["--ollama", ollama.url, *args]) == 0
+    out, err = capsys.readouterr()
+
+    # The result measured before the server went away is kept and reported...
+    assert len(json.loads(out)) == 1
+    assert "went away" in err
+    # ...and the second model is never started.
+    assert all(body["model"] != "second:latest" for body in ollama.bodies)

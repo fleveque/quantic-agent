@@ -276,7 +276,10 @@ The interesting shape: **one GPU, many network calls.**
   may lose work when stopped. So: `SIGTERM` is a clean stop at the next checkpoint, and an unreachable
   Ollama is a reason to wait, not to fail — the run stays queued until the server is back. The
   client reports that case as an error of its own, distinct from every other failure, and the
-  agent exits with status 3 for it so a scheduler knows a retry is safe. `SIGTERM` (or Ctrl-C)
+  agent exits with status 3 for it so a scheduler knows a retry is safe. *(As built, milestone 3:
+  `llm.ServerUnavailableError`, for a refused, reset or dropped connection or no route to the server;
+  not for a DNS failure, which is usually a typo, nor a timeout. A missing model is
+  `ModelNotFoundError`, any other refusal `APIError`.)* `SIGTERM` (or Ctrl-C)
   cancels the request in flight and exits with 130; Ollama stops generating within about a second,
   so stopping the agent gives the GPU back straight away. The runbook has the commands ([target machine §8](target-machine.md#9-freeing-the-gpu)).
 - **As built in Go (milestone 8).** A run is checkpointed in SQLite when research ends (`runs.phase`:

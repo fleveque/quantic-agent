@@ -5,6 +5,8 @@ defined here is available to every test by naming it as a parameter.
 """
 
 import json
+import socket
+import struct
 import threading
 from collections.abc import Iterator
 from dataclasses import dataclass, field
@@ -24,23 +26,32 @@ def fixture(name: str) -> bytes:
 
 @dataclass
 class Reply:
-    body: bytes
+    """One answer. drop=True closes the connection without replying, the way
+    a restarting Ollama does; reset=True aborts it, so the client sees the
+    connection reset by its peer."""
+
+    body: bytes = b""
     status: int = 200
     content_type: str = "application/json"
+    drop: bool = False
+    reset: bool = False
 
 
 @dataclass
 class FakeOllama:
     """What the fake server answers, and what it was asked.
 
-    replies maps a path to its reply; any other path is a 404 in Ollama's
-    plain-text style. Requests are recorded rather than asserted on inside the
+    replies maps a path to its reply, or to a list of replies given in turn,
+    the last one repeating; any other path is a 404 in Ollama's plain-text
+    style. Requests are recorded rather than asserted on inside the
     server: an assert in the server's thread would fail that thread, not the
     test (the same reason Go's test server may call t.Errorf but not t.Fatalf).
     """
 
     url: str
-    replies: dict[str, Reply] = field(default_factory=lambda: dict[str, Reply]())
+    replies: dict[str, Reply | list[Reply]] = field(
+        default_factory=lambda: dict[str, Reply | list[Reply]]()
+    )
     paths: list[str] = field(default_factory=lambda: list[str]())
     bodies: list[dict[str, Any]] = field(default_factory=lambda: list[dict[str, Any]]())
 
@@ -66,6 +77,19 @@ def ollama() -> Iterator[FakeOllama]:
         def _answer(self) -> None:
             fake.paths.append(self.path)
             reply = fake.replies.get(self.path, Reply(b"404 page not found\n", 404, "text/plain"))
+            if isinstance(reply, list):
+                reply = reply.pop(0) if len(reply) > 1 else reply[0]
+            if reply.drop:
+                # Returning without a response; the server closes the socket.
+                self.close_connection = True
+                return
+            if reply.reset:
+                # Lingering for zero seconds makes close() send a TCP reset.
+                self.connection.setsockopt(
+                    socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("ii", 1, 0)
+                )
+                self.connection.close()
+                return
             self.send_response(reply.status)
             self.send_header("Content-Type", reply.content_type)
             self.send_header("Content-Length", str(len(reply.body)))
@@ -88,11 +112,8 @@ def ollama() -> Iterator[FakeOllama]:
     server.server_close()
 
 
-@pytest.fixture
-def dead_url() -> str:
-    """A URL nothing listens on: a server is bound to a free port and closed
-    before the test uses it."""
-    server = ThreadingHTTPServer(("127.0.0.1", 0), BaseHTTPRequestHandler)
-    host, port = server.server_address[:2]
-    server.server_close()
-    return f"http://{host!s}:{port}"
+# An address nothing listens on, as with a stopped Ollama. Port 1 is
+# privileged and outside the range the system hands out. The port of a server
+# just closed isn't safe for this: another process can be given it a moment
+# later, and then the "dead" server answers.
+DEAD_URL = "http://127.0.0.1:1"

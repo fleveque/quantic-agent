@@ -1,7 +1,9 @@
+import socket
 from datetime import timedelta
 
+import httpx
 import pytest
-from conftest import FakeOllama, Reply, fixture
+from conftest import DEAD_URL, FakeOllama, Reply, fixture
 
 from quantic_agent import llm
 
@@ -68,43 +70,103 @@ def test_version(ollama: FakeOllama) -> None:
     assert ollama.paths == ["/api/version"]
 
 
+def causes(err: BaseException) -> list[type[BaseException]]:
+    """The classes in err's chain of causes, outermost first."""
+    found: list[type[BaseException]] = []
+    current: BaseException | None = err
+    while current is not None:
+        found.append(type(current))
+        current = current.__cause__ or current.__context__
+    return found
+
+
+# Every body here is what a real Ollama 0.34.4 sent for that request.
 @pytest.mark.parametrize(
-    ("status", "body", "wanted"),
+    ("status", "body", "message", "kind"),
     [
         pytest.param(
             404,
-            b'{"error":"model \'no-such-model:latest\' not found"}',
-            ["404", "no-such-model:latest", "not found"],
-            id="json error body",
+            fixture("generate-model-not-found.json"),
+            "model 'no-such-model:latest' not found",
+            llm.ModelNotFoundError,
+            id="unknown model",
         ),
         # A mistyped path never reaches Ollama's handlers, so the body is the
-        # HTTP mux's plain text rather than JSON.
-        pytest.param(404, b"404 page not found\n", ["404", "page not found"], id="plain text"),
-        pytest.param(500, b"", ["500"], id="empty body"),
+        # router's plain text, and the 404 is not about a model.
+        pytest.param(404, b"404 page not found\n", "404 page not found", llm.APIError, id="plain"),
+        pytest.param(
+            400,
+            b'{"error":"invalid character \'n\' looking for beginning of object key string"}',
+            "invalid character 'n' looking for beginning of object key string",
+            llm.APIError,
+            id="malformed request",
+        ),
+        pytest.param(500, b"", "", llm.APIError, id="empty body"),
     ],
 )
-def test_server_errors(ollama: FakeOllama, status: int, body: bytes, wanted: list[str]) -> None:
+def test_server_errors(
+    ollama: FakeOllama, status: int, body: bytes, message: str, kind: type[llm.APIError]
+) -> None:
     ollama.replies["/api/generate"] = Reply(body, status)
 
-    with llm.Client(ollama.url, "m") as client, pytest.raises(llm.LLMError) as err:
+    with llm.Client(ollama.url, "m") as client, pytest.raises(llm.APIError) as err:
         client.generate("hi")
 
-    for want in wanted:
-        assert want in str(err.value)
+    # The exact class: a plain 404 must not be taken for a missing model.
+    assert type(err.value) is kind
+    assert err.value.status_code == status
+    assert err.value.message == message
+    # The message still reads as one line with the status in it.
+    assert str(status) in str(err.value)
 
 
 def test_generate_rejects_an_unparseable_reply(ollama: FakeOllama) -> None:
     ollama.replies["/api/generate"] = Reply(b"{not json")
 
-    with llm.Client(ollama.url, "m") as client, pytest.raises(llm.LLMError, match="decoding"):
+    with (
+        llm.Client(ollama.url, "m") as client,
+        pytest.raises(llm.LLMError, match="decoding") as err,
+    ):
         client.generate("hi")
+    # A reply that arrived but made no sense is neither kind of known failure.
+    assert type(err.value) is llm.LLMError
 
 
-def test_an_unreachable_server_is_an_llm_error(dead_url: str) -> None:
-    with llm.Client(dead_url, "m") as client, pytest.raises(llm.LLMError) as err:
+def test_unavailable_when_nothing_listens() -> None:
+    with llm.Client(DEAD_URL, "m") as client, pytest.raises(llm.ServerUnavailableError) as err:
         client.version()
-    # The transport's own exception is kept, chained as the cause.
-    assert err.value.__cause__ is not None
+    # The network's own reason is still there, as the cause.
+    assert ConnectionRefusedError in causes(err.value)
+
+
+@pytest.mark.parametrize(
+    ("reply", "cause"),
+    [
+        # Accepted, then closed without a reply, as a restarting Ollama does.
+        pytest.param(Reply(drop=True), httpx.RemoteProtocolError, id="dropped"),
+        pytest.param(Reply(reset=True), ConnectionResetError, id="reset"),
+    ],
+)
+def test_unavailable_when_the_connection_goes(
+    ollama: FakeOllama, reply: Reply, cause: type[BaseException]
+) -> None:
+    ollama.replies["/api/generate"] = reply
+
+    with llm.Client(ollama.url, "m") as client, pytest.raises(llm.ServerUnavailableError) as err:
+        client.generate("hi")
+    assert cause in causes(err.value)
+
+
+def test_an_unknown_host_is_not_unavailable() -> None:
+    # .invalid is reserved and never resolves. An unresolvable name is almost
+    # always a typo in OLLAMA_HOST, which should fail rather than be waited on.
+    with (
+        llm.Client("http://no-such-host.invalid:11434", "m") as client,
+        pytest.raises(llm.LLMError) as err,
+    ):
+        client.version()
+    assert type(err.value) is llm.LLMError
+    assert socket.gaierror in causes(err.value)
 
 
 def test_a_host_without_a_scheme_is_accepted(ollama: FakeOllama) -> None:

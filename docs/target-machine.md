@@ -184,11 +184,13 @@ ollama` keeps it off until you `enable --now` it again.
 The agent is a one-shot command for now, so there is nothing to stop. Once it runs as a service
 (milestone 13) it gets its own unit, and the design requires that stopping it loses no work and that a
 stopped Ollama makes it wait rather than fail ([design §3.6](design.md#36-concurrency-model)).
-Parts of that already exist. With Ollama stopped, `agent` exits with status 3 ("no model server
-answering"), and `agent -resume N` carries the run on once it's back (section 8). Ctrl-C or
-`SIGTERM` cancels the request in flight and exits with 130, saving the run so it can be resumed; Ollama stops working on a cancelled
-generation within about a second, so stopping the agent is enough to free the GPU. Cancelling while a
-model is still *loading* aborts the load, so the next request starts it again from zero.
+Part of that already exists. With Ollama stopped, `quantic-agent` exits with status 3 ("no model
+server answering"): nothing was attempted, so the same command can simply be run again later. In
+the Go version, Ctrl-C or `SIGTERM` also cancels the request in flight and exits with 130, saving the
+run so `agent -resume N` can carry it on (section 8); here those arrive with milestones 4 and 8.
+Ollama stops working on a cancelled generation within about a second, so stopping the agent is
+enough to free the GPU. Cancelling while a model is still *loading* aborts the load, so the next
+request starts it again from zero.
 
 ---
 
