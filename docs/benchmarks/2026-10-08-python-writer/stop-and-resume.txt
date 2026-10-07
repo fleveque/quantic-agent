@@ -1,0 +1,57 @@
+Real runs, qwen3.5:9b, live quantic.finance data, 2026-10-08. Ctrl-C sent as `kill -INT` from a
+script, after the tool call was traced (one second later for the first run, three for the second).
+
+=== Stopped during research (the model was reading the tool's result)
+$ quantic-agent --research "Which companies go ex-dividend in the next 10 days?"
+tool dividend_calendar {"days": 10} → 810 bytes (314ms)
+quantic-agent: run 1 interrupted
+quantic-agent: to carry on from where it stopped: quantic-agent --resume 1
+quantic-agent: stopped; the request in flight was cancelled
+exit 130
+$ nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader   # just before Ctrl-C, then 2s after
+91 %
+0 %
+$ quantic-agent --runs
+RUN  STARTED           STATE        PHASE     CALLS  TOKENS  QUESTION
+1    2026-10-08 00:21  interrupted  research  1      439     Which companies go ex-dividend in the next 10 days?
+$ quantic-agent --resume 1
+quantic-agent: resuming run 1 in its research phase, with 1 tool call(s) recorded
+quantic-agent: run 1 answered
+Based on the data provided, there are no companies listed that go ex-dividend within the next 10 days from today's date (2026-10-08). The earliest ex-dividend date in the dataset is 2026-10-08.
+exit 0
+$ quantic-agent --runs
+RUN  STARTED           STATE     PHASE  CALLS  TOKENS  QUESTION
+1    2026-10-08 00:21  answered  done   1      1780    Which companies go ex-dividend in the next 10 days?
+
+(No tool line on resume: the recorded call was replayed, not made again. Every figure traces, so the
+run is "answered"; the answer is still wrong, since Microsoft goes ex-dividend that day. The check
+verifies figures, not claims.)
+
+=== Stopped while writing, resumed with no MCP server reachable
+$ quantic-agent --runs
+RUN  STARTED           STATE        PHASE     CALLS  TOKENS  QUESTION
+2    2026-10-08 00:21  interrupted  write     1      1358    Which companies go ex-dividend in the next 10 days?
+1    2026-10-08 00:21  interrupted  write     1      1359    Which companies go ex-dividend in the next 10 days?
+$ quantic-agent --resume 1 --mcp http://127.0.0.1:1/mcp
+quantic-agent: resuming run 1 in its write phase, with 1 tool call(s) recorded
+quantic-agent: 3 figure(s) in the answer came from no tool result:
+  'two' (number 2)
+  '1' (number 1)
+  '2' (number 2)
+quantic-agent: run 1 unverified
+Based on the data provided, two companies go ex-dividend within the next 10 days from today (2026-10-08):
+
+*   **Microsoft** (Symbol: MSFT), a Technology company, has an ex-dividend date of **2026-10-08**.
+*   **Johnson & Johnson** (Symbol: JNJ), a Healthcare company, also has an ex-dividend date of **2026-10-08**.
+
+The remaining companies in the dataset go ex-dividend on dates outside the next 10-day window:
+*   **Apple Inc.** (AAPL) goes ex-dividend on **2026-10-09** (1 day away).
+*   **Iberdrola** (IBE.MC) goes ex-dividend on **2026-10-10** (2 days away).
+*   **Procter & Gamble** (PG) goes ex-dividend on **2026-10-16**.
+*   **Coca-Cola** (KO) goes ex-dividend on **2026-10-17**.
+exit 4
+$ quantic-agent --runs
+RUN  STARTED           STATE        PHASE     CALLS  TOKENS  QUESTION
+3    2026-10-08 00:21  interrupted  research  1      439     Which companies go ex-dividend in the next 10 days?
+2    2026-10-08 00:21  interrupted  write     1      1358    Which companies go ex-dividend in the next 10 days?
+1    2026-10-08 00:21  unverified   done      1      2007    Which companies go ex-dividend in the next 10 days?

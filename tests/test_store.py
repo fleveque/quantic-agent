@@ -1,15 +1,21 @@
+import shutil
 import sqlite3
 import subprocess
 import sys
 import threading
 from datetime import UTC, datetime, timedelta
+from importlib.resources import as_file, files
 from pathlib import Path
 
 import pytest
+import sqlalchemy
+from alembic import command
+from sqlalchemy.exc import OperationalError
 
-from quantic_agent.agent import Call
+from quantic_agent import store
+from quantic_agent.agent import Call, Limit
 from quantic_agent.provenance import Kind, Manifest, check_prose
-from quantic_agent.store import Draft, NotFoundError, State, Store
+from quantic_agent.store import Draft, NotFoundError, NotResumableError, Phase, State, Store
 
 CALENDAR = (
     '{"from":"2026-10-06","days":10,"stocks":[{"symbol":"MSFT","ex_dividend_date":"2026-10-08"}]}'
@@ -84,8 +90,111 @@ def test_migrations_apply_once(tmp_path: Path) -> None:
     # Opening the same file again finds the schema current and changes nothing.
     with open_store(tmp_path) as db:
         db.start_run("research", "q", "m")
-    with sqlite3.connect(tmp_path / "agent.db") as raw:
-        assert raw.execute("SELECT version FROM schema_migrations").fetchall() == [(1,)]
+    assert tables(tmp_path / "agent.db") == ["alembic_version", "drafts", "runs", "tool_calls"]
+    assert version(tmp_path / "agent.db") == "0003"
+
+
+def tables(path: Path) -> list[str]:
+    with sqlite3.connect(path) as raw:
+        rows = raw.execute("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
+        return [name for (name,) in rows]
+
+
+def version(path: Path) -> str:
+    with sqlite3.connect(path) as raw:
+        return raw.execute("SELECT version_num FROM alembic_version").fetchone()[0]
+
+
+def alembic(path: Path, step: str, revision: str) -> None:
+    """Runs an Alembic command, upgrade or downgrade, on the database at path,
+    on a connection set up as the store's own."""
+    engine = sqlalchemy.create_engine(
+        f"sqlite:///{path}", poolclass=sqlalchemy.NullPool, connect_args={"autocommit": False}
+    )
+    with engine.connect() as connection:
+        getattr(command, step)(store.alembic_config(connection), revision)
+    engine.dispose()
+
+
+def test_every_migration_goes_down_and_up_again(tmp_path: Path) -> None:
+    # A downgrade is code like any other: one that leaves a table behind
+    # fails the way back up.
+    path = tmp_path / "agent.db"
+    open_store(tmp_path).close()
+
+    alembic(path, "downgrade", "base")
+    assert tables(path) == ["alembic_version"]
+
+    alembic(path, "upgrade", "head")
+    assert version(path) == "0003"
+
+
+def test_a_failed_migration_leaves_nothing_behind(tmp_path: Path) -> None:
+    # The package's migrations, and a fourth that creates a table and then
+    # fails. Measured: in sqlite3's default mode, the table stayed, with
+    # alembic_version still at 0003, so every later open would fail on it.
+    location = tmp_path / "migrations"
+    with as_file(files("quantic_agent").joinpath("migrations")) as source:
+        shutil.copytree(source, location, ignore=shutil.ignore_patterns("__pycache__"))
+    (location / "versions" / "0004_broken.py").write_text(
+        "from alembic import op\n"
+        "revision = '0004'\n"
+        "down_revision = '0003'\n"
+        "def upgrade():\n"
+        "    op.execute('CREATE TABLE half (x INTEGER)')\n"
+        "    op.execute('this is not SQL')\n"
+    )
+    path = tmp_path / "agent.db"
+
+    with pytest.raises(OperationalError, match="syntax error"):
+        store.migrate(path, str(location))
+
+    assert "half" not in tables(path)
+    assert version(path) == "0003"
+
+
+def milestone_7_database(path: Path) -> None:
+    """A database as milestone 7 left it: the first migration's schema, and
+    its versions in schema_migrations, which Alembic doesn't read. Two runs,
+    one answered, one interrupted, each with a call; one draft."""
+    Store(path).close()
+    alembic(path, "downgrade", "0001")
+    with sqlite3.connect(path) as raw:
+        raw.executescript("""
+            DROP TABLE alembic_version;
+            CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL);
+            INSERT INTO schema_migrations VALUES (1, '2026-10-07T21:00:00+00:00');
+            INSERT INTO runs (kind, input, model, state, started_at) VALUES
+                ('research', 'answered', 'm', 'answered', '2026-10-07T21:01:00+00:00'),
+                ('research', 'stopped', 'm', 'interrupted', '2026-10-07T21:02:00+00:00');
+            INSERT INTO tool_calls
+                (run_id, seq, tool, arguments, result, failed, duration_ms, called_at)
+            VALUES
+                (1, 0, 'dividend_calendar', '{}', '{}', 0, 5, '2026-10-07T21:01:01+00:00'),
+                (2, 0, 'dividend_calendar', '{}', '{}', 0, 5, '2026-10-07T21:02:01+00:00');
+            INSERT INTO drafts (run_id, content, truncated, findings, created_at)
+                VALUES (1, 'text', 0, '[]', '2026-10-07T21:01:02+00:00');
+        """)
+
+
+def test_a_milestone_7_database_is_handed_over(tmp_path: Path) -> None:
+    path = tmp_path / "agent.db"
+    milestone_7_database(path)
+
+    with Store(path) as db:
+        runs = {r.input: r for r in db.runs()}
+        # The rebuild of runs kept the rows that point at it, and they still
+        # must point at a run.
+        assert [c.tool for c in db.run(runs["stopped"].id).calls] == ["dividend_calendar"]
+        with pytest.raises(sqlite3.IntegrityError, match="FOREIGN KEY"):
+            db.record_call(999, 0, calls()[0])
+
+    assert "schema_migrations" not in tables(path)
+    assert version(path) == "0003"
+    # An answered run is done; an interrupted one can be resumed from research.
+    assert (runs["answered"].phase, runs["stopped"].phase) == (Phase.DONE, Phase.RESEARCH)
+    with sqlite3.connect(path) as raw:
+        assert raw.execute("PRAGMA foreign_key_check").fetchall() == []
 
 
 def test_foreign_keys_are_enforced(tmp_path: Path) -> None:
@@ -137,9 +246,8 @@ def test_runs_newest_first(tmp_path: Path) -> None:
         (second, "second", 1),
         (first, "first", 0),
     ]
-    # 9:00 went to the migration's applied_at; the first run started at 9:01,
-    # and comes back as an aware datetime in UTC.
-    assert runs[1].started_at == datetime(2026, 10, 7, 9, 1, tzinfo=UTC)
+    # The first run started at 9:00, and comes back as an aware datetime in UTC.
+    assert runs[1].started_at == datetime(2026, 10, 7, 9, 0, tzinfo=UTC)
 
 
 def test_a_missing_run(tmp_path: Path) -> None:
@@ -189,3 +297,78 @@ def test_processes_opening_a_new_database(tmp_path: Path) -> None:
         for p in procs:
             _, err = p.communicate()
             assert p.returncode == 0, err
+
+
+def test_a_checkpoint_is_where_a_run_resumes(tmp_path: Path) -> None:
+    with open_store(tmp_path) as db:
+        run_id = db.start_run("research", "q", "m")
+        db.record_call(run_id, 0, calls()[1])
+        db.checkpoint(run_id, Phase.WRITE, 1500, Limit.CALLS)
+        db.finish(run_id, State.INTERRUPTED)
+
+        run = db.resume(run_id)
+
+    assert (run.state, run.phase, run.tokens, run.exhausted) == (
+        State.RUNNING,
+        Phase.WRITE,
+        1500,
+        Limit.CALLS,
+    )
+    assert (run.error, run.finished_at) == ("", None)
+    assert run.calls == [calls()[1]]
+
+
+def test_a_draft_makes_a_run_done(tmp_path: Path) -> None:
+    with open_store(tmp_path) as db:
+        run_id = db.start_run("research", "q", "m")
+        db.finish(run_id, State.ANSWERED, draft=Draft("x", False, []), tokens=2000)
+        run = db.run(run_id)
+
+        assert (run.phase, run.tokens) == (Phase.DONE, 2000)
+        with pytest.raises(NotResumableError):
+            db.resume(run_id)
+
+
+@pytest.mark.parametrize("state", [State.FAILED, State.NO_DATA, State.INTERRUPTED])
+def test_a_run_without_an_answer_can_be_resumed(tmp_path: Path, state: State) -> None:
+    with open_store(tmp_path) as db:
+        run_id = db.start_run("research", "q", "m")
+        db.finish(run_id, state, "why")
+        assert db.resume(run_id).state is State.RUNNING
+
+
+def test_a_running_or_missing_run_cant_be_resumed(tmp_path: Path) -> None:
+    with open_store(tmp_path) as db:
+        run_id = db.start_run("research", "q", "m")
+        with pytest.raises(NotResumableError):
+            db.resume(run_id)
+        with pytest.raises(NotResumableError):
+            db.resume(42)
+
+
+def test_only_one_resume_gets_the_run(tmp_path: Path) -> None:
+    # Ten resumes of one run at once, each with its own connection, as ten
+    # processes would have. The UPDATE's condition is the claim: one wins.
+    with open_store(tmp_path) as db:
+        run_id = db.start_run("research", "q", "m")
+        db.finish(run_id, State.INTERRUPTED)
+    won: list[int] = []
+    lost: list[int] = []
+    start = threading.Barrier(10)
+
+    def resume(i: int) -> None:
+        with open_store(tmp_path) as db:
+            start.wait()
+            try:
+                db.resume(run_id)
+                won.append(i)
+            except NotResumableError:
+                lost.append(i)
+
+    threads = [threading.Thread(target=resume, args=(i,)) for i in range(10)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert (len(won), len(lost)) == (1, 9)

@@ -2,23 +2,24 @@
 
 It still has no scheduled tasks. What it can do so far: --check reports the
 model server and its models, --ask sends one prompt and prints the reply, and
---research answers a question with Quantic's tools, tracing each tool call to
-stderr as it completes. Every research run is stored with its tool calls in a
-SQLite database: --runs lists them, --run N shows one and re-checks its answer
-against the data it was given.
+--research answers a question in two phases: research, where the model calls
+Quantic's tools (each call traced to stderr as it completes), then writing,
+where it answers from what they returned and nothing else. Every research run
+is stored with its tool calls in a SQLite database: --runs lists them, --run N
+shows one and re-checks its answer against the data it was given, and
+--resume N carries on with a run that stopped, from the phase it had reached.
 
 Exit status: 0 success, 1 failure (including --timeout running out), 2 wrong
-usage, 3 the model server or the MCP server wasn't there to answer, 4 a
---research answer contains figures no tool returned (design N1), 130
-stopped by Ctrl-C or
-SIGTERM. 3 means nothing was attempted, so a scheduler can simply run the same
-command again later (design §3.6). On 130 the request in flight was
-cancelled, and Ollama stops working on it too.
+usage, 3 the model server or the MCP server wasn't there to answer (or
+Quantic's rate limit didn't clear), 4 a --research answer contains figures no
+tool returned (design N1), 5 research gathered no data, so nothing was
+written, 130 stopped by Ctrl-C or SIGTERM. After 3, 5 or 130, --resume
+continues the run (design §3.6). On 130 the request in flight was cancelled,
+and Ollama stops working on it too.
 """
 
 import argparse
 import asyncio
-import itertools
 import json
 import os
 import signal
@@ -41,6 +42,7 @@ EXIT_OK = 0
 EXIT_FAILED = 1
 EXIT_UNAVAILABLE = 3
 EXIT_UNVERIFIED = 4
+EXIT_NO_DATA = 5
 EXIT_INTERRUPTED = 130  # 128 + SIGINT, the shell's convention for Ctrl-C
 
 # Bounds one run, in seconds. The slowest request measured on the target
@@ -74,6 +76,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     action.add_argument("--ask", metavar="PROMPT", help="send one prompt and print the reply")
     action.add_argument(
         "--research", metavar="QUESTION", help="answer a question using Quantic's tools"
+    )
+    action.add_argument(
+        "--resume",
+        type=int,
+        metavar="N",
+        help="carry on with run N, stopped or failed before answering, with its own model",
     )
     action.add_argument("--runs", action="store_true", help="list recent research runs")
     action.add_argument(
@@ -119,7 +127,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.run is not None:
         with store.Store(args.db) as db:
             return _show_run(db, args.run)
-    if not args.check and args.ask is None and args.research is None:
+    if not args.check and args.ask is None and args.research is None and args.resume is None:
         print("quantic-agent: no tasks defined yet")
         return EXIT_OK
 
@@ -135,10 +143,18 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 async def _run(args: argparse.Namespace) -> int:
     cancel_on_sigterm()
+    if args.research is not None or args.resume is not None:
+        with store.Store(args.db) as db:
+            try:
+                run = _start_or_resume(db, args)
+            except store.NotResumableError as err:
+                _error(str(err))
+                return EXIT_FAILED
+            # A resumed run goes on with the model it started with, which is
+            # the one its record names.
+            async with llm.Client(args.ollama, run.model) as client:
+                return await _research(client, db, run, args)
     async with llm.Client(args.ollama, args.model) as client:
-        if args.research is not None:
-            with store.Store(args.db) as db:
-                return await _research(client, db, args)
         try:
             # One deadline for the whole run, whatever it does inside; None
             # means no limit.
@@ -197,8 +213,10 @@ def _fail(err: Exception, args: argparse.Namespace) -> int:
             _error(f"no MCP server answering at {args.mcp}.")
             _error(str(err))
             return EXIT_UNAVAILABLE
-        case agent.TooManyCallsError():
-            _error(f"the model kept asking for tools and never answered: {err}")
+        case quantic.RateLimitedError():
+            _error("Quantic's rate limit didn't clear; resume the run later.")
+            _error(str(err))
+            return EXIT_UNAVAILABLE
         case llm.ModelNotFoundError():
             _not_pulled(args.model)
         case llm.APIError(status_code=status) if status >= 500:
@@ -241,33 +259,64 @@ async def _check(client: llm.Client, base_url: str) -> int:
     return EXIT_OK
 
 
-async def _research(client: llm.Client, db: store.Store, args: argparse.Namespace) -> int:
-    """Answers one question with the tools, recording the run as it goes: the
-    run when it starts, each tool call as it completes, and the outcome and
-    draft when it ends."""
-    run_id = db.start_run("research", args.research, client.model)
-    seq = itertools.count()
+def _start_or_resume(db: store.Store, args: argparse.Namespace) -> store.Run:
+    """Records a new run, or claims the one being resumed."""
+    if args.resume is not None:
+        run = db.resume(args.resume)
+        _error(
+            f"resuming run {run.id} in its {run.phase} phase, "
+            f"with {len(run.calls)} tool call(s) recorded"
+        )
+        return run
+    return db.run(db.start_run("research", args.research, args.model))
 
-    def on_call(call: agent.Call) -> None:
-        _trace(call)
-        db.record_call(run_id, next(seq), call)
+
+async def _research(
+    client: llm.Client, db: store.Store, run: store.Run, args: argparse.Namespace
+) -> int:
+    """Answers one question in two phases, research then write (design §3.1),
+    recording the run as it goes: the run when it starts, each tool call as it
+    completes, a checkpoint when research is done, and the outcome and draft
+    when it ends. A resumed run starts at the phase it had reached: one
+    stopped while writing doesn't call a single tool again."""
+    # The record's calls, continued in place by the research phase.
+    gathered = agent.Research(calls=run.calls, tokens=run.tokens, exhausted=run.exhausted)
+    written = 0  # tokens the writer used, if it got that far
 
     def finish(
         state: store.State, error: str | None = None, draft: store.Draft | None = None
     ) -> None:
-        db.finish(run_id, state, error, draft)
-        _error(f"run {run_id} {state}")
+        db.finish(run.id, state, error, draft, tokens=gathered.tokens + written)
+        _error(f"run {run.id} {state}")
+        if draft is None:
+            _error(f"to carry on from where it stopped: quantic-agent --resume {run.id}")
 
+    # "Today" is the day the run started, when its data was fetched, even for
+    # a run resumed later: the answer describes that data.
+    today = run.started_at.astimezone().date()
     try:
-        # The deadline covers the handshake, every model turn and every tool
-        # call. It sits inside this try, so running out of time arrives as
-        # TimeoutError and a signal as CancelledError: two different outcomes.
+        # The deadline covers the handshake, every model turn, every tool
+        # call and the writing. It sits inside this try, so running out of
+        # time arrives as TimeoutError and a signal as CancelledError: two
+        # different outcomes.
         async with asyncio.timeout(args.timeout or None):
-            async with quantic.Server(args.mcp) as server:
-                researcher = agent.Researcher(
-                    model=client, server=server, tools=[DIVIDEND_CALENDAR]
-                )
-                answer = await researcher.ask(args.research, on_call=on_call)
+            if run.phase is store.Phase.RESEARCH:
+                await _research_phase(client, db, run, gathered, args)
+                if not gathered.has_data:
+                    # Nothing to write from. Writing anyway produced "no data
+                    # was retrieved" answers that counted as answered. The run
+                    # stays in research, so resuming tries again.
+                    _error("research gathered no data (no tool call succeeded); nothing to write")
+                    finish(store.State.NO_DATA, "research gathered no data")
+                    return EXIT_NO_DATA
+                if gathered.exhausted is not None:
+                    _error(
+                        f"research stopped when its {gathered.exhausted} budget ran out; "
+                        "writing from what it gathered"
+                    )
+                db.checkpoint(run.id, store.Phase.WRITE, gathered.tokens, gathered.exhausted)
+            draft = await agent.Writer(client, today=today).write(run.input, gathered)
+            written = draft.tokens
     except asyncio.CancelledError:
         # Recorded, then passed on. finish() is synchronous, so it runs to the
         # end even in a cancelled task: cancellation only lands at an await.
@@ -276,34 +325,68 @@ async def _research(client: llm.Client, db: store.Store, args: argparse.Namespac
     except TimeoutError:
         finish(store.State.FAILED, f"gave up after {args.timeout:g}s")
         return _gave_up(args.timeout)
-    except (llm.LLMError, quantic.ToolServerError, agent.TooManyCallsError) as err:
+    except agent.NothingWrittenError as err:
+        written = err.tokens
+        finish(store.State.FAILED, str(err))
+        _error(str(err))
+        return EXIT_FAILED
+    except (llm.LLMError, quantic.ToolServerError) as err:
         finish(store.State.FAILED, str(err))
         return _fail(err, args)
 
-    print(answer.text)
-    if answer.truncated:
+    print(draft.text)
+    if draft.truncated:
         _error("the answer was truncated: the model hit its token limit")
     try:
-        findings = _check_figures(answer.text, answer.calls)
+        findings = _check_figures(run, draft.text, gathered.calls)
     except provenance.ProvenanceError as err:
         finish(store.State.FAILED, str(err))
         _error(str(err))
         return EXIT_FAILED
-    draft = store.Draft(content=answer.text, truncated=answer.truncated, findings=findings)
+    saved = store.Draft(content=draft.text, truncated=draft.truncated, findings=findings)
     if findings:
         _report_findings(findings, sys.stderr)
-        finish(store.State.UNVERIFIED, draft=draft)
+        finish(store.State.UNVERIFIED, draft=saved)
         return EXIT_UNVERIFIED
-    finish(store.State.ANSWERED, draft=draft)
+    finish(store.State.ANSWERED, draft=saved)
     return EXIT_OK
 
 
-def _check_figures(text: str, calls: Sequence[agent.Call]) -> list[provenance.Finding]:
+async def _research_phase(
+    client: llm.Client,
+    db: store.Store,
+    run: store.Run,
+    gathered: agent.Research,
+    args: argparse.Namespace,
+) -> None:
+    """Lets the model call Quantic's tools, recording each call as it
+    completes, and carrying on from what gathered already holds."""
+
+    def on_call(seq: int, call: agent.Call) -> None:
+        _trace(call)
+        db.record_call(run.id, seq, call)
+
+    def on_retry(method: str, retry: int, wait: float) -> None:
+        _error(f"Quantic's rate limit; retry {retry} of {method} in {wait:.1f}s")
+
+    async with quantic.Server(args.mcp, on_retry=on_retry) as server:
+        researcher = agent.Researcher(model=client, server=server, tools=[DIVIDEND_CALENDAR])
+        await researcher.research(run.input, gathered, on_call=on_call)
+
+
+def _check_figures(
+    run: store.Run, text: str, calls: Sequence[agent.Call]
+) -> list[provenance.Finding]:
     """Every figure in text that the successful calls' results don't account
     for (design N1). Failed calls aren't data: an error message is not a
-    source."""
+    source. The run's question and the date it started count as sources:
+    repeating the question's "six months", or the date the writer was told is
+    today, invents nothing."""
     records = [provenance.Record(c.tool, c.result) for c in calls if not c.failed]
-    return provenance.check_prose(text, provenance.Manifest(records))
+    manifest = provenance.Manifest(records)
+    manifest.add_text("question", run.input)
+    manifest.add_text("today", run.started_at.astimezone().date().isoformat())
+    return provenance.check_prose(text, manifest)
 
 
 def _report_findings(findings: Sequence[provenance.Finding], out: TextIO) -> None:
@@ -317,10 +400,20 @@ def _report_findings(findings: Sequence[provenance.Finding], out: TextIO) -> Non
 
 def _show_runs(db: store.Store) -> int:
     """The most recent runs, newest first."""
-    rows = [("RUN", "STARTED", "STATE", "CALLS", "QUESTION")]
+    rows = [("RUN", "STARTED", "STATE", "PHASE", "CALLS", "TOKENS", "QUESTION")]
     for run in db.runs(20):
         started = run.started_at.astimezone().strftime("%Y-%m-%d %H:%M")
-        rows.append((str(run.id), started, run.state, str(run.call_count), _shorten(run.input, 60)))
+        rows.append(
+            (
+                str(run.id),
+                started,
+                run.state,
+                run.phase,
+                str(run.call_count),
+                str(run.tokens),
+                _shorten(run.input, 60),
+            )
+        )
     widths = [max(len(row[i]) for row in rows) for i in range(len(rows[0]))]
     for row in rows:
         print("  ".join(cell.ljust(w) for cell, w in zip(row, widths, strict=True)).rstrip())
@@ -339,6 +432,9 @@ def _show_run(db: store.Store, run_id: int) -> int:
     started = run.started_at.astimezone().strftime("%Y-%m-%d %H:%M:%S")
     print(f"run {run.id} · {run.state} · {run.model} · {started}")
     print(f"question: {run.input}")
+    print(f"phase: {run.phase} · {run.tokens} tokens")
+    if run.exhausted is not None:
+        print(f"research stopped early: its {run.exhausted} budget ran out")
     if run.error:
         print(f"error: {run.error}")
     for i, call in enumerate(run.calls):
@@ -347,7 +443,7 @@ def _show_run(db: store.Store, run_id: int) -> int:
     if run.draft is None:
         return EXIT_OK
     print(f"\n{run.draft.content}\n")
-    findings = _check_figures(run.draft.content, run.calls)
+    findings = _check_figures(run, run.draft.content, run.calls)
     if not findings:
         print("provenance, re-checked now: every figure traces to a stored tool result")
         return EXIT_OK

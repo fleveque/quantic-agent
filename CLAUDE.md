@@ -6,7 +6,7 @@ understand Python. The first version was Go, up to milestone 8: `../quantic-agen
 `github.com/fleveque/quantic-agent-go`). Its design, ADRs, benchmarks, fixtures and lessons are the
 starting point here.
 
-## Status — 2026-10-07
+## Status — 2026-10-08
 
 - **Milestone 0 merged** (#1): design, ADRs 0001–0007 and benchmarks carried over; lesson 00.
 - **Milestone 1 merged** (#2): `quantic_agent/cli.py`, `quantic_agent/tools.py`; lesson 01.
@@ -28,15 +28,18 @@ starting point here.
   `check_data`, `check_prose`, `no_figures`); `--research` exits 4 for figures with no source.
   Booleans are never numbers in the manifest (`True == 1`). Go's later fixes (numbers in words,
   "16 and 17", list lengths, the question's and today's figures) come with milestone 8; lesson 06.
-- **Milestone 7 in review** (branch `m7-sqlite`): `quantic_agent/store.py` (stdlib `sqlite3`, sync,
-  `autocommit=True` + `BEGIN IMMEDIATE`, migrations in `src/quantic_agent/migrations/`, `flock` around
-  WAL switch and migrating); `--research` records runs and calls as they happen; `--runs`, `--run N`,
-  `--db`. Tests are isolated from the real state directory by an autouse fixture (`isolated_state`):
-  without it the tests wrote three runs into `~/.local/state`. Seen in a real run, not caught: wrong
-  weekday names ("Tuesday, October 9" for a Friday) are claims no tool made; for milestone 8; lesson 07.
-- design.md's "As built in Go" notes link to quantic-agent-go's code: turn each into an "As built"
-  note about this repository's code as its milestone is ported (§3.3's calculators done). The
-  runbook's run history is the Go version's until milestones 7 and 8 port it.
+- **Milestone 7 merged** (#8): `quantic_agent/store.py` (stdlib `sqlite3`, sync, `autocommit=True` +
+  `BEGIN IMMEDIATE`, `flock` around WAL switch and migrating); `--research` records runs and calls as
+  they happen; `--runs`, `--run N`, `--db`. Tests are isolated from the real state directory by an
+  autouse fixture (`isolated_state`); lesson 07.
+- **Milestone 8 in review** (branch `m8-research-loop`): migrations with Alembic (ADR 0010,
+  `migrations/env.py` + `versions/0001..0003`, a M7 database handed over once); `agent.Research` /
+  `Researcher.research` (budgets, replay of recorded calls, continued in place) and `agent.Writer`
+  (no tools, told the run's start date); `quantic.py` retries 429 in an httpx2 transport under the
+  SDK; phases, checkpoints, `--resume N`, `no_data` (exit 5); provenance with Go's later fixes plus
+  weekdays next to a date and "Oct 8-10" ranges; real runs in `docs/benchmarks/2026-10-08-python-writer/`
+  (4/9 traced); lesson 08. The Python version is now where the Go version stopped.
+- design.md keeps Go's "As built in Go" notes next to this repository's "As built" notes.
 - PRs are squash-merged, so a walkthrough built from a branch commit cites a SHA `main` won't have.
   After merge, rebuild the walkthrough page from the merge commit and republish the artifact. That
   updates the published page only: no commit, nothing pushed.
@@ -51,11 +54,16 @@ starting point here.
 
 ## Next, in order
 
-1. **Port milestone 8 from quantic-agent-go**, with its lesson and walkthrough: the research loop (the Go
-   version's findings PRs included: numbers in words, today's date, `no_data`).
-2. **Milestone 9 — the worker pool**: serialised GPU, parallel I/O. The Week Ahead needs
-   `get_stock` per company (amounts, yields), 20–40 calls paced under Quantic's 60/min limit.
-3. `num_ctx` is Ollama's default 4096 for chat; fine for one calendar, not for the Week Ahead's data.
+1. **Milestone 9 — the worker pool**: serialised GPU, parallel I/O. The Week Ahead needs
+   `get_stock` per company (amounts, yields), 20–40 calls paced under Quantic's 60/min limit. The
+   first milestone with no Go version to port.
+2. `num_ctx` is Ollama's default 4096 for chat; fine for one calendar, not for the Week Ahead's data.
+3. Seen in real runs, not caught: counts of a filtered subset ("four companies") are flagged though
+   right; a wrong statement whose figures all trace ("no companies in the next 10 days") passes; the
+   9B sometimes reasons out loud in an answer despite `think: false`.
+4. Which date is "today": the writer is told the agent's local date when the run started; Quantic's
+   calendar uses its own (UTC). Just after midnight in Spain they differ by a day (seen 2026-10-08).
+   A design question for the author, not decided.
 
 ## Conventions
 
@@ -112,6 +120,10 @@ starting point here.
 - With the SDK: use `mode="legacy"` (the default "auto" wastes a `server/discover` request per
   session). Connection failures arrive as `ExceptionGroup`s around `httpx2` errors (flatten before
   classifying); cancellation is not wrapped. The SDK's HTTP library is `httpx2`, not `httpx`.
+- The SDK has no 429 retry: it turns a 429 into JSON-RPC error -32603 ("Server returned an error
+  response") and drops a refused notification silently. An exception raised in its HTTP transport
+  cancels the waiting call (`CancelledError`) and surfaces only at session exit; answer with a
+  JSON-RPC error instead. The SDK sends `tools/list` once per session, before the first `tools/call`.
 - The server's code is in `../quantic` on `main` (`lib/quantic_web/mcp/`). Fetch first: the local
   checkout lagged `origin/main` by three months.
 
@@ -136,3 +148,6 @@ starting point here.
 - Migrating from several processes at once collides; a file lock (`flock`) around migrating fixes it.
 - Adding a value to a `CHECK` constraint means rebuilding the table, with foreign keys off for that
   connection, outside a transaction (SQLite's documented recipe).
+- Alembic on `sqlite3` needs `connect_args={"autocommit": False}`, or a failed migration leaves its
+  tables behind. Without the `flock`, Alembic migrating a new database from 4 processes failed 47–50
+  of 80 opens, with or without `autocommit=False` (different errors, same count).

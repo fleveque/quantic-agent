@@ -103,6 +103,16 @@ miscounts in words ("ten" stocks where there are nine), which the validator does
 that showed the writer the research conversation gave buy-timing advice twice; the data-only writer
 didn't.
 
+**As built (milestone 8, [`agent.py`](../src/quantic_agent/agent.py)).** The same two phases, with the
+same prompts. `Researcher.research` continues an `agent.Research` in place (calls, tokens, the
+budget that stopped it), so when the loop raises, the caller still holds what was done and what it
+cost; Go returned the value alongside the error. `Writer.write` is one `chat` with no tools, told the
+date the run started. Measured on the same three questions, three runs each, against live data a day
+later ([benchmarks](benchmarks/2026-10-08-python-writer/README.md)): 4 of 9 traced. The failures were
+wrong or unverifiable counts in words, a derived date six months out, and one answer that reasoned
+out loud and concluded wrongly. One answer that traced fully was still wrong ("no companies" in ten
+days, with Microsoft going ex-dividend that day): the check verifies figures, not claims.
+
 ### 3.2 Loop bounds
 
 The research loop is bounded, not open-ended. Per task kind, from config:
@@ -126,6 +136,11 @@ tokens across both phases. A reply that takes research to its token budget has i
 dropped, not run. The writer is told when research stopped early. The run records which budget ran
 out (`runs.exhausted`). Not built yet: the cache for repeated identical calls, and per-task budgets
 from config.
+
+**As built (milestone 8).** The same bounds and defaults: `agent.Budget(calls=4, tokens=16_000)`, a
+frozen dataclass whose defaults are the defaults (Go needed `cmp.Or` to read 0 as "the default"), and
+`--timeout` for wall clock. Recorded calls of a resumed run count against the call budget, and its
+recorded tokens against the token budget. Real runs used 1,780–3,301 tokens across both phases.
 
 ### 3.3 Provenance
 
@@ -184,13 +199,19 @@ number formats are parsed. Booleans are never indexed as numbers, since Python's
 fully; the other two said "October 16 and 17", where the bare "17" isn't read as a date, and "to
 December 6, 2026", an end date the model computed from the window itself.
 
-*In Go (updated after milestone 8, to be ported with it): numbers written as words, two to ninety-nine, are
-figures too, and "October 16 and 17" reads as two dates. Besides returned values, the manifest
-accepts each list's length, so "nine stocks" checks against a nine-item calendar, and the figures of
-the question and of the date the run started, which the writer is told; see the
-[measurement](benchmarks/2026-10-07-writer/README.md).) In Go's own real runs at milestone 6, five of
-six research answers traced fully; the sixth said "the next 4 months", a figure the model derived
-itself, which is exactly what N1 forbids.*
+*In Go's own real runs at milestone 6, five of six research answers traced fully; the sixth said "the
+next 4 months", a figure the model derived itself, which is exactly what N1 forbids.*
+
+**As built (milestone 8).** Go's fixes after its milestone 8, ported: numbers written as words, two to
+ninety-nine, are figures ("nine stocks", "six-month"; "one" is left out, usually a pronoun);
+"October 16 and 17" is two dates; each list's length counts as returned, so "nine stocks" checks
+against a nine-item calendar; and `Manifest.add_text` adds the figures of the question and of the
+date the run started, which the writer is told
+([measurement, in Go](benchmarks/2026-10-07-writer/README.md)). Two additions of this version's own,
+both from real runs. A weekday written with a date must be the weekday that date falls on: milestone
+7's audit log passed "Tuesday, October 9" for a Friday. A weekday alone ("on Friday") isn't checked;
+nothing says which Friday. And a range of days, "Oct 8-10" or "Oct 16–17", is two dates, where the
+end was read as the number -10.
 
 ### 3.4 Retrieval (RAG)
 
@@ -310,6 +331,15 @@ The interesting shape: **one GPU, many network calls.**
   an answer. Adding that state rebuilt `runs` (migration `0003`), with foreign keys off for that one
   connection, as SQLite's own recipe requires. There is no
   scheduler yet: resuming is a command, not automatic.
+- **As built (milestone 8).** The same phases, `--resume N`, exit statuses and claim. A resumed run
+  keeps the model it started with and the date it started on. The `429` retry sits under the MCP SDK,
+  as an HTTP transport, because the SDK has none: left alone, it turned a `429` into a JSON-RPC
+  error indistinguishable from a request the server rejected, which the loop would have handed to the
+  model to correct. When the retries run out, the transport answers the request itself with a
+  JSON-RPC error code of the agent's own, which the SDK passes up; raising instead made the SDK
+  cancel the waiting call, which reads as Ctrl-C. Only POSTs are retried. Measured on the real
+  machine: Ctrl-C while the model worked took the GPU from 91% to 0% within two seconds, and the run
+  resumed from its write phase with no MCP server reachable.
 
 ### 3.7 Storage
 
@@ -372,6 +402,17 @@ because cancellation only lands at an `await`, the save that records an interrup
 completes (Go needed `context.WithoutCancel`). `--runs` lists runs and `--run N` re-checks one, at
 the same path and with the same `--db` / `QUANTIC_AGENT_DB` override. Whether to move to a migration
 library is milestone 8's question, as it was Go's.
+
+**As built (milestone 8).** Alembic ([decision 0010](decisions/0010-alembic-for-migrations.md)),
+on a SQLAlchemy connection of its own, with `connect_args={"autocommit": False}`: measured, in
+`sqlite3`'s default mode a migration that failed partway left its first table behind with the version
+unchanged. The `flock` stays, and covers the one-time handover of a milestone 7 database
+(`schema_migrations` → Alembic's `alembic_version`, one transaction). Alembic has no lock for SQLite
+either, and without ours it collided far more than the hand-written code: 47 and 50 of 80 opens of a
+new database failed, each within half a second, so SQLite refused rather than waited; with it, 0 of
+400. A test takes every migration down and back up. `0002` adds `phase`, `tokens` and `exhausted`;
+`0003` rebuilds `runs` to add `no_data`. The migration connection never turns foreign keys on, so
+the rebuild needs no `PRAGMA` dance, and it ends with `PRAGMA foreign_key_check`.
 
 ### 3.8 Delivery
 

@@ -8,6 +8,7 @@ license-files = ["LICENSE"]
 authors = [{ name = "Francesc Leveque" }]
 requires-python = ">=3.14"
 dependencies = [
+    "alembic>=1.20.0",
     "httpx>=0.28.1",
     "httpx2>=2.13.1",
     "mcp>=2.3.0",

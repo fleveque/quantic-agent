@@ -240,4 +240,5 @@ milestone 8, which takes on the validator's other gaps found in real runs.
 
 ---
 
-**Previous:** [Lesson 06 — Every figure has a source](06-every-figure-has-a-source.md)
+**Previous:** [Lesson 06 — Every figure has a source](06-every-figure-has-a-source.md) ·
+**Next:** [Lesson 08 — A loop that can stop](08-a-loop-that-can-stop.md)

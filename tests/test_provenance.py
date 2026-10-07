@@ -57,7 +57,44 @@ QUOTE = manifest(
         pytest.param(CAL, "on October 8, 2026", [], id="full date"),
         pytest.param(CAL, "on 8 October 2026", [], id="day before month"),
         pytest.param(CAL, "on October 16th", [], id="ordinal day"),
-        pytest.param(CAL, "Oct 21 brings two", [], id="the day isn't checked twice"),
+        pytest.param(CAL, "Oct 21 is busy", [], id="the day isn't checked twice"),
+        pytest.param(CAL, "on October 16 and 17", [], id="a second day sharing the month"),
+        pytest.param(
+            CAL,
+            "on October 17 and 18",
+            ["October 17 and 18"],
+            id="a second day that wasn't returned",
+        ),
+        pytest.param(CAL, "on 16 & 17 October", [], id="a day pair before the month"),
+        # A real answer's "Oct 8-10" read as a date and the number -10.
+        pytest.param(CAL, "between Oct 8-10 and Oct 16\u201317", [], id="ranges of days"),
+        pytest.param(CAL, "from Oct 17-18", ["Oct 17-18"], id="a range ending on another day"),
+        pytest.param(CAL, "on 2026-10-08 October brings", [], id="an ISO date isn't a range"),
+        # Numbers in words are figures too. A list's length counts as
+        # returned: the calendar has ten stocks.
+        pytest.param(CAL, "ten stocks go ex-dividend", [], id="a count that matches the list"),
+        pytest.param(CAL, "eleven stocks go ex-dividend", ["eleven"], id="a count that doesn't"),
+        pytest.param(CAL, "about four months", ["four"], id="a derived duration in words"),
+        pytest.param(QUOTE, "twenty-one days", ["twenty-one"], id="a compound number"),
+        pytest.param(CAL, "a six-month window", ["six"], id="a word number as an adjective"),
+        pytest.param(CAL, "one of them pays monthly", [], id="one is a pronoun, not a figure"),
+        # A weekday written with a date must be that date's. October 9 is a
+        # Friday: the claim milestone 7's audit log passed.
+        pytest.param(CAL, "Apple on Friday, October 9", [], id="the right weekday"),
+        pytest.param(
+            CAL, "Apple on Tuesday, October 9", ["Tuesday, October 9"], id="a wrong weekday"
+        ),
+        pytest.param(CAL, "Apple (Fri 9 Oct)", [], id="an abbreviated weekday"),
+        pytest.param(
+            CAL, "on 2026-10-09 (Thursday)", ["2026-10-09 (Thursday)"], id="a weekday after"
+        ),
+        pytest.param(
+            CAL,
+            "on Saturday, October 16 and 17",
+            ["Saturday, October 16 and 17"],
+            id="a weekday goes with the first day of a pair",
+        ),
+        pytest.param(CAL, "on Friday", [], id="a weekday alone isn't checked"),
         pytest.param(CAL, "the 2026 calendar", [], id="year of a returned date"),
         pytest.param(CAL, "by 2027", ["2027"], id="year with no returned date"),
         pytest.param(QUOTE, "pays 0.2695 per share", [], id="exact amount"),
@@ -112,10 +149,12 @@ def test_a_real_answer_passes() -> None:
     [
         # The example docs/rendering.md gives of prose a post may contain...
         (
-            "Three consumer-staples names go ex-dividend in the same week "
+            "Several consumer-staples names go ex-dividend in the same week "
             "for the first time this quarter.",
             [],
         ),
+        # ...a count in words, which nothing in a post's prose can verify...
+        ("Three consumer-staples names go ex-dividend in the same week.", ["Three"]),
         # ...and of prose it may not.
         ("Yields rose about 40 basis points.", ["40"]),
         ("Microsoft goes ex-dividend on Oct 8.", ["Oct 8"]),
@@ -202,3 +241,25 @@ def test_the_manifest_records_where_values_came_from() -> None:
 def test_results_must_be_json() -> None:
     with pytest.raises(ProvenanceError, match="not JSON"):
         Manifest([Record("calc", "3.3 percent")])
+
+
+def test_a_wrong_weekday_says_what_the_date_is() -> None:
+    [finding] = check_prose("Apple goes ex-dividend on Tuesday, October 9.", CAL)
+    assert str(finding) == "'Tuesday, October 9' (date --10-09, but 2026-10-09 is a Friday)"
+
+
+def test_text_as_a_source() -> None:
+    # Figures from text added as a source, such as the question, are
+    # accounted for; ones it doesn't contain are still reported.
+    m = calendar_120()
+    m.add_text("question", "Which stocks go ex-dividend in the next six months?")
+    m.add_text("today", "2026-10-07")
+
+    found = check_prose("Over the next six months (from 2026-10-07): about four months of data.", m)
+
+    assert [f.text for f in found] == ["four"]
+    assert [str(s) for s in m.number(6)] == ["question: 'six'"]
+
+
+def test_a_list_length_is_a_source() -> None:
+    assert [str(s) for s in CAL.number(10)] == ["dividend_calendar#0 len($.stocks)"]

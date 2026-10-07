@@ -176,11 +176,13 @@ class FakeMCP:
     (tests/fixtures/mcp), rewriting each reply's id to the request's. tools
     maps a tool name to the fixture its tools/call answers with, or to "hang"
     for a call that never answers; requests records every JSON-RPC message
-    received, in order.
+    received, in order. rate_limited is how many POSTs to refuse first with
+    429, the way Quantic refuses an anonymous caller over its limit.
     """
 
     url: str
     tools: dict[str, str] = field(default_factory=lambda: dict[str, str]())
+    rate_limited: int = 0
     requests: list[dict[str, Any]] = field(default_factory=lambda: list[dict[str, Any]]())
     released: threading.Event = field(default_factory=threading.Event)
 
@@ -214,6 +216,12 @@ def quantic_mcp() -> Iterator[FakeMCP]:
         def do_POST(self) -> None:
             length = int(self.headers.get("Content-Length", 0))
             message: dict[str, Any] = json.loads(self.rfile.read(length))
+            if fake.rate_limited > 0:
+                fake.rate_limited -= 1
+                # Quantic's reply, from QuanticWeb.Plugs.McpAuth.
+                body = json.dumps({"error": "rate limited — try again shortly"}).encode()
+                self._reply(429, body, "application/json")
+                return
             fake.requests.append(message)
             method = message.get("method", "")
             if "id" not in message:  # a notification: acknowledged, no reply

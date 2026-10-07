@@ -99,3 +99,75 @@ async def test_a_deadline_ends_a_tool_call(quantic_mcp: FakeMCP) -> None:
         with pytest.raises(TimeoutError):
             async with asyncio.timeout(0.3):
                 await server.call_tool("dividend_calendar", {"days": 10})
+
+
+# Short waits, so the retries take milliseconds.
+FAST = quantic.Backoff(attempts=3, base=0.01, max=0.02)
+
+
+async def test_a_rate_limited_request_is_retried(quantic_mcp: FakeMCP) -> None:
+    quantic_mcp.tools["dividend_calendar"] = "call-dividend-calendar.sse"
+    retries: list[tuple[str, int]] = []
+
+    def on_retry(method: str, retry: int, wait: float) -> None:
+        retries.append((method, retry))
+        assert FAST.wait(retry, lambda: 0) <= wait <= FAST.wait(retry, lambda: 1)
+
+    async with quantic.Server(quantic_mcp.url, backoff=FAST, on_retry=on_retry) as server:
+        # The handshake is over once a request has been answered after it.
+        await server.list_tools()
+        quantic_mcp.rate_limited = 2
+        result = await server.call_tool("dividend_calendar", {"days": 10})
+
+    assert not result.is_error
+    assert retries == [("tools/call", 1), ("tools/call", 2)]
+
+
+async def test_a_limit_that_doesnt_clear_is_not_the_models_mistake(quantic_mcp: FakeMCP) -> None:
+    # Left to the SDK, a 429 became "Server returned an error response
+    # (-32603)", an RPCError, which the research loop hands to the model to
+    # correct. Nothing about the request was wrong.
+    async with quantic.Server(quantic_mcp.url, backoff=FAST) as server:
+        await server.list_tools()
+        quantic_mcp.rate_limited = 3
+        with pytest.raises(quantic.RateLimitedError, match=r"tools/call: 429.*3 attempts"):
+            await server.call_tool("dividend_calendar", {"days": 10})
+
+
+async def test_a_rate_limited_handshake(quantic_mcp: FakeMCP) -> None:
+    quantic_mcp.rate_limited = 3
+    with pytest.raises(quantic.RateLimitedError, match="initialize"):
+        async with quantic.Server(quantic_mcp.url, backoff=FAST):
+            pass
+
+
+async def test_waiting_to_retry_ends_with_the_run(quantic_mcp: FakeMCP) -> None:
+    # An hour's wait, cut short by the deadline: a refused run must still
+    # stop when it is told to.
+    quantic_mcp.rate_limited = 1
+
+    async def connect() -> None:
+        async with quantic.Server(quantic_mcp.url, backoff=quantic.Backoff(base=3600, max=3600)):
+            pass
+
+    loop = asyncio.get_running_loop()
+    start = loop.time()
+    with pytest.raises(TimeoutError):
+        await asyncio.wait_for(connect(), 0.2)
+    assert loop.time() - start < 1
+
+
+def test_the_default_backoff_outlasts_a_minute() -> None:
+    # Quantic counts requests in fixed one-minute windows and doesn't say when
+    # one ends. Even the shortest schedule, every jitter at its minimum, must
+    # wait out a whole window before giving up.
+    b = quantic.DEFAULT_BACKOFF
+    shortest = sum(b.wait(r, lambda: 0) for r in range(1, b.attempts))
+    longest = sum(b.wait(r, lambda: 1) for r in range(1, b.attempts))
+    assert shortest >= 60, f"the retries can give up after {shortest}s of waiting"
+    assert (shortest, longest) == (60.5, 121)
+
+
+def test_a_wait_is_capped_however_late_the_retry() -> None:
+    b = quantic.DEFAULT_BACKOFF
+    assert b.wait(2000, lambda: 1) == b.max

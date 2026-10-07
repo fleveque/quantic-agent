@@ -1,5 +1,6 @@
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from datetime import date
 from typing import Any
 
 import pytest
@@ -10,17 +11,23 @@ from quantic_agent.tools import DIVIDEND_CALENDAR
 pytestmark = pytest.mark.anyio
 
 
-def asks(*calls: tuple[str, dict[str, Any]]) -> llm.ChatResponse:
-    """A model reply asking for tools."""
+def asks(*calls: tuple[str, dict[str, Any]], tokens: int = 0) -> llm.ChatResponse:
+    """A model reply asking for tools, which cost tokens to produce."""
     tool_calls = [llm.ToolCall(function=llm.FunctionCall(name=n, arguments=a)) for n, a in calls]
     return llm.ChatResponse(
-        model="m", message=llm.Message(role="assistant", tool_calls=tool_calls), done=True
+        model="m",
+        message=llm.Message(role="assistant", tool_calls=tool_calls),
+        done=True,
+        prompt_eval_count=tokens,
     )
 
 
-def answers(text: str) -> llm.ChatResponse:
+def answers(text: str, tokens: int = 0) -> llm.ChatResponse:
     return llm.ChatResponse(
-        model="m", message=llm.Message(role="assistant", content=text), done=True
+        model="m",
+        message=llm.Message(role="assistant", content=text),
+        done=True,
+        prompt_eval_count=tokens,
     )
 
 
@@ -70,25 +77,40 @@ class FakeServer:
 CALENDAR = quantic.Result(text='{"stocks":[{"symbol":"MSFT"}]}', is_error=False)
 
 
-def researcher(model: ScriptedModel, server: FakeServer) -> agent.Researcher:
-    return agent.Researcher(model=model, server=server, tools=[DIVIDEND_CALENDAR])
+def researcher(
+    model: ScriptedModel, server: FakeServer, budget: agent.Budget = agent.DEFAULT_BUDGET
+) -> agent.Researcher:
+    return agent.Researcher(model=model, server=server, tools=[DIVIDEND_CALENDAR], budget=budget)
 
 
-async def test_it_calls_a_tool_then_answers() -> None:
-    model = ScriptedModel([asks(("dividend_calendar", {"days": 10})), answers("MSFT, on the 8th.")])
+async def research(r: agent.Researcher, gathered: agent.Research | None = None) -> agent.Research:
+    gathered = gathered if gathered is not None else agent.Research()
+    await r.research("q", gathered)
+    return gathered
+
+
+async def test_it_calls_a_tool_until_the_model_stops_asking() -> None:
+    model = ScriptedModel(
+        [asks(("dividend_calendar", {"days": 10}), tokens=900), answers("MSFT.", tokens=1100)]
+    )
     server = FakeServer({"dividend_calendar": CALENDAR})
-    traced: list[agent.Call] = []
+    traced: list[tuple[int, agent.Call]] = []
+    gathered = agent.Research()
 
-    answer = await researcher(model, server).ask("next 10 days?", on_call=traced.append)
+    await researcher(model, server).research(
+        "next 10 days?", gathered, on_call=lambda seq, c: traced.append((seq, c))
+    )
 
-    assert answer.text == "MSFT, on the 8th."
     # The arguments reached the server validated, as the tool takes them.
     assert server.received == [("dividend_calendar", {"days": 10})]
-    # Each call was handed over as it completed, and kept in the answer.
-    assert traced == answer.calls
-    assert [(c.tool, c.result, c.failed) for c in answer.calls] == [
+    # Each call was handed over as it completed, with its position, and kept.
+    assert traced == list(enumerate(gathered.calls))
+    assert [(c.tool, c.result, c.failed) for c in gathered.calls] == [
         ("dividend_calendar", CALENDAR.text, False)
     ]
+    # Both replies' tokens count; neither budget stopped it.
+    assert (gathered.tokens, gathered.exhausted) == (2000, None)
+    assert gathered.has_data
     # Second turn: the model saw its own request, then the tool's output.
     second = model.shown[1]
     assert second[-2].tool_calls is not None
@@ -124,21 +146,23 @@ async def test_model_mistakes_go_back_to_the_model(
     model = ScriptedModel([asks(request_), answers("sorry")])
     server = FakeServer({"dividend_calendar": CALENDAR})
 
-    answer = await researcher(model, server).ask("q")
+    gathered = await research(researcher(model, server))
 
     # The server never got the bad request; the model was shown why instead.
     assert server.received == []
-    assert answer.calls[0].failed
+    assert gathered.calls[0].failed
     assert shown in model.shown[1][-1].content
+    # A refused call is not data.
+    assert not gathered.has_data
 
 
 async def test_a_tools_refusal_goes_back_to_the_model() -> None:
     refused = quantic.Result(text="needs authentication", is_error=True)
     model = ScriptedModel([asks(("dividend_calendar", {})), answers("can't")])
 
-    answer = await researcher(model, FakeServer({"dividend_calendar": refused})).ask("q")
+    gathered = await research(researcher(model, FakeServer({"dividend_calendar": refused})))
 
-    assert answer.calls[0].failed
+    assert gathered.calls[0].failed
     assert model.shown[1][-1].content == "error: needs authentication"
 
 
@@ -146,37 +170,147 @@ async def test_a_rejected_request_goes_back_to_the_model() -> None:
     rejected = quantic.RPCError(-32602, "Invalid params", "days: expected type of :integer")
     model = ScriptedModel([asks(("dividend_calendar", {"days": 10})), answers("ok")])
 
-    await researcher(model, FakeServer({"dividend_calendar": rejected})).ask("q")
+    await research(researcher(model, FakeServer({"dividend_calendar": rejected})))
 
     assert "Invalid params (-32602)" in model.shown[1][-1].content
 
 
-async def test_it_stops_at_the_call_limit() -> None:
+async def test_running_out_of_calls_is_an_outcome_not_an_error() -> None:
     # A model that never stops asking.
     model = ScriptedModel([asks(("dividend_calendar", {})) for _ in range(10)])
-    traced: list[agent.Call] = []
+    server = FakeServer({"dividend_calendar": CALENDAR})
 
-    with pytest.raises(agent.TooManyCallsError):
-        await agent.Researcher(
-            model=model,
-            server=FakeServer({"dividend_calendar": CALENDAR}),
-            tools=[DIVIDEND_CALENDAR],
-            max_calls=2,
-        ).ask("q", on_call=traced.append)
+    gathered = await research(researcher(model, server, agent.Budget(calls=2)))
 
-    # The calls made before the limit were all recorded.
-    assert len(traced) == 2
+    assert gathered.exhausted is agent.Limit.CALLS
+    assert len(gathered.calls) == len(server.received) == 2
+
+
+async def test_a_reply_that_crosses_the_token_budget_isnt_run() -> None:
+    model = ScriptedModel(
+        [
+            asks(("dividend_calendar", {"days": 10}), tokens=600),
+            asks(("dividend_calendar", {"days": 20}), tokens=600),
+        ]
+    )
+    server = FakeServer({"dividend_calendar": CALENDAR})
+
+    gathered = await research(researcher(model, server, agent.Budget(tokens=1000)))
+
+    # The second request arrived after the budget was spent: dropped.
+    assert server.received == [("dividend_calendar", {"days": 10})]
+    assert (gathered.tokens, gathered.exhausted) == (1200, agent.Limit.TOKENS)
+
+
+async def test_a_spent_budget_asks_nothing() -> None:
+    # A resumed run may have spent its tokens already.
+    model = ScriptedModel([])
+    spent = agent.Research(tokens=16_000)
+
+    await research(researcher(model, FakeServer()), spent)
+
+    assert model.shown == []
+    assert spent.exhausted is agent.Limit.TOKENS
 
 
 async def test_it_stops_when_the_server_is_gone() -> None:
     gone = quantic.ToolServerUnavailableError("connection refused")
-    model = ScriptedModel([asks(("dividend_calendar", {}))])
-    traced: list[agent.Call] = []
+    model = ScriptedModel([asks(("dividend_calendar", {}), tokens=700)])
+    gathered = agent.Research()
 
     # A failure the model can't fix ends the run, keeping its class...
     with pytest.raises(quantic.ToolServerUnavailableError):
-        await researcher(model, FakeServer({"dividend_calendar": gone})).ask(
-            "q", on_call=traced.append
-        )
-    # ...and the call it happened in is recorded, for the audit log.
-    assert [(c.tool, c.failed) for c in traced] == [("dividend_calendar", True)]
+        await researcher(model, FakeServer({"dividend_calendar": gone})).research("q", gathered)
+    # ...and what was done before it is still there: the call it happened in,
+    # for the audit log, and the tokens.
+    assert [(c.tool, c.failed) for c in gathered.calls] == [("dividend_calendar", True)]
+    assert gathered.tokens == 700
+
+
+async def test_a_resumed_run_replays_its_calls() -> None:
+    recorded = agent.Call(tool="dividend_calendar", arguments={"days": 10}, result=CALENDAR.text)
+    prior = agent.Research(calls=[recorded], tokens=900)
+    model = ScriptedModel([asks(("dividend_calendar", {"days": 20})), answers("done")])
+    server = FakeServer({"dividend_calendar": CALENDAR})
+    traced: list[int] = []
+
+    await researcher(model, server).research("q", prior, on_call=lambda seq, _: traced.append(seq))
+
+    # The model saw the recorded call and its result as if just made...
+    first = model.shown[0]
+    assert [m.role for m in first] == ["system", "user", "assistant", "tool"]
+    assert first[2].tool_calls is not None
+    assert first[2].tool_calls[0].function.arguments == {"days": 10}
+    assert first[3].content == CALENDAR.text
+    # ...without the tool being called again for it. The new call is
+    # number 1, after the recorded one.
+    assert server.received == [("dividend_calendar", {"days": 20})]
+    assert traced == [1]
+    assert [c.arguments for c in prior.calls] == [{"days": 10}, {"days": 20}]
+
+
+async def test_recorded_calls_count_against_the_budget() -> None:
+    recorded = agent.Call(tool="dividend_calendar", arguments={}, result=CALENDAR.text)
+    model = ScriptedModel([asks(("dividend_calendar", {}))])
+    server = FakeServer({"dividend_calendar": CALENDAR})
+
+    gathered = await research(
+        researcher(model, server, agent.Budget(calls=2)), agent.Research(calls=[recorded] * 2)
+    )
+
+    assert server.received == []
+    assert gathered.exhausted is agent.Limit.CALLS
+
+
+# ---- writing ---------------------------------------------------------------
+
+
+def gathered_data(*, exhausted: agent.Limit | None = None) -> agent.Research:
+    return agent.Research(
+        calls=[
+            agent.Call("dividend_calendar", {"days": 200}, "error: at most 120", failed=True),
+            agent.Call("dividend_calendar", {"days": 10}, CALENDAR.text),
+        ],
+        exhausted=exhausted,
+    )
+
+
+async def test_the_writer_sees_the_question_and_the_data_only() -> None:
+    model = ScriptedModel([answers("MSFT goes ex-dividend.", tokens=500)])
+    writer = agent.Writer(model, today=date(2026, 10, 7))
+
+    draft = await writer.write("next 10 days?", gathered_data())
+
+    assert draft == agent.Draft(text="MSFT goes ex-dividend.", truncated=False, tokens=500)
+    # No tools: the writer can't fetch anything.
+    assert model.tools == [None]
+    system, user = model.shown[0]
+    assert system.content == agent.WRITE_PROMPT
+    # The failed call is an error the research model saw, not data.
+    assert user.content == (
+        "Today's date: 2026-10-07\n\n"
+        "Question: next 10 days?\n\n"
+        f'Data from dividend_calendar {{"days": 10}}:\n{CALENDAR.text}'
+    )
+
+
+def test_the_writer_is_told_when_research_was_cut_short() -> None:
+    _, user = agent.write_messages("q", None, gathered_data(exhausted=agent.Limit.CALLS))
+    assert "Today" not in user.content
+    assert user.content.endswith(
+        "(its calls budget ran out), so the data may be incomplete. Say what it covers."
+    )
+
+
+def test_the_writer_is_told_when_there_is_no_data() -> None:
+    _, user = agent.write_messages("q", None, agent.Research())
+    assert user.content == "Question: q\n\nNo data was retrieved."
+
+
+async def test_an_empty_answer_is_not_a_draft() -> None:
+    model = ScriptedModel([answers("  \n", tokens=300)])
+
+    with pytest.raises(agent.NothingWrittenError) as caught:
+        await agent.Writer(model).write("q", gathered_data())
+
+    assert caught.value.tokens == 300
