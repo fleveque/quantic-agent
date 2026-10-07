@@ -6,7 +6,8 @@ model server and its models, --ask sends one prompt and prints the reply, and
 stderr as it completes.
 
 Exit status: 0 success, 1 failure (including --timeout running out), 2 wrong
-usage, 3 the model server or the MCP server wasn't there to answer, 130
+usage, 3 the model server or the MCP server wasn't there to answer, 4 a
+--research answer contains figures no tool returned (design N1), 130
 stopped by Ctrl-C or
 SIGTERM. 3 means nothing was attempted, so a scheduler can simply run the same
 command again later (design §3.6). On 130 the request in flight was
@@ -22,7 +23,7 @@ import sys
 from collections.abc import Sequence
 from importlib.metadata import version
 
-from quantic_agent import agent, llm, quantic
+from quantic_agent import agent, llm, provenance, quantic
 from quantic_agent.tools import DIVIDEND_CALENDAR
 
 # The safe choice for the target hardware (design §4): it fits any 16GB card
@@ -34,6 +35,7 @@ DEFAULT_MODEL = "qwen3.5:9b"
 EXIT_OK = 0
 EXIT_FAILED = 1
 EXIT_UNAVAILABLE = 3
+EXIT_UNVERIFIED = 4
 EXIT_INTERRUPTED = 130  # 128 + SIGINT, the shell's convention for Ctrl-C
 
 # Bounds one run, in seconds. The slowest request measured on the target
@@ -208,7 +210,26 @@ async def _research(client: llm.Client, mcp_url: str, question: str) -> int:
     print(answer.text)
     if answer.truncated:
         _error("the answer was truncated: the model hit its token limit")
-    return EXIT_OK
+    return _verify(answer)
+
+
+def _verify(answer: agent.Answer) -> int:
+    """Checks every figure in a research answer against the data its tool
+    calls returned (design N1). The answer has already been printed, so a
+    person can see it; the findings and the exit status say it can't be
+    trusted."""
+    records = [provenance.Record(c.tool, c.result) for c in answer.calls if not c.failed]
+    try:
+        findings = provenance.check_prose(answer.text, provenance.Manifest(records))
+    except provenance.ProvenanceError as err:
+        _error(str(err))
+        return EXIT_FAILED
+    if not findings:
+        return EXIT_OK
+    _error(f"{len(findings)} figure(s) in the answer came from no tool result:")
+    for finding in findings:
+        print(f"  {finding}", file=sys.stderr)
+    return EXIT_UNVERIFIED
 
 
 def _trace(call: agent.Call) -> None:

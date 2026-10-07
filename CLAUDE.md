@@ -17,13 +17,17 @@ starting point here.
   `ModelNotFoundError(APIError)`; exit 3 when unavailable; lesson 03.
 - **Milestone 4 merged** (#5): async (ADR 0008), `asyncio.timeout`, Ctrl-C/SIGTERM exit 130; async
   tests through anyio's plugin; lesson 04.
-- **Milestone 5 in review** (branch `m5-the-first-real-tool`): the official MCP SDK (ADR 0009) behind
+- **Milestone 5 merged** (#6): the official MCP SDK (ADR 0009) behind
   `quantic_agent/quantic.py`; `llm.Client.chat` with tools; `tools.Tool` whose Pydantic arguments
   model is the schema (strict, extra forbidden); `agent.Researcher` with `typing.Protocol`s and an
   `on_call` callback per tool call; `--research`, `--mcp`/`QUANTIC_MCP_URL`; `quantic-evaltools`
   (cases in `src/quantic_agent/eval_cases.json`); `network.unreachable` shared by both clients. The
   fake MCP server (`quantic_mcp` fixture) replays `tests/fixtures/mcp/` for the real SDK; lesson 05.
   Go's `QUANTIC_MCP_TOKEN` isn't ported: nothing authenticated is needed yet (ADR 0006).
+- **Milestone 6 in review** (branch `m6-provenance`): `quantic_agent/provenance.py` (`Manifest`,
+  `check_data`, `check_prose`, `no_figures`); `--research` exits 4 for figures with no source.
+  Booleans are never numbers in the manifest (`True == 1`). Go's later fixes (numbers in words,
+  "16 and 17", list lengths, the question's and today's figures) come with milestone 8; lesson 06.
 - design.md's "As built in Go" notes link to quantic-agent-go's code: turn each into an "As built"
   note about this repository's code as its milestone is ported (§3.3's calculators done). The
   runbook's run history is the Go version's until milestones 7 and 8 port it.
@@ -41,8 +45,8 @@ starting point here.
 
 ## Next, in order
 
-1. **Port milestones 6–8 from quantic-agent-go**, in order, one PR each, each with its lesson and
-   walkthrough: 6 provenance, 7 SQLite, 8 the research loop (the Go
+1. **Port milestones 7–8 from quantic-agent-go**, in order, one PR each, each with its lesson and
+   walkthrough: 7 SQLite, 8 the research loop (the Go
    version's findings PRs included: numbers in words, today's date, `no_data`).
 2. **Milestone 9 — the worker pool**: serialised GPU, parallel I/O. The Week Ahead needs
    `get_stock` per company (amounts, yields), 20–40 calls paced under Quantic's 60/min limit.
