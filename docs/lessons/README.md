@@ -17,6 +17,7 @@ Ruby that turned out wrong, and what changed from the Go version and why.
 | [03](03-exceptions-you-can-tell-apart.md) | Exceptions you can tell apart | 3 — errors the agent can tell apart | [Exceptions you can tell apart](https://claude.ai/artifact/URFbirkFqqQNFbe2xfRqLJ) | [Errors, line by line](https://claude.ai/artifact/KjWES5unohRZjtyiMhxCBE) |
 | [04](04-async-deadlines-and-letting-go.md) | Async, deadlines and letting go | 4 — timeouts and cancellation | [Async, deadlines and letting go](https://claude.ai/artifact/Rrre4qcYJJdAMwTrMw1RLq) | [Deadlines, line by line](https://claude.ai/artifact/LjytQhW7PHSoTDN8XDn5Ps) |
 | [05](05-the-first-real-tool.md) | The first real tool | 5 — MCP client, schemas from types | [The first real tool](https://claude.ai/artifact/T5ixXHQr63Bx6Nuzwj1GJj) | [The first tool, line by line](https://claude.ai/artifact/JAHtPs3kXL3WZhwe4x1eiz) |
+| [06](06-every-figure-has-a-source.md) | Every figure has a source | 6 — the provenance validator | — | — |
 
 Lessons tell the story of a milestone: what surprised me and why. Walkthroughs go through the code
 itself in reading order, the way a tech lead would with a new teammate. Formatted pages are built

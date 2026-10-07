@@ -11,7 +11,8 @@ tool call; nothing ships without a human.
 > run has a deadline (`--timeout`), and Ctrl-C or `SIGTERM` cancels the request in flight, which frees
 > the GPU. `--research` answers a question with the local model and Quantic's MCP server, through
 > the official SDK, tracing each tool call; `quantic-evaltools` measures how reliably models call
-> tools. The deterministic calculators for derived figures are in, with their tests. The agent was first built in Go, up to milestone 8:
+> tools. Every research answer is checked: a number or date no tool returned is reported, and the
+> run exits 4. The deterministic calculators for derived figures are in, with their tests. The agent was first built in Go, up to milestone 8:
 > [quantic-agent-go](https://github.com/fleveque/quantic-agent-go), now archived. It continues here
 > in Python, chosen for what comes next: retrieval, document handling, model evaluation and
 > experimenting with local models ([decision 0007](docs/decisions/0007-continue-in-python.md)).
@@ -81,8 +82,8 @@ Python with Go. Milestones 0–8 are ports of the Go version; the lessons say wh
 | 2 | The Ollama client | `httpx`, Pydantic models, JSON at a boundary |
 | 3 | Errors the agent can tell apart | exceptions, hierarchies, chaining |
 | 4 | Timeouts and cancellation | `async`/`await`, `asyncio.timeout`, cancellation, signals |
-| 5 | The first tool: MCP client, schemas from types *(you are here)* | the MCP SDK, JSON Schema from Pydantic, `typing.Protocol`, exception groups |
-| 6 | Provenance | regular expressions, parsing numbers, parametrized tests |
+| 5 | The first tool: MCP client, schemas from types | the MCP SDK, JSON Schema from Pydantic, `typing.Protocol`, exception groups |
+| 6 | Provenance *(you are here)* | `re` with named groups, structural `match`, recursive type aliases |
 | 7 | SQLite: runs, drafts, audit log | `sqlite3`, migrations, transactions, file locks |
 | 8 | The research loop: budgets, retries, phases, resume | state machines, backoff with jitter |
 | 9 | Worker pool: serialised GPU, parallel I/O | concurrency in Python |

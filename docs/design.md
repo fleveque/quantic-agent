@@ -170,22 +170,27 @@ than regex extraction — and the prose is validated by the simpler assertion th
 unaccounted numerics at all. This also removes the locale number-format problem entirely: figures
 never appear in translated text.
 
-**As built in Go (milestone 6, [`internal/provenance`](https://github.com/fleveque/quantic-agent-go/tree/main/internal/provenance)).** The manifest indexes
+**As built (milestone 6, [`provenance.py`](../src/quantic_agent/provenance.py)).** The manifest indexes
 every number, date and string in a run's successful tool results, with the path each came from.
-`CheckData` holds a post's data block to it field by field, strings included, so an invented ticker
-fails like a rounded yield. `CheckProse` covers free text such as `agent -research` answers: it finds
+`check_data` holds a post's data block to it field by field, strings included, so an invented ticker
+fails like a rounded yield. `check_prose` covers free text such as `--research` answers: it finds
 numbers (currency, percent, thousands separators), dates (ISO, "Oct 8", "8 October 2026") and bare
 years, and reports any the manifest lacks. Matching is exact: a rounded, converted or derived figure is
 reported. The false positives above are handled by rule: digits inside words (`Q3`, `W38`) and list
 positions at a line start aren't claims, and a bare year counts if a returned date falls in it. Known
-limits, acceptable because post prose must have no figures at all (`NoFigures`): only English number
-formats are parsed. *(Updated after milestone 8: numbers written as words, two to ninety-nine, are
+limits, acceptable because post prose must have no figures at all (`no_figures`): only English
+number formats are parsed. Booleans are never indexed as numbers, since Python's `True == 1` and
+`False == 0` would let a tool's `"done": true` vouch for a "1". In six real research runs, four traced
+fully; the other two said "October 16 and 17", where the bare "17" isn't read as a date, and "to
+December 6, 2026", an end date the model computed from the window itself.
+
+*In Go (updated after milestone 8, to be ported with it): numbers written as words, two to ninety-nine, are
 figures too, and "October 16 and 17" reads as two dates. Besides returned values, the manifest
 accepts each list's length, so "nine stocks" checks against a nine-item calendar, and the figures of
 the question and of the date the run started, which the writer is told; see the
-[measurement](benchmarks/2026-10-07-writer/README.md).)* In real runs, five of six research
-answers traced fully; the sixth said "the next 4 months", a figure the model derived itself, which is
-exactly what N1 forbids.
+[measurement](benchmarks/2026-10-07-writer/README.md).) In Go's own real runs at milestone 6, five of
+six research answers traced fully; the sixth said "the next 4 months", a figure the model derived
+itself, which is exactly what N1 forbids.*
 
 ### 3.4 Retrieval (RAG)
 

@@ -203,3 +203,28 @@ def test_research_without_quantic_exits_3(
 
     assert code == 3
     assert f"no MCP server answering at {DEAD_URL}/mcp" in capsys.readouterr().err
+
+
+def test_research_reports_figures_no_tool_returned(
+    ollama: FakeOllama, quantic_mcp: FakeMCP, capsys: pytest.CaptureFixture[str]
+) -> None:
+    research_servers(ollama, quantic_mcp)
+    # The same exchange, but the answer claims a window the data doesn't cover.
+    ollama.replies["/api/chat"] = [
+        Reply(fixture("chat-tool-call.json")),
+        Reply(
+            b'{"model":"qwen3.5:9b","message":{"role":"assistant","content":'
+            b'"Over the next 180 days, Microsoft goes ex-dividend on Oct 8."},"done":true}'
+        ),
+    ]
+
+    code = main(["--ollama", ollama.url, "--mcp", quantic_mcp.url, "--research", "q"])
+
+    assert code == 4
+    out, err = capsys.readouterr()
+    # The answer is still shown, so a person can see what was claimed...
+    assert "180 days" in out
+    # ...and the figure with no source is named; the date traces to the data.
+    assert "1 figure(s) in the answer came from no tool result" in err
+    assert "'180' (number 180)" in err
+    assert "Oct 8" not in err

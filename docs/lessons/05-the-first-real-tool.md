@@ -273,4 +273,5 @@ covers 120, whatever the schema says. That's why the bound is enforced, not just
 
 ---
 
-**Previous:** [Lesson 04 — Async, deadlines and letting go](04-async-deadlines-and-letting-go.md)
+**Previous:** [Lesson 04 — Async, deadlines and letting go](04-async-deadlines-and-letting-go.md) ·
+**Next:** [Lesson 06 — Every figure has a source](06-every-figure-has-a-source.md)
