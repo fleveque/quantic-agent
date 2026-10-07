@@ -1,4 +1,7 @@
 import json
+import os
+import signal
+import threading
 from argparse import ArgumentTypeError
 from pathlib import Path
 
@@ -167,3 +170,46 @@ def test_it_stops_when_the_server_goes_away(
     assert "went away" in err
     # ...and the second model is never started.
     assert all(body["model"] != "second:latest" for body in ollama.bodies)
+
+
+MEASURED = Reply(
+    b'{"model":"first:latest","response":"done","done":true,"prompt_eval_count":10,'
+    b'"prompt_eval_duration":1000000,"eval_count":10,"eval_duration":1000000}'
+)
+
+
+def one_model(ollama: FakeOllama) -> None:
+    ollama.replies["/api/tags"] = Reply(b'{"models":[{"name":"first:latest","size":1}]}')
+    ollama.replies["/api/ps"] = Reply(b'{"models":[]}')
+
+
+def test_a_request_that_times_out_is_skipped(
+    ollama: FakeOllama, capsys: pytest.CaptureFixture[str]
+) -> None:
+    one_model(ollama)
+    # Warm-up answers, the first size never does, the second answers.
+    ollama.replies["/api/generate"] = [MEASURED, Reply(hang=True), MEASURED]
+
+    args = ["--models", "first:latest", "--contexts", "4096,8192", "--timeout", "0.3", "--json"]
+    assert main(["--ollama", ollama.url, *args]) == 0
+    out, err = capsys.readouterr()
+
+    assert [r["context_tokens"] for r in json.loads(out)] == [8192]
+    assert "first:latest at 4096: gave up after 0.3s (--timeout)" in err
+
+
+def test_ctrl_c_stops_the_run_and_keeps_what_was_measured(
+    ollama: FakeOllama, capsys: pytest.CaptureFixture[str]
+) -> None:
+    one_model(ollama)
+    # Warm-up and the first size answer; the second hangs until Ctrl-C.
+    ollama.replies["/api/generate"] = [MEASURED, MEASURED, Reply(hang=True)]
+    threading.Timer(0.3, os.kill, (os.getpid(), signal.SIGINT)).start()
+
+    args = ["--models", "first:latest", "--contexts", "4096,8192", "--json"]
+    assert main(["--ollama", ollama.url, *args]) == 130
+    out, err = capsys.readouterr()
+
+    assert [r["context_tokens"] for r in json.loads(out)] == [4096]
+    assert "the request in flight was cancelled" in err
+    assert ollama.wait_for_hangups(1)

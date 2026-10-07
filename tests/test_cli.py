@@ -1,3 +1,7 @@
+import os
+import signal
+import threading
+
 import pytest
 from conftest import DEAD_URL, FakeOllama, Reply
 
@@ -143,3 +147,25 @@ def test_check_and_ask_are_one_or_the_other(capsys: pytest.CaptureFixture[str]) 
         main(["--check", "--ask", "hi"])
     assert exit_.value.code == 2
     assert "not allowed with argument" in capsys.readouterr().err
+
+
+def test_timeout_gives_up(ollama: FakeOllama, capsys: pytest.CaptureFixture[str]) -> None:
+    ollama.replies["/api/generate"] = Reply(hang=True)
+
+    assert main(["--ollama", ollama.url, "--timeout", "0.2", "--ask", "hi"]) == 1
+    assert "gave up after 0.2s (--timeout)" in capsys.readouterr().err
+    assert ollama.wait_for_hangups(1)
+
+
+@pytest.mark.parametrize("signum", [signal.SIGINT, signal.SIGTERM], ids=["ctrl-c", "sigterm"])
+def test_a_signal_cancels_the_request_in_flight(
+    ollama: FakeOllama, signum: signal.Signals, capsys: pytest.CaptureFixture[str]
+) -> None:
+    ollama.replies["/api/generate"] = Reply(hang=True)
+    # The real signal, to this process, while the request hangs.
+    threading.Timer(0.3, os.kill, (os.getpid(), signum)).start()
+
+    assert main(["--ollama", ollama.url, "--ask", "hi"]) == 130
+    assert "the request in flight was cancelled" in capsys.readouterr().err
+    # Cancelling closed the connection, so Ollama would stop generating.
+    assert ollama.wait_for_hangups(1)

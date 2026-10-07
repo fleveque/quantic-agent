@@ -7,8 +7,10 @@ tool call; nothing ships without a human.
 > **Status: milestone 3.** The design, decisions and benchmarks are carried over from the Go version.
 > The agent reaches the local model server: `quantic-agent --check` reports the server and its models,
 > `--ask` sends one prompt, and `quantic-bench` measures speed and GPU residency per model. Failures
-> come in kinds a caller can tell apart: a stopped Ollama exits with status 3, safe to retry. The
-> deterministic calculators the research loop will call for derived figures are in, with their tests. The agent was first built in Go, up to milestone 8:
+> come in kinds a caller can tell apart: a stopped Ollama exits with status 3, safe to retry. Every
+> run has a deadline (`--timeout`), and Ctrl-C or `SIGTERM` cancels the request in flight, which frees
+> the GPU. The deterministic calculators the research loop will call for derived figures are in,
+> with their tests. The agent was first built in Go, up to milestone 8:
 > [quantic-agent-go](https://github.com/fleveque/quantic-agent-go), now archived. It continues here
 > in Python, chosen for what comes next: retrieval, document handling, model evaluation and
 > experimenting with local models ([decision 0007](docs/decisions/0007-continue-in-python.md)).
@@ -76,8 +78,8 @@ Python with Go. Milestones 0–8 are ports of the Go version; the lessons say wh
 | 0 | Layout and design | `pyproject.toml`, `uv`, packages and `sys.path`, `src/` layout, privacy by convention |
 | 1 | First code and tests | modules, functions and types, `pytest`, a command entry point |
 | 2 | The Ollama client | `httpx`, Pydantic models, JSON at a boundary |
-| 3 | Errors the agent can tell apart *(you are here)* | exceptions, hierarchies, chaining |
-| 4 | Timeouts and cancellation | deadlines, cancellation, signals, clean shutdown |
+| 3 | Errors the agent can tell apart | exceptions, hierarchies, chaining |
+| 4 | Timeouts and cancellation *(you are here)* | `async`/`await`, `asyncio.timeout`, cancellation, signals |
 | 5 | The first tool: MCP client, schemas from types | JSON Schema from Pydantic, Streamable HTTP and SSE |
 | 6 | Provenance | regular expressions, parsing numbers, parametrized tests |
 | 7 | SQLite: runs, drafts, audit log | `sqlite3`, migrations, transactions, file locks |

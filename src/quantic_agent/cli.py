@@ -4,13 +4,17 @@ It still has no scheduled tasks. What it can do so far is reach the local
 model server: --check reports the server and its models, --ask sends one
 prompt and prints the reply.
 
-Exit status: 0 success, 1 failure, 2 wrong usage, 3 the model server wasn't
-there to answer. 3 means nothing was attempted, so a scheduler can simply run
-the same command again later (design §3.6).
+Exit status: 0 success, 1 failure (including --timeout running out), 2 wrong
+usage, 3 the model server wasn't there to answer, 130 stopped by Ctrl-C or
+SIGTERM. 3 means nothing was attempted, so a scheduler can simply run the same
+command again later (design §3.6). On 130 the request in flight was
+cancelled, and Ollama stops working on it too.
 """
 
 import argparse
+import asyncio
 import os
+import signal
 import sys
 from collections.abc import Sequence
 from importlib.metadata import version
@@ -26,6 +30,14 @@ DEFAULT_MODEL = "qwen3.5:9b"
 EXIT_OK = 0
 EXIT_FAILED = 1
 EXIT_UNAVAILABLE = 3
+EXIT_INTERRUPTED = 130  # 128 + SIGINT, the shell's convention for Ctrl-C
+
+# Bounds one run, in seconds. The slowest request measured on the target
+# machine took 94s (a 27B partly in system RAM, 64K context) and the slowest
+# cold load 31s, so five minutes leaves more than double. It must never be
+# short enough to cut off a load: cancelling a load aborts it, and the next
+# attempt starts from zero.
+DEFAULT_TIMEOUT = 300.0
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -59,19 +71,64 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=os.environ.get("QUANTIC_MODEL") or DEFAULT_MODEL,
         help="model to generate with (default: $QUANTIC_MODEL, else %(default)s)",
     )
+    parser.add_argument(
+        "--timeout",
+        type=float,
+        default=DEFAULT_TIMEOUT,
+        metavar="SECONDS",
+        help="give up on the model server after this long; 0 for no limit (default: %(default)g)",
+    )
     args = parser.parse_args(argv)
 
     if not args.check and args.ask is None:
         print("quantic-agent: no tasks defined yet")
         return EXIT_OK
 
-    with llm.Client(args.ollama, args.model) as client:
+    # asyncio.run turns Ctrl-C into a cancellation of _run, then re-raises it
+    # here as KeyboardInterrupt once _run has unwound. SIGTERM cancels _run
+    # too (cancel_on_sigterm), and arrives as the CancelledError itself.
+    try:
+        return asyncio.run(_run(args))
+    except KeyboardInterrupt, asyncio.CancelledError:
+        _error("stopped; the request in flight was cancelled")
+        return EXIT_INTERRUPTED
+
+
+async def _run(args: argparse.Namespace) -> int:
+    cancel_on_sigterm()
+    async with llm.Client(args.ollama, args.model) as client:
         try:
-            if args.check:
-                return _check(client, args.ollama)
-            return _ask(client, args.ask)
+            # One deadline for the whole run, whatever it does inside; None
+            # means no limit.
+            async with asyncio.timeout(args.timeout or None):
+                if args.check:
+                    return await _check(client, args.ollama)
+                return await _ask(client, args.ask)
+        except TimeoutError:
+            _error(
+                f"gave up after {args.timeout:g}s (--timeout). A cold model can take "
+                "half a minute to load, and a long generation longer."
+            )
+            return EXIT_FAILED
         except llm.LLMError as err:
             return _fail(err, args.ollama, args.model)
+
+
+def cancel_on_sigterm() -> None:
+    """Makes SIGTERM, what systemd sends to stop a service, cancel the running
+    task the way Ctrl-C does. Only the first one: after it, SIGTERM is back to
+    its default, so a second one ends the process at once instead of waiting
+    for a clean stop."""
+    loop = asyncio.get_running_loop()
+    task = asyncio.current_task()
+    if task is None:
+        return
+
+    def stop() -> None:
+        loop.remove_signal_handler(signal.SIGTERM)
+        task.cancel()
+
+    loop.add_signal_handler(signal.SIGTERM, stop)
 
 
 def _fail(err: llm.LLMError, base_url: str, model: str) -> int:
@@ -102,10 +159,10 @@ def _error(message: str) -> None:
     print(f"quantic-agent: {message}", file=sys.stderr)
 
 
-def _check(client: llm.Client, base_url: str) -> int:
-    print(f"ollama {client.version()} at {base_url}")
+async def _check(client: llm.Client, base_url: str) -> int:
+    print(f"ollama {await client.version()} at {base_url}")
     selected = False
-    for m in client.models():
+    for m in await client.models():
         # Names compare case-insensitively because that is how Ollama
         # resolves them.
         marker = " "
@@ -124,10 +181,10 @@ def _check(client: llm.Client, base_url: str) -> int:
     return EXIT_OK
 
 
-def _ask(client: llm.Client, prompt: str) -> int:
+async def _ask(client: llm.Client, prompt: str) -> int:
     # Thinking is suppressed: the agent wants the answer, and a reasoning
     # trace is text nothing downstream is allowed to publish.
-    resp = client.generate(prompt, think=False)
+    resp = await client.generate(prompt, think=False)
     print(resp.response)
     # The run line goes to stderr so that stdout stays pipeable.
     note = " · truncated: hit the token limit" if resp.truncated else ""

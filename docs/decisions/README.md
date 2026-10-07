@@ -11,6 +11,7 @@ Why the design is what it is, one decision per file. New decisions are numbered 
 | [0005](0005-default-model-by-measurement.md) | Keep the 9B as default; choose models by measurement, repeatedly | 2026-09-26 |
 | [0006](0006-anonymous-mcp-for-public-tools.md) | Connect to Quantic's MCP server anonymously; a service token when it's needed | 2026-10-06 |
 | [0007](0007-continue-in-python.md) | Continue the agent in Python; the Go version is finished | 2026-10-07 |
+| [0008](0008-async-for-deadlines-and-cancellation.md) | Async: asyncio and httpx.AsyncClient, for deadlines and cancellation | 2026-10-07 |
 
 **0001–0007 were written for the Go version**, [quantic-agent-go](https://github.com/fleveque/quantic-agent-go),
 and are carried over unchanged, links aside: they are records of what was decided and why, at the

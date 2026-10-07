@@ -232,4 +232,5 @@ requests succeed and drops the third.
 
 ---
 
-**Previous:** [Lesson 02 — Pydantic models and one HTTP call](02-pydantic-models-and-one-http-call.md)
+**Previous:** [Lesson 02 — Pydantic models and one HTTP call](02-pydantic-models-and-one-http-call.md) ·
+**Next:** [Lesson 04 — Async, deadlines and letting go](04-async-deadlines-and-letting-go.md)

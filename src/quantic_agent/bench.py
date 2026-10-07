@@ -7,16 +7,17 @@ benchmark travels with the repository and runs where the agent will.
 """
 
 import argparse
+import asyncio
 import os
 import secrets
 import sys
-from collections.abc import Iterator, Sequence
+from collections.abc import AsyncIterator, Sequence
 from datetime import timedelta
 
 from pydantic import BaseModel, TypeAdapter
 
 from quantic_agent import llm
-from quantic_agent.cli import short_count
+from quantic_agent.cli import cancel_on_sigterm, short_count
 
 # The candidates for design open question 9: the 9B that fits with room to
 # spare, and Qwen3.8-27B at two sub-4-bit quantisations that Ollama's own
@@ -24,6 +25,12 @@ from quantic_agent.cli import short_count
 DEFAULT_MODELS = (
     "qwen3.5:9b,hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S,hf.co/unsloth/Qwen3.8-27B-GGUF:UD-Q3_K_XL"
 )
+
+
+# Bounds each request, not the whole run, in seconds. The slowest request
+# measured so far took 94s (a 27B partly in system RAM at 64K, generating 128
+# tokens), and --predict can ask for far more, so the margin is wide.
+DEFAULT_TIMEOUT = 600.0
 
 
 class Result(BaseModel):
@@ -73,100 +80,146 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         "--json", action="store_true", help="emit results as JSON instead of a table"
     )
+    parser.add_argument(
+        "--timeout",
+        type=float,
+        default=DEFAULT_TIMEOUT,
+        metavar="SECONDS",
+        help="give up on any single request after this long; 0 for no limit (default: %(default)g)",
+    )
     args = parser.parse_args(argv)
+    try:
+        return asyncio.run(_run(args))
+    except KeyboardInterrupt:
+        # A second Ctrl-C while the first was still being handled.
+        print("quantic-bench: stopped", file=sys.stderr)
+        return 130
+
+
+async def _run(args: argparse.Namespace) -> int:
+    cancel_on_sigterm()
     sizes: list[int] = args.contexts
     wanted = [m.strip() for m in args.models.split(",") if m.strip()]
+    timeout: float | None = args.timeout or None
 
     try:
-        with llm.Client(args.ollama, "") as lister:
-            present = {m.name.casefold() for m in lister.models()}
-    except llm.LLMError as err:
-        print(f"quantic-bench: {err}", file=sys.stderr)
+        async with llm.Client(args.ollama, "") as lister, asyncio.timeout(timeout):
+            present = {m.name.casefold() for m in await lister.models()}
+    except (llm.LLMError, TimeoutError) as err:
+        print(f"quantic-bench: {err or 'timed out listing models'}", file=sys.stderr)
         return 1
 
     results: list[Result] = []
+    interrupted = False
     try:
         for name in wanted:
             if name.casefold() not in present:
                 print(f"quantic-bench: {name} is not on this server, skipping", file=sys.stderr)
                 continue
-            with llm.Client(args.ollama, name) as client:
-                for result in _measure_model(client, sizes, args.predict):
+            async with llm.Client(args.ollama, name) as client:
+                async for result in _measure_model(client, sizes, args.predict, timeout):
                     results.append(result)
     except llm.ServerUnavailableError as err:
         # Every later request would fail the same way. Stop, and report what
         # was measured before the server went away.
         print(f"quantic-bench: {err}", file=sys.stderr)
         print("quantic-bench: the model server went away; stopping", file=sys.stderr)
+    except asyncio.CancelledError:
+        # Ctrl-C or SIGTERM. Swallowing a cancellation is only right at the
+        # top of the program, where nothing else waits for it: here, so that
+        # what was measured is still reported. uncancel() records that it was
+        # handled.
+        interrupted = True
+        if task := asyncio.current_task():
+            task.uncancel()
 
+    code = 0
+    if interrupted:
+        print("quantic-bench: stopped; the request in flight was cancelled", file=sys.stderr)
+        code = 130
     if not results:
         print("quantic-bench: nothing measured", file=sys.stderr)
-        return 1
+        return max(code, 1)
     if args.json:
         print(_RESULTS.dump_json(results, indent=2).decode())
     else:
         _write_table(results)
-    return 0
+    return code
 
 
-def _measure_model(client: llm.Client, sizes: list[int], predict: int) -> Iterator[Result]:
+async def _measure_model(
+    client: llm.Client, sizes: list[int], predict: int, timeout: float | None
+) -> AsyncIterator[Result]:
     """Measures one model at each size, yielding each result as it's made.
 
-    A failure for one size is reported and the next size tried, except that
-    the server being unavailable propagates: the caller keeps every result
-    already yielded, and stops.
+    A failure or timeout for one size is reported and the next size tried. The
+    server being unavailable and a cancellation propagate: the caller keeps
+    every result already yielded, and stops.
     """
     # One untimed call first, so the measurements exclude loading the weights
     # and load time is reported once rather than smeared over the first size.
     try:
-        warm = client.generate(
-            "Reply with the single word: ready.",
-            think=False,
-            options=llm.Options(num_predict=1, num_ctx=sizes[0]),
-        )
+        async with asyncio.timeout(timeout):
+            warm = await client.generate(
+                "Reply with the single word: ready.",
+                think=False,
+                options=llm.Options(num_predict=1, num_ctx=sizes[0]),
+            )
     except llm.ServerUnavailableError:
         raise
-    except llm.LLMError as err:
-        print(f"quantic-bench: {client.model}: {err}", file=sys.stderr)
+    except (llm.LLMError, TimeoutError) as err:
+        print(f"quantic-bench: {client.model}: {_describe(err, timeout)}", file=sys.stderr)
         return
 
-    for ctx in sizes:
+    for size in sizes:
         try:
-            result = _measure(client, ctx, predict, warm.load_duration)
+            result = await _measure(client, size, predict, warm.load_duration, timeout)
         except llm.ServerUnavailableError:
             raise
-        except llm.LLMError as err:
-            print(f"quantic-bench: {client.model} at {ctx}: {err}", file=sys.stderr)
+        except (llm.LLMError, TimeoutError) as err:
+            print(
+                f"quantic-bench: {client.model} at {size}: {_describe(err, timeout)}",
+                file=sys.stderr,
+            )
             continue
         yield result
 
 
-def _measure(client: llm.Client, ctx: int, predict: int, load: timedelta) -> Result:
+def _describe(err: Exception, timeout: float | None) -> str:
+    if isinstance(err, TimeoutError):
+        return f"gave up after {timeout:g}s (--timeout)"
+    return str(err)
+
+
+async def _measure(
+    client: llm.Client, size: int, predict: int, load: timedelta, timeout: float | None
+) -> Result:
     """One generation, with the rates the server itself counted. Ollama returns
     token counts and durations per phase, so nothing here is timed with a wall
     clock that would include HTTP."""
-    resp = client.generate(
-        filler_prompt(ctx * 8 // 10),
-        think=False,
-        options=llm.Options(num_predict=predict, num_ctx=ctx),
-    )
-    r = Result(
-        model=client.model,
-        context_tokens=ctx,
-        prompt_tokens=resp.prompt_eval_count,
-        prompt_tokens_per_second=_rate(resp.prompt_eval_count, resp.prompt_eval_duration),
-        generated_tokens=resp.eval_count,
-        generated_tokens_per_second=_rate(resp.eval_count, resp.eval_duration),
-        total_seconds=resp.total_duration.total_seconds(),
-        load_seconds=load.total_seconds(),
-        generated_tokens_requested=predict,
-    )
-    # Residency is only knowable while the model is still held, so ask right
-    # after the generation rather than at the end of the run.
-    try:
-        running = client.running()
-    except llm.LLMError:
-        return r  # the measurement stands; residency is a bonus
+    async with asyncio.timeout(timeout):
+        resp = await client.generate(
+            filler_prompt(size * 8 // 10),
+            think=False,
+            options=llm.Options(num_predict=predict, num_ctx=size),
+        )
+        r = Result(
+            model=client.model,
+            context_tokens=size,
+            prompt_tokens=resp.prompt_eval_count,
+            prompt_tokens_per_second=_rate(resp.prompt_eval_count, resp.prompt_eval_duration),
+            generated_tokens=resp.eval_count,
+            generated_tokens_per_second=_rate(resp.eval_count, resp.eval_duration),
+            total_seconds=resp.total_duration.total_seconds(),
+            load_seconds=load.total_seconds(),
+            generated_tokens_requested=predict,
+        )
+        # Residency is only knowable while the model is still held, so ask
+        # right after the generation rather than at the end of the run.
+        try:
+            running = await client.running()
+        except llm.LLMError:
+            return r  # the measurement stands; residency is a bonus
     for m in running:
         if m.name.casefold() == client.model.casefold():
             r.size_bytes, r.vram_bytes, r.fraction_on_gpu = m.size, m.size_vram, m.on_gpu
