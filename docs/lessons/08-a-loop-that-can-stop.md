@@ -8,6 +8,9 @@ what Go's did after its milestone 8, and two things more, both found in real run
 library that commits behind your back unless asked not to, an SDK that hides a rate limit as a
 mistake, and an answer that passed every check and was wrong.
 
+*Also readable as a [formatted page](https://claude.ai/artifact/VqfYLE86knX1NP1Agt9XNP), with a [code walkthrough](https://claude.ai/artifact/R4AmcMHTenLcAeaQqAWeDY) of every change the
+milestone made.*
+
 ---
 
 ## Migrations, by hand and with Alembic
