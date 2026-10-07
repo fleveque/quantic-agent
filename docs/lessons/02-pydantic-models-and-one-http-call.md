@@ -6,6 +6,9 @@ and `net/http`. In Python it's Pydantic and httpx, and most of the Go lesson's c
 unnecessary. Two of the defaults would have broken the client without saying anything, though, and
 neither one made a sound until a test compared numbers.
 
+*Also readable as a [formatted page](https://claude.ai/artifact/UsGoUQ6UEyicTvGaWCHyeC), with a [code walkthrough](https://claude.ai/artifact/EZRDtdwTdMmHzqqjSNsTZM) of every file the
+milestone added or changed.*
+
 ---
 
 ## What landed
