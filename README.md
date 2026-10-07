@@ -4,9 +4,9 @@ A local agent that drafts data-grounded content and data-quality reports for
 [Quantic](https://quantic.finance), using local models through Ollama. Every figure traces to a real
 tool call; nothing ships without a human.
 
-> **Status: milestone 0.** The design, decisions and benchmarks are carried over from the Go version,
-> and the Python project is set up: `uv`, `ruff`, strict `pyright` and `pytest`, all in CI. No agent
-> code yet. The agent was first built in Go, up to milestone 8:
+> **Status: milestone 1.** The design, decisions and benchmarks are carried over from the Go version,
+> and the first code is in: a `quantic-agent` command with nothing to do yet, and the deterministic
+> calculators the research loop will call for derived figures, with their tests. The agent was first built in Go, up to milestone 8:
 > [quantic-agent-go](https://github.com/fleveque/quantic-agent-go), now archived. It continues here
 > in Python, chosen for what comes next: retrieval, document handling, model evaluation and
 > experimenting with local models ([decision 0007](docs/decisions/0007-continue-in-python.md)).
@@ -71,8 +71,8 @@ Python with Go. Milestones 0–8 are ports of the Go version; the lessons say wh
 
 | # | Milestone | Python ground covered |
 |---|---|---|
-| 0 | Layout and design *(you are here)* | `pyproject.toml`, `uv`, packages and `sys.path`, `src/` layout, privacy by convention |
-| 1 | First code and tests | modules, functions and types, `pytest`, a command entry point |
+| 0 | Layout and design | `pyproject.toml`, `uv`, packages and `sys.path`, `src/` layout, privacy by convention |
+| 1 | First code and tests *(you are here)* | modules, functions and types, `pytest`, a command entry point |
 | 2 | The Ollama client | `httpx`, Pydantic models, JSON at a boundary |
 | 3 | Errors the agent can tell apart | exceptions, hierarchies, chaining |
 | 4 | Timeouts and cancellation | deadlines, cancellation, signals, clean shutdown |
@@ -99,6 +99,7 @@ uv run ruff format --check .
 uv run ruff check .
 uv run pyright               # strict
 uv run pytest
+uv run quantic-agent --version
 ```
 
 CI also checks that relative links in the docs resolve. Setting up the machine the agent runs on is in

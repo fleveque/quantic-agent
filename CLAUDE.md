@@ -8,11 +8,18 @@ starting point here.
 
 ## Status — 2026-10-07
 
-- **Milestone 0 in review** (branch `m0-layout-and-design`): design, ADRs 0001–0007 and benchmarks
-  carried over; `pyproject.toml`, `src/quantic_agent/`, one layout test; lesson 00. design.md's "As
-  built in Go" notes link to quantic-agent-go's code: turn each into an "As built" note about this
-  repository's code as its milestone is ported. The runbook's commands are the Go version's until
-  milestones 2, 5, 7 and 8 port them.
+- **Milestone 0 merged** (#1): design, ADRs 0001–0007 and benchmarks carried over; lesson 00.
+- **Milestone 1 in review** (branch `m1-first-code-and-tests`): `quantic_agent/cli.py` (argparse,
+  `--version`, entry point `quantic-agent`), `quantic_agent/tools.py` (`pct_change`, `diff`, `total`),
+  parametrized tests; CI's milestone-0 guard removed; lesson 01.
+- design.md's "As built in Go" notes link to quantic-agent-go's code: turn each into an "As built"
+  note about this repository's code as its milestone is ported (§3.3's calculators done). The
+  runbook's commands are the Go version's until milestones 2, 5, 7 and 8 port them.
+- PRs are squash-merged: after merge, republish the walkthrough citing the commit on `main`.
+- `ruff format --check` also formats ```` ```python ```` blocks in Markdown: lesson snippets must be
+  valid, formatted Python, or use an unlabelled fence for verbatim quotes and fragments.
+- Break-it experiments: a same-size edit within the same second runs stale bytecode. Run them with
+  `PYTHONDONTWRITEBYTECODE=1 uv run pytest -p no:cacheprovider`.
 - `uv` comes from mise (`mise use -g uv@latest`); in a non-login shell, `eval "$(mise env -s bash)"`
   first.
 - `docs/lessons/pages/build.py` is in the gate (ruff, strict pyright). Its `^` end marker takes a
@@ -20,8 +27,8 @@ starting point here.
 
 ## Next, in order
 
-1. **Port milestones 1–8 from quantic-agent-go**, in order, one PR each, each with its lesson and
-   walkthrough: 1 first code and tests, 2 the Ollama client, 3 errors, 4 timeouts and cancellation, 5 the first
+1. **Port milestones 2–8 from quantic-agent-go**, in order, one PR each, each with its lesson and
+   walkthrough: 2 the Ollama client, 3 errors, 4 timeouts and cancellation, 5 the first
    tool (MCP client, schemas from types), 6 provenance, 7 SQLite, 8 the research loop (the Go
    version's findings PRs included: numbers in words, today's date, `no_data`).
 2. **Milestone 9 — the worker pool**: serialised GPU, parallel I/O. The Week Ahead needs

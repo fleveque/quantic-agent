@@ -9,6 +9,11 @@ authors = [{ name = "Francesc Leveque" }]
 requires-python = ">=3.14"
 dependencies = []
 
+# `uv sync` installs this as .venv/bin/quantic-agent: a small script that
+# imports quantic_agent.cli and exits with what main() returns.
+[project.scripts]
+quantic-agent = "quantic_agent.cli:main"
+
 # Tools for working on the agent, not for running it: `uv sync` installs them,
 # a built wheel doesn't carry them.
 [dependency-groups]
