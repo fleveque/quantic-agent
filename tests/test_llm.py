@@ -253,3 +253,50 @@ async def test_cancelling_ends_the_request(ollama: FakeOllama) -> None:
 )
 def test_on_gpu_fraction(size: int, size_vram: int, want: float) -> None:
     assert llm.RunningModel(name="m", size=size, size_vram=size_vram).on_gpu == want
+
+
+async def test_chat_reads_a_tool_call(ollama: FakeOllama) -> None:
+    # One real exchange with qwen3.5:9b: the model's first reply asks for a tool.
+    ollama.replies["/api/chat"] = Reply(fixture("chat-tool-call.json"))
+    definition = llm.ToolDef(
+        function=llm.FunctionDef(name="dividend_calendar", description="d", parameters={})
+    )
+
+    async with llm.Client(ollama.url, "qwen3.5:9b") as client:
+        resp = await client.chat(
+            [llm.Message(role="user", content="next 10 days?")], tools=[definition], think=False
+        )
+
+    assert resp.message.content == ""
+    assert resp.message.tool_calls is not None
+    call = resp.message.tool_calls[0].function
+    # Ollama sends the arguments as a JSON object, not a string.
+    assert (call.name, call.arguments) == ("dividend_calendar", {"days": 10})
+
+    sent = ollama.bodies[0]
+    assert sent["stream"] is False
+    assert sent["tools"][0]["function"]["name"] == "dividend_calendar"
+    # Unset message fields aren't sent: no "tool_calls": null for a user message.
+    assert sent["messages"] == [{"role": "user", "content": "next 10 days?"}]
+
+
+async def test_chat_sends_a_tool_result_back(ollama: FakeOllama) -> None:
+    ollama.replies["/api/chat"] = Reply(fixture("chat-tool-answer.json"))
+    asked = llm.Message(
+        role="assistant",
+        tool_calls=[
+            llm.ToolCall(
+                function=llm.FunctionCall(name="dividend_calendar", arguments={"days": 10})
+            )
+        ],
+    )
+    result = llm.Message(role="tool", tool_name="dividend_calendar", content='{"stocks":[]}')
+
+    async with llm.Client(ollama.url, "qwen3.5:9b") as client:
+        resp = await client.chat([asked, result])
+
+    assert resp.message.tool_calls is None
+    assert "ex-dividend" in resp.message.content
+    sent = ollama.bodies[0]["messages"]
+    assert sent[0]["tool_calls"][0]["function"]["arguments"] == {"days": 10}
+    assert sent[1] == {"role": "tool", "content": '{"stocks":[]}', "tool_name": "dividend_calendar"}

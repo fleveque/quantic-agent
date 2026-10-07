@@ -236,4 +236,5 @@ copies in parallel to load the machine: no failures.
 
 ---
 
-**Previous:** [Lesson 03 — Exceptions you can tell apart](03-exceptions-you-can-tell-apart.md)
+**Previous:** [Lesson 03 — Exceptions you can tell apart](03-exceptions-you-can-tell-apart.md) ·
+**Next:** [Lesson 05 — The first real tool](05-the-first-real-tool.md)

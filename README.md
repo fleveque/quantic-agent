@@ -9,8 +9,9 @@ tool call; nothing ships without a human.
 > `--ask` sends one prompt, and `quantic-bench` measures speed and GPU residency per model. Failures
 > come in kinds a caller can tell apart: a stopped Ollama exits with status 3, safe to retry. Every
 > run has a deadline (`--timeout`), and Ctrl-C or `SIGTERM` cancels the request in flight, which frees
-> the GPU. The deterministic calculators the research loop will call for derived figures are in,
-> with their tests. The agent was first built in Go, up to milestone 8:
+> the GPU. `--research` answers a question with the local model and Quantic's MCP server, through
+> the official SDK, tracing each tool call; `quantic-evaltools` measures how reliably models call
+> tools. The deterministic calculators for derived figures are in, with their tests. The agent was first built in Go, up to milestone 8:
 > [quantic-agent-go](https://github.com/fleveque/quantic-agent-go), now archived. It continues here
 > in Python, chosen for what comes next: retrieval, document handling, model evaluation and
 > experimenting with local models ([decision 0007](docs/decisions/0007-continue-in-python.md)).
@@ -79,8 +80,8 @@ Python with Go. Milestones 0–8 are ports of the Go version; the lessons say wh
 | 1 | First code and tests | modules, functions and types, `pytest`, a command entry point |
 | 2 | The Ollama client | `httpx`, Pydantic models, JSON at a boundary |
 | 3 | Errors the agent can tell apart | exceptions, hierarchies, chaining |
-| 4 | Timeouts and cancellation *(you are here)* | `async`/`await`, `asyncio.timeout`, cancellation, signals |
-| 5 | The first tool: MCP client, schemas from types | JSON Schema from Pydantic, Streamable HTTP and SSE |
+| 4 | Timeouts and cancellation | `async`/`await`, `asyncio.timeout`, cancellation, signals |
+| 5 | The first tool: MCP client, schemas from types *(you are here)* | the MCP SDK, JSON Schema from Pydantic, `typing.Protocol`, exception groups |
 | 6 | Provenance | regular expressions, parsing numbers, parametrized tests |
 | 7 | SQLite: runs, drafts, audit log | `sqlite3`, migrations, transactions, file locks |
 | 8 | The research loop: budgets, retries, phases, resume | state machines, backoff with jitter |
@@ -106,7 +107,9 @@ uv run pytest
 uv run quantic-agent --version
 uv run quantic-agent --check                 # is the model server up, and what does it have?
 uv run quantic-agent --ask "say hello"       # one prompt, one reply
+uv run quantic-agent --research "What goes ex-dividend this week?"   # model + Quantic's tools
 uv run quantic-bench                         # tokens/second and GPU residency per model
+uv run quantic-evaltools                     # how reliably each model calls tools
 ```
 
 `--ollama` / `OLLAMA_HOST` and `--model` / `QUANTIC_MODEL` choose the server and the model; nothing

@@ -1,9 +1,10 @@
 import os
+import re
 import signal
 import threading
 
 import pytest
-from conftest import DEAD_URL, FakeOllama, Reply
+from conftest import DEAD_URL, FakeMCP, FakeOllama, Reply, fixture
 
 from quantic_agent.cli import main
 
@@ -169,3 +170,36 @@ def test_a_signal_cancels_the_request_in_flight(
     assert "the request in flight was cancelled" in capsys.readouterr().err
     # Cancelling closed the connection, so Ollama would stop generating.
     assert ollama.wait_for_hangups(1)
+
+
+def research_servers(ollama: FakeOllama, quantic_mcp: FakeMCP) -> None:
+    # A real exchange with qwen3.5:9b: it asks for the calendar, then answers.
+    ollama.replies["/api/chat"] = [
+        Reply(fixture("chat-tool-call.json")),
+        Reply(fixture("chat-tool-answer.json")),
+    ]
+    quantic_mcp.tools["dividend_calendar"] = "call-dividend-calendar.sse"
+
+
+def test_research(
+    ollama: FakeOllama, quantic_mcp: FakeMCP, capsys: pytest.CaptureFixture[str]
+) -> None:
+    research_servers(ollama, quantic_mcp)
+
+    code = main(["--ollama", ollama.url, "--mcp", quantic_mcp.url, "--research", "next 10 days?"])
+
+    assert code == 0
+    out, err = capsys.readouterr()
+    assert "ex-dividend" in out
+    # Each tool call is traced on stderr as it completes.
+    assert re.search(r'tool dividend_calendar \{"days": 10\} → \d+ bytes \(\d+ms\)', err)
+    assert quantic_mcp.calls() == [{"name": "dividend_calendar", "arguments": {"days": 10}}]
+
+
+def test_research_without_quantic_exits_3(
+    ollama: FakeOllama, capsys: pytest.CaptureFixture[str]
+) -> None:
+    code = main(["--ollama", ollama.url, "--mcp", DEAD_URL + "/mcp", "--research", "q"])
+
+    assert code == 3
+    assert f"no MCP server answering at {DEAD_URL}/mcp" in capsys.readouterr().err

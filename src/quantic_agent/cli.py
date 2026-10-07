@@ -1,11 +1,13 @@
 """The quantic-agent command.
 
-It still has no scheduled tasks. What it can do so far is reach the local
-model server: --check reports the server and its models, --ask sends one
-prompt and prints the reply.
+It still has no scheduled tasks. What it can do so far: --check reports the
+model server and its models, --ask sends one prompt and prints the reply, and
+--research answers a question with Quantic's tools, tracing each tool call to
+stderr as it completes.
 
 Exit status: 0 success, 1 failure (including --timeout running out), 2 wrong
-usage, 3 the model server wasn't there to answer, 130 stopped by Ctrl-C or
+usage, 3 the model server or the MCP server wasn't there to answer, 130
+stopped by Ctrl-C or
 SIGTERM. 3 means nothing was attempted, so a scheduler can simply run the same
 command again later (design §3.6). On 130 the request in flight was
 cancelled, and Ollama stops working on it too.
@@ -13,13 +15,15 @@ cancelled, and Ollama stops working on it too.
 
 import argparse
 import asyncio
+import json
 import os
 import signal
 import sys
 from collections.abc import Sequence
 from importlib.metadata import version
 
-from quantic_agent import llm
+from quantic_agent import agent, llm, quantic
+from quantic_agent.tools import DIVIDEND_CALENDAR
 
 # The safe choice for the target hardware (design §4): it fits any 16GB card
 # with room to spare. Development happens on a different machine, so both
@@ -61,6 +65,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--check", action="store_true", help="report the model server and its models"
     )
     action.add_argument("--ask", metavar="PROMPT", help="send one prompt and print the reply")
+    action.add_argument(
+        "--research", metavar="QUESTION", help="answer a question using Quantic's tools"
+    )
     parser.add_argument(
         "--ollama",
         default=os.environ.get("OLLAMA_HOST") or llm.DEFAULT_BASE_URL,
@@ -72,6 +79,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="model to generate with (default: $QUANTIC_MODEL, else %(default)s)",
     )
     parser.add_argument(
+        "--mcp",
+        default=os.environ.get("QUANTIC_MCP_URL") or quantic.DEFAULT_URL,
+        help="Quantic's MCP server (default: $QUANTIC_MCP_URL, else %(default)s)",
+    )
+    parser.add_argument(
         "--timeout",
         type=float,
         default=DEFAULT_TIMEOUT,
@@ -80,7 +92,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    if not args.check and args.ask is None:
+    if not args.check and args.ask is None and args.research is None:
         print("quantic-agent: no tasks defined yet")
         return EXIT_OK
 
@@ -103,6 +115,8 @@ async def _run(args: argparse.Namespace) -> int:
             async with asyncio.timeout(args.timeout or None):
                 if args.check:
                     return await _check(client, args.ollama)
+                if args.research is not None:
+                    return await _research(client, args.mcp, args.research)
                 return await _ask(client, args.ask)
         except TimeoutError:
             _error(
@@ -110,8 +124,8 @@ async def _run(args: argparse.Namespace) -> int:
                 "half a minute to load, and a long generation longer."
             )
             return EXIT_FAILED
-        except llm.LLMError as err:
-            return _fail(err, args.ollama, args.model)
+        except (llm.LLMError, quantic.ToolServerError, agent.TooManyCallsError) as err:
+            return _fail(err, args)
 
 
 def cancel_on_sigterm() -> None:
@@ -131,16 +145,22 @@ def cancel_on_sigterm() -> None:
     loop.add_signal_handler(signal.SIGTERM, stop)
 
 
-def _fail(err: llm.LLMError, base_url: str, model: str) -> int:
+def _fail(err: Exception, args: argparse.Namespace) -> int:
     """Reports err and chooses the exit status, by the kind of error: its
     class, never its message, which is for people and can change."""
     match err:
         case llm.ServerUnavailableError():
-            _error(f"no model server answering at {base_url}. Is Ollama running?")
+            _error(f"no model server answering at {args.ollama}. Is Ollama running?")
             _error(str(err))
             return EXIT_UNAVAILABLE
+        case quantic.ToolServerUnavailableError():
+            _error(f"no MCP server answering at {args.mcp}.")
+            _error(str(err))
+            return EXIT_UNAVAILABLE
+        case agent.TooManyCallsError():
+            _error(f"the model kept asking for tools and never answered: {err}")
         case llm.ModelNotFoundError():
-            _not_pulled(model)
+            _not_pulled(args.model)
         case llm.APIError(status_code=status) if status >= 500:
             # The server itself failed, such as a model it couldn't load. The
             # reason is in its log, not in the reply.
@@ -179,6 +199,23 @@ async def _check(client: llm.Client, base_url: str) -> int:
         _not_pulled(client.model)
         return EXIT_FAILED
     return EXIT_OK
+
+
+async def _research(client: llm.Client, mcp_url: str, question: str) -> int:
+    async with quantic.Server(mcp_url) as server:
+        researcher = agent.Researcher(model=client, server=server, tools=[DIVIDEND_CALENDAR])
+        answer = await researcher.ask(question, on_call=_trace)
+    print(answer.text)
+    if answer.truncated:
+        _error("the answer was truncated: the model hit its token limit")
+    return EXIT_OK
+
+
+def _trace(call: agent.Call) -> None:
+    """One line per tool call on stderr: what was asked, and what came back."""
+    outcome = call.result if call.failed else f"{len(call.result)} bytes"
+    ms = round(call.duration.total_seconds() * 1000)
+    print(f"tool {call.tool} {json.dumps(call.arguments)} → {outcome} ({ms}ms)", file=sys.stderr)
 
 
 async def _ask(client: llm.Client, prompt: str) -> int:

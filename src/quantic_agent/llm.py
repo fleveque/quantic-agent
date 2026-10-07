@@ -2,7 +2,7 @@
 
 The agent generates through Ollama (design §4): one HTTP call per generation,
 never streamed, so a reply is one JSON object rather than a sequence of them.
-Tool schemas arrive in milestone 5.
+chat() offers the model tools and may get back a request to call one.
 
 Every call is a coroutine (decision 0008), and the caller decides how long it
 may take: the client sets no timeout of its own. Wrap calls in
@@ -19,13 +19,14 @@ ModelNotFoundError when it is but lacks the model, APIError for any other
 refusal. All are LLMErrors.
 """
 
-import errno
-from collections.abc import Iterator
+from collections.abc import Sequence
 from datetime import datetime, timedelta
-from typing import Annotated, Self
+from typing import Annotated, Any, Literal, Self
 
 import httpx
 from pydantic import BaseModel, BeforeValidator, ValidationError
+
+from quantic_agent import network
 
 DEFAULT_BASE_URL = "http://localhost:11434"
 
@@ -127,6 +128,88 @@ class GenerateResponse(BaseModel):
         """Whether the model stopped because it ran out of token budget rather
         than because it finished. A truncated draft is a broken draft: half a
         table is worse than no table."""
+        return self.done_reason == "length"
+
+
+class FunctionCall(BaseModel):
+    """A tool the model asked for, and the arguments it chose.
+
+    Ollama sends the arguments as a JSON object, not a string. They're kept as
+    they arrived: whether they fit the tool is for the tool to decide, and a
+    model can produce anything.
+    """
+
+    name: str
+    arguments: dict[str, Any] = {}
+
+
+class ToolCall(BaseModel):
+    id: str | None = None
+    function: FunctionCall
+
+
+class Message(BaseModel):
+    """One message in a conversation.
+
+    tool_calls is set on an assistant message that asks for tools instead of
+    answering; sending it back as part of the history keeps the conversation
+    coherent for the model. tool_name is set on a "tool" message: which
+    tool's output content is.
+    """
+
+    role: Literal["system", "user", "assistant", "tool"]
+    content: str = ""
+    tool_calls: list[ToolCall] | None = None
+    tool_name: str | None = None
+
+
+class FunctionDef(BaseModel):
+    """What the model is told about a tool. parameters is a JSON Schema."""
+
+    name: str
+    description: str
+    parameters: dict[str, Any]
+
+
+class ToolDef(BaseModel):
+    """One tool offered to the model."""
+
+    type: Literal["function"] = "function"
+    function: FunctionDef
+
+
+class _ChatBody(BaseModel):
+    """The wire format of POST /api/chat."""
+
+    model: str
+    messages: Sequence[Message]
+    tools: Sequence[ToolDef] | None = None
+    stream: bool = False  # sent, as for /api/generate
+    think: bool | None = None
+    options: Options | None = None
+
+
+class ChatResponse(BaseModel):
+    """One non-streamed reply from /api/chat: the model's next message, which
+    is either an answer or a request to call tools."""
+
+    model: str
+    created_at: datetime | None = None
+    message: Message
+    done: bool
+    done_reason: str = ""
+
+    prompt_eval_count: int = 0
+    eval_count: int = 0
+
+    total_duration: Nanoseconds = timedelta()
+    load_duration: Nanoseconds = timedelta()
+    prompt_eval_duration: Nanoseconds = timedelta()
+    eval_duration: Nanoseconds = timedelta()
+
+    @property
+    def truncated(self) -> bool:
+        """Whether the model ran out of token budget mid-reply."""
         return self.done_reason == "length"
 
 
@@ -233,6 +316,23 @@ class Client:
         body = _GenerateBody(model=self._model, prompt=prompt, think=think, options=options)
         return await self._call("POST", "/api/generate", GenerateResponse, body)
 
+    async def chat(
+        self,
+        messages: Sequence[Message],
+        *,
+        tools: Sequence[ToolDef] | None = None,
+        think: bool | None = None,
+        options: Options | None = None,
+    ) -> ChatResponse:
+        """One conversation turn through /api/chat: the messages so far go in,
+        the model's next message comes out. Unlike generate it can offer the
+        model tools, and the reply may then ask to call one instead of
+        answering."""
+        body = _ChatBody(
+            model=self._model, messages=messages, tools=tools, think=think, options=options
+        )
+        return await self._call("POST", "/api/chat", ChatResponse, body)
+
     async def version(self) -> str:
         """The server's version. Doubles as a reachability check that costs
         no GPU time."""
@@ -258,7 +358,7 @@ class Client:
         # it is a BaseException, not an httpx.HTTPError, so it can never be
         # mistaken for an unavailable server.
         except httpx.HTTPError as err:
-            kind = ServerUnavailableError if _unreachable(err) else LLMError
+            kind = ServerUnavailableError if network.unreachable(err) else LLMError
             raise kind(f"{method} {path}: {err}") from err
 
         # 200, not httpx.codes.OK: pyright types that enum member as the tuple
@@ -269,41 +369,6 @@ class Client:
             return reply.model_validate_json(resp.content)
         except ValidationError as err:
             raise LLMError(f"decoding {path} reply: {err}") from err
-
-
-def _causes(err: BaseException) -> Iterator[BaseException]:
-    """err, then what caused it, then what caused that. httpx raises its own
-    exception from httpcore's, which is raised from the operating system's."""
-    current: BaseException | None = err
-    while current is not None:
-        yield current
-        current = current.__cause__ or current.__context__
-
-
-def _unreachable(err: httpx.HTTPError) -> bool:
-    """Whether a transport error means the server wasn't there to answer.
-
-    Each case was reproduced: connection refused (nothing listening), reset by
-    the peer, network unreachable (no route), and a connection closed before
-    any reply, as a restart does (httpx's RemoteProtocolError; a server
-    answering malformed HTTP would raise it too, which a real Ollama doesn't).
-
-    Two are left out on purpose. A DNS failure: httpx raises the same
-    ConnectError as for a refused connection, so only the cause tells them
-    apart. Its cause is a socket.gaierror, whose error numbers are the
-    resolver's (-2, "Name or service not known"), never one checked below. An
-    unknown host is far more often a typo in OLLAMA_HOST than a machine that's
-    off, and a typo should fail, not be waited on. And a timeout: a slow
-    server is not a missing one (milestone 4).
-    """
-    causes = list(_causes(err))
-    if isinstance(err, httpx.RemoteProtocolError):
-        return True
-    return any(
-        isinstance(c, ConnectionRefusedError | ConnectionResetError)
-        or (isinstance(c, OSError) and c.errno in (errno.EHOSTUNREACH, errno.ENETUNREACH))
-        for c in causes
-    )
 
 
 def _api_error(method: str, path: str, resp: httpx.Response) -> APIError:

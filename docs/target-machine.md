@@ -7,10 +7,10 @@ The agent is developed on a laptop and runs on the desktop: Ryzen, 64GB RAM, RTX
 Nothing in the code is machine-specific (see [design §4](design.md#4-stack)), so the same checkout
 works on both machines; only the models pulled and the numbers measured differ.
 
-**The Python version is at milestone 2.** The check and the benchmark (sections 4–6) are this
-repository's commands. The run history (section 8) is still the Go version's, run from a checkout of
-[quantic-agent-go](https://github.com/fleveque/quantic-agent-go) (archived, still working), until
-milestones 7 and 8 are ported; the tool-call evaluation arrives with milestone 5.
+**The Python version is at milestone 5.** The check, the benchmark (sections 4–6) and the tool-call
+evaluation (section 7) are this repository's commands. The run history (section 8) is still the Go
+version's, run from a checkout of [quantic-agent-go](https://github.com/fleveque/quantic-agent-go)
+(archived, still working), until milestones 7 and 8 are ported.
 
 ---
 
@@ -138,6 +138,10 @@ Keep both files as evidence — `docs/benchmarks/YYYY-MM-DD-bench.json` — and 
 
 Speed and fit are only half the answer for a sub-4-bit model: tool-call accuracy is the other half,
 and that gets measured once milestone 5 exists.
+
+**Tool calls**, the other half: `uv run quantic-evaltools` puts each model through eight questions
+whose right first move is known, five times each (`--models`, `--repeat`, `--json`). It needs Ollama
+but not Quantic.
 
 **Results, 2026-09-26:** [decision 0005](decisions/0005-default-model-by-measurement.md). The 9B stays
 the default; the raw files are in [`benchmarks/`](benchmarks/). To evaluate a new model later, the same

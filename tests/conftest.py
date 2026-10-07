@@ -152,3 +152,100 @@ def ollama() -> Iterator[FakeOllama]:
 # just closed isn't safe for this: another process can be given it a moment
 # later, and then the "dead" server answers.
 DEAD_URL = "http://127.0.0.1:1"
+
+
+@dataclass
+class FakeMCP:
+    """A fake Quantic MCP server, enough of Streamable HTTP for the real SDK.
+
+    It answers by JSON-RPC method with replies captured from quantic.finance
+    (tests/fixtures/mcp), rewriting each reply's id to the request's. tools
+    maps a tool name to the fixture its tools/call answers with, or to "hang"
+    for a call that never answers; requests records every JSON-RPC message
+    received, in order.
+    """
+
+    url: str
+    tools: dict[str, str] = field(default_factory=lambda: dict[str, str]())
+    requests: list[dict[str, Any]] = field(default_factory=lambda: list[dict[str, Any]]())
+    released: threading.Event = field(default_factory=threading.Event)
+
+    def calls(self) -> list[dict[str, Any]]:
+        """The params of every tools/call received."""
+        return [r["params"] for r in self.requests if r.get("method") == "tools/call"]
+
+
+def _with_id(fixture_text: str, request_id: object) -> str:
+    """A captured reply, JSON or one SSE event, answering request_id instead."""
+    if fixture_text.lstrip().startswith("{"):
+        message = json.loads(fixture_text)
+        message["id"] = request_id
+        return json.dumps(message)
+    lines: list[str] = []
+    for line in fixture_text.splitlines():
+        if line.startswith("data: "):
+            message = json.loads(line.removeprefix("data: "))
+            message["id"] = request_id
+            line = "data: " + json.dumps(message)
+        lines.append(line)
+    return "\n".join(lines) + "\n\n"
+
+
+@pytest.fixture
+def quantic_mcp() -> Iterator[FakeMCP]:
+    """A fake MCP server on a free port for the length of one test."""
+    fake: FakeMCP
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_POST(self) -> None:
+            length = int(self.headers.get("Content-Length", 0))
+            message: dict[str, Any] = json.loads(self.rfile.read(length))
+            fake.requests.append(message)
+            method = message.get("method", "")
+            if "id" not in message:  # a notification: acknowledged, no reply
+                self._reply(202, b"", "application/json")
+                return
+            name = {
+                "initialize": "initialize.sse",
+                "tools/list": "tools-list.json",
+                "tools/call": fake.tools.get(message.get("params", {}).get("name", ""), ""),
+            }.get(method, "")
+            if name == "hang":
+                fake.released.wait(5)  # set at teardown
+                return
+            text = (FIXTURES / "mcp" / name).read_text() if name else ""
+            if not text:
+                text = (
+                    '{"jsonrpc":"2.0","id":0,"error":{"code":-32601,"message":"Method not found"}}'
+                )
+            body = _with_id(text, message["id"]).encode()
+            kind = "text/event-stream" if name.endswith(".sse") else "application/json"
+            self._reply(200, body, kind)
+
+        def do_GET(self) -> None:
+            # No server-initiated stream: the spec allows refusing it.
+            self._reply(405, b"", "text/plain")
+
+        def do_DELETE(self) -> None:
+            self._reply(200, b"", "text/plain")
+
+        def _reply(self, status: int, body: bytes, content_type: str) -> None:
+            self.send_response(status)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Mcp-Session-Id", "test-session")
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, format: str, *args: Any) -> None:
+            pass
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    host, port = server.server_address[:2]
+    fake = FakeMCP(url=f"http://{host!s}:{port}/mcp")
+    thread = threading.Thread(target=server.serve_forever, args=(0.01,), daemon=True)
+    thread.start()
+    yield fake
+    fake.released.set()
+    server.shutdown()
+    server.server_close()
