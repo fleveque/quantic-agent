@@ -9,6 +9,9 @@ Python, most of that dissolved: SQLite comes with the language, there's one conn
 synchronous save can't be cancelled halfway. What took the work was transactions, a lock, and my
 own tests.
 
+*Also readable as a [formatted page](https://claude.ai/artifact/GioJKqVLzs6r5fKFbgu2yn), with a [code walkthrough](https://claude.ai/artifact/BmisnMg62AC2VpT7TcbzW4) of every change the
+milestone made.*
+
 ---
 
 ## What landed
