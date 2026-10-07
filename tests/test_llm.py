@@ -1,3 +1,4 @@
+import asyncio
 import socket
 from datetime import timedelta
 
@@ -7,12 +8,14 @@ from conftest import DEAD_URL, FakeOllama, Reply, fixture
 
 from quantic_agent import llm
 
+pytestmark = pytest.mark.anyio
 
-def test_generate_decodes_the_reply(ollama: FakeOllama) -> None:
+
+async def test_generate_decodes_the_reply(ollama: FakeOllama) -> None:
     ollama.replies["/api/generate"] = Reply(fixture("generate.json"))
 
-    with llm.Client(ollama.url, "quantic-9b:latest") as client:
-        resp = client.generate("Reply with exactly: ok", think=False)
+    async with llm.Client(ollama.url, "quantic-9b:latest") as client:
+        resp = await client.generate("Reply with exactly: ok", think=False)
 
     assert resp.response == "ok"
     assert resp.done_reason == "stop"
@@ -29,11 +32,11 @@ def test_generate_decodes_the_reply(ollama: FakeOllama) -> None:
     assert sent["think"] is False
 
 
-def test_generate_reports_truncation(ollama: FakeOllama) -> None:
+async def test_generate_reports_truncation(ollama: FakeOllama) -> None:
     ollama.replies["/api/generate"] = Reply(fixture("generate-thinking.json"))
 
-    with llm.Client(ollama.url, "quantic-9b:latest") as client:
-        resp = client.generate("hi")
+    async with llm.Client(ollama.url, "quantic-9b:latest") as client:
+        resp = await client.generate("hi")
 
     assert resp.truncated, f"done_reason {resp.done_reason!r}"
     # A thinking model spends its budget on the reasoning pass first, so a
@@ -42,31 +45,31 @@ def test_generate_reports_truncation(ollama: FakeOllama) -> None:
     assert resp.thinking != ""
 
 
-def test_generate_omits_what_was_not_set(ollama: FakeOllama) -> None:
+async def test_generate_omits_what_was_not_set(ollama: FakeOllama) -> None:
     ollama.replies["/api/generate"] = Reply(fixture("generate.json"))
 
-    with llm.Client(ollama.url, "m") as client:
-        client.generate("hi")
+    async with llm.Client(ollama.url, "m") as client:
+        await client.generate("hi")
 
     assert "think" not in ollama.bodies[0]
     assert "options" not in ollama.bodies[0]
 
 
-def test_generate_sends_options_whose_value_is_zero(ollama: FakeOllama) -> None:
+async def test_generate_sends_options_whose_value_is_zero(ollama: FakeOllama) -> None:
     ollama.replies["/api/generate"] = Reply(fixture("generate.json"))
 
-    with llm.Client(ollama.url, "m") as client:
-        client.generate("hi", options=llm.Options(temperature=0, seed=0))
+    async with llm.Client(ollama.url, "m") as client:
+        await client.generate("hi", options=llm.Options(temperature=0, seed=0))
 
     # 0 is a real temperature and a real seed; None is "not set".
     assert ollama.bodies[0]["options"] == {"temperature": 0, "seed": 0}
 
 
-def test_version(ollama: FakeOllama) -> None:
+async def test_version(ollama: FakeOllama) -> None:
     ollama.replies["/api/version"] = Reply(b'{"version":"0.30.3"}')
 
-    with llm.Client(ollama.url, "m") as client:
-        assert client.version() == "0.30.3"
+    async with llm.Client(ollama.url, "m") as client:
+        assert await client.version() == "0.30.3"
     assert ollama.paths == ["/api/version"]
 
 
@@ -104,13 +107,14 @@ def causes(err: BaseException) -> list[type[BaseException]]:
         pytest.param(500, b"", "", llm.APIError, id="empty body"),
     ],
 )
-def test_server_errors(
+async def test_server_errors(
     ollama: FakeOllama, status: int, body: bytes, message: str, kind: type[llm.APIError]
 ) -> None:
     ollama.replies["/api/generate"] = Reply(body, status)
 
-    with llm.Client(ollama.url, "m") as client, pytest.raises(llm.APIError) as err:
-        client.generate("hi")
+    async with llm.Client(ollama.url, "m") as client:
+        with pytest.raises(llm.APIError) as err:
+            await client.generate("hi")
 
     # The exact class: a plain 404 must not be taken for a missing model.
     assert type(err.value) is kind
@@ -120,21 +124,20 @@ def test_server_errors(
     assert str(status) in str(err.value)
 
 
-def test_generate_rejects_an_unparseable_reply(ollama: FakeOllama) -> None:
+async def test_generate_rejects_an_unparseable_reply(ollama: FakeOllama) -> None:
     ollama.replies["/api/generate"] = Reply(b"{not json")
 
-    with (
-        llm.Client(ollama.url, "m") as client,
-        pytest.raises(llm.LLMError, match="decoding") as err,
-    ):
-        client.generate("hi")
+    async with llm.Client(ollama.url, "m") as client:
+        with pytest.raises(llm.LLMError, match="decoding") as err:
+            await client.generate("hi")
     # A reply that arrived but made no sense is neither kind of known failure.
     assert type(err.value) is llm.LLMError
 
 
-def test_unavailable_when_nothing_listens() -> None:
-    with llm.Client(DEAD_URL, "m") as client, pytest.raises(llm.ServerUnavailableError) as err:
-        client.version()
+async def test_unavailable_when_nothing_listens() -> None:
+    async with llm.Client(DEAD_URL, "m") as client:
+        with pytest.raises(llm.ServerUnavailableError) as err:
+            await client.version()
     # The network's own reason is still there, as the cause.
     assert ConnectionRefusedError in causes(err.value)
 
@@ -147,41 +150,40 @@ def test_unavailable_when_nothing_listens() -> None:
         pytest.param(Reply(reset=True), ConnectionResetError, id="reset"),
     ],
 )
-def test_unavailable_when_the_connection_goes(
+async def test_unavailable_when_the_connection_goes(
     ollama: FakeOllama, reply: Reply, cause: type[BaseException]
 ) -> None:
     ollama.replies["/api/generate"] = reply
 
-    with llm.Client(ollama.url, "m") as client, pytest.raises(llm.ServerUnavailableError) as err:
-        client.generate("hi")
+    async with llm.Client(ollama.url, "m") as client:
+        with pytest.raises(llm.ServerUnavailableError) as err:
+            await client.generate("hi")
     assert cause in causes(err.value)
 
 
-def test_an_unknown_host_is_not_unavailable() -> None:
+async def test_an_unknown_host_is_not_unavailable() -> None:
     # .invalid is reserved and never resolves. An unresolvable name is almost
     # always a typo in OLLAMA_HOST, which should fail rather than be waited on.
-    with (
-        llm.Client("http://no-such-host.invalid:11434", "m") as client,
-        pytest.raises(llm.LLMError) as err,
-    ):
-        client.version()
+    async with llm.Client("http://no-such-host.invalid:11434", "m") as client:
+        with pytest.raises(llm.LLMError) as err:
+            await client.version()
     assert type(err.value) is llm.LLMError
     assert socket.gaierror in causes(err.value)
 
 
-def test_a_host_without_a_scheme_is_accepted(ollama: FakeOllama) -> None:
+async def test_a_host_without_a_scheme_is_accepted(ollama: FakeOllama) -> None:
     ollama.replies["/api/generate"] = Reply(fixture("generate.json"))
 
     # OLLAMA_HOST is conventionally "host:port", with no scheme.
-    with llm.Client(ollama.host_port, "m") as client:
-        assert client.generate("hi").response == "ok"
+    async with llm.Client(ollama.host_port, "m") as client:
+        assert (await client.generate("hi")).response == "ok"
 
 
-def test_models(ollama: FakeOllama) -> None:
+async def test_models(ollama: FakeOllama) -> None:
     ollama.replies["/api/tags"] = Reply(fixture("tags.json"))
 
-    with llm.Client(ollama.url, "qwen3.5:9b") as client:
-        models = client.models()
+    async with llm.Client(ollama.url, "qwen3.5:9b") as client:
+        models = await client.models()
 
     assert len(models) == 3
     got = models[0]
@@ -196,11 +198,11 @@ def test_models(ollama: FakeOllama) -> None:
     assert not got.supports("telepathy")
 
 
-def test_running(ollama: FakeOllama) -> None:
+async def test_running(ollama: FakeOllama) -> None:
     ollama.replies["/api/ps"] = Reply(fixture("ps.json"))
 
-    with llm.Client(ollama.url, "qwen3.5:9b") as client:
-        running = client.running()
+    async with llm.Client(ollama.url, "qwen3.5:9b") as client:
+        running = await client.running()
 
     assert len(running) == 1
     got = running[0]
@@ -211,6 +213,33 @@ def test_running(ollama: FakeOllama) -> None:
     assert got.on_gpu == 0
     # The server reports its default window, not the model's maximum.
     assert got.context_length == 4096
+
+
+async def test_a_deadline_ends_the_request(ollama: FakeOllama) -> None:
+    ollama.replies["/api/generate"] = Reply(hang=True)
+
+    async with llm.Client(ollama.url, "m") as client:
+        # Not an LLMError: running out of time is the caller's decision, and
+        # a slow server is not a missing one.
+        with pytest.raises(TimeoutError):
+            async with asyncio.timeout(0.1):
+                await client.generate("hi")
+
+    # The connection was closed, which is what tells Ollama to stop.
+    assert ollama.wait_for_hangups(1)
+
+
+async def test_cancelling_ends_the_request(ollama: FakeOllama) -> None:
+    ollama.replies["/api/generate"] = Reply(hang=True)
+
+    async with llm.Client(ollama.url, "m") as client:
+        request = asyncio.create_task(client.generate("hi"))
+        await asyncio.sleep(0.1)  # long enough for the request to be on its way
+        request.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await request
+
+    assert ollama.wait_for_hangups(1)
 
 
 @pytest.mark.parametrize(

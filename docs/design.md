@@ -281,7 +281,11 @@ The interesting shape: **one GPU, many network calls.**
   not for a DNS failure, which is usually a typo, nor a timeout. A missing model is
   `ModelNotFoundError`, any other refusal `APIError`.)* `SIGTERM` (or Ctrl-C)
   cancels the request in flight and exits with 130; Ollama stops generating within about a second,
-  so stopping the agent gives the GPU back straight away. The runbook has the commands ([target machine §8](target-machine.md#9-freeing-the-gpu)).
+  so stopping the agent gives the GPU back straight away. *(As built, milestone 4: the agent is
+  async ([decision 0008](decisions/0008-async-for-deadlines-and-cancellation.md)). The model client
+  has no timeout of its own; `--timeout` bounds a run with `asyncio.timeout`, default five minutes,
+  and both signals cancel the main task. Measured: Ollama's log shows the cancelled generation
+  stopped, and a cancelled cold load aborted.)* The runbook has the commands ([target machine §8](target-machine.md#9-freeing-the-gpu)).
 - **As built in Go (milestone 8).** A run is checkpointed in SQLite when research ends (`runs.phase`:
   `research` → `write` → `done`), and every tool call is already recorded as it completes.
   `agent -resume N` continues a run that was interrupted or failed before answering: one stopped while

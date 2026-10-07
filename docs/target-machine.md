@@ -185,11 +185,12 @@ The agent is a one-shot command for now, so there is nothing to stop. Once it ru
 (milestone 13) it gets its own unit, and the design requires that stopping it loses no work and that a
 stopped Ollama makes it wait rather than fail ([design §3.6](design.md#36-concurrency-model)).
 Part of that already exists. With Ollama stopped, `quantic-agent` exits with status 3 ("no model
-server answering"): nothing was attempted, so the same command can simply be run again later. In
-the Go version, Ctrl-C or `SIGTERM` also cancels the request in flight and exits with 130, saving the
-run so `agent -resume N` can carry it on (section 8); here those arrive with milestones 4 and 8.
-Ollama stops working on a cancelled generation within about a second, so stopping the agent is
-enough to free the GPU. Cancelling while a model is still *loading* aborts the load, so the next
+server answering"): nothing was attempted, so the same command can simply be run again later.
+Ctrl-C or `SIGTERM` cancels the request in flight and exits with 130 (a second one ends the process
+at once). In the Go version that also saves the run so `agent -resume N` can carry it on (section
+8); here that arrives with milestone 8. Ollama stops working on a cancelled generation within about
+a second (measured with this client: the agent exited 25ms after Ctrl-C, and Ollama's log said
+`stop processing`), so stopping the agent is enough to free the GPU. Cancelling while a model is still *loading* aborts the load, so the next
 request starts it again from zero.
 
 ---
@@ -219,6 +220,6 @@ this on a trusted LAN, ideally with a firewall rule limiting port 11434 to the l
 | `Quantic's rate limit; retry …` lines, then possibly exit status 3 | More than 60 anonymous MCP requests a minute from this IP address, from the agent or anything else on it | The agent waits it out by itself (up to about two minutes). If it still gave up, `agent -resume N` later |
 | `the model server failed; its log has the cause` | Ollama answered 5xx, e.g. a model it couldn't load | `journalctl -u ollama -e` |
 | `figure(s) in the answer came from no tool result`, exit status 4 | `-research` answer contains a number or date no tool returned: invented, rounded, or derived by the model (e.g. "4 months" from 120 days) | Working as intended (design N1). The answer is shown so you can see it, but it isn't trustworthy |
-| `gave up after 5m0s (-timeout)` | The request took longer than `-timeout`: a slow model at a long context, or a stuck server | Raise `-timeout`, or check `ollama ps` for a model that spilled into system RAM. Too short a timeout during a cold load aborts the load |
+| `gave up after 300s (--timeout)` | The run took longer than `--timeout`: a slow model at a long context, or a stuck server | Raise `--timeout` (seconds; 0 for no limit), or check `ollama ps` for a model that spilled into system RAM. Too short a timeout during a cold load aborts the load |
 | `ON GPU 0% (CPU)` on the desktop | Ollama not using the GPU | `nvidia-smi`; `journalctl -u ollama -b \| grep -iE 'cuda\|gpu'` |
 | 64K row much slower than 32K, `ON GPU` below 100% | Cache no longer fits beside the weights | Expected at the limit — that's the measurement. Try section 6. |

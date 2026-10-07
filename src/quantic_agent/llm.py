@@ -2,8 +2,16 @@
 
 The agent generates through Ollama (design §4): one HTTP call per generation,
 never streamed, so a reply is one JSON object rather than a sequence of them.
-Tool schemas arrive in milestone 5 and deadlines in milestone 4; this is the
-plain request/response floor underneath both.
+Tool schemas arrive in milestone 5.
+
+Every call is a coroutine (decision 0008), and the caller decides how long it
+may take: the client sets no timeout of its own. Wrap calls in
+`asyncio.timeout(...)`, or cancel the task. Cancelling ends the request, and
+Ollama then stops working on it too: a cancelled generation frees the GPU
+within about a second. Cancelling while a model is still loading aborts the
+load, so a deadline must allow for a cold start. Neither a timeout nor a
+cancellation is an LLMError: they arrive as asyncio's own TimeoutError and
+CancelledError.
 
 Failures are exceptions a caller can tell apart by class, never by message:
 ServerUnavailableError when the server isn't there to answer,
@@ -186,35 +194,35 @@ class _RunningModels(BaseModel):
 class Client:
     """A handle on one Ollama server and one model.
 
-    It holds a pool of HTTP connections, so close it when done, or use it as a
-    context manager: `with Client(url, model) as client: ...`.
+    It holds a pool of HTTP connections, so close it when done, or use it as an
+    async context manager: `async with Client(url, model) as client: ...`.
     """
 
-    def __init__(self, base_url: str, model: str, *, timeout: float = 300) -> None:
+    def __init__(self, base_url: str, model: str) -> None:
         # OLLAMA_HOST is conventionally "host:port", which isn't a URL.
         if "://" not in base_url:
             base_url = "http://" + base_url
         self._model = model
-        # httpx's default timeout is 5 seconds, which a cold model load alone
-        # can take six times over. A blunt ceiling until milestone 4 gives
-        # each call its own deadline.
-        self._http = httpx.Client(base_url=base_url.rstrip("/"), timeout=timeout)
+        # timeout=None: no limit of httpx's own (its default is 5 seconds, a
+        # sixth of a cold model load). How long a call may take is decided by
+        # whoever awaits it.
+        self._http = httpx.AsyncClient(base_url=base_url.rstrip("/"), timeout=None)
 
     @property
     def model(self) -> str:
         """The model this client generates with."""
         return self._model
 
-    def close(self) -> None:
-        self._http.close()
+    async def aclose(self) -> None:
+        await self._http.aclose()
 
-    def __enter__(self) -> Self:
+    async def __aenter__(self) -> Self:
         return self
 
-    def __exit__(self, *exc_info: object) -> None:
-        self.close()
+    async def __aexit__(self, *exc_info: object) -> None:
+        await self.aclose()
 
-    def generate(
+    async def generate(
         self, prompt: str, *, think: bool | None = None, options: Options | None = None
     ) -> GenerateResponse:
         """Sends one prompt and returns the whole reply.
@@ -223,29 +231,32 @@ class Client:
         the model's own default alone.
         """
         body = _GenerateBody(model=self._model, prompt=prompt, think=think, options=options)
-        return self._call("POST", "/api/generate", GenerateResponse, body)
+        return await self._call("POST", "/api/generate", GenerateResponse, body)
 
-    def version(self) -> str:
+    async def version(self) -> str:
         """The server's version. Doubles as a reachability check that costs
         no GPU time."""
-        return self._call("GET", "/api/version", _Version).version
+        return (await self._call("GET", "/api/version", _Version)).version
 
-    def models(self) -> list[PulledModel]:
+    async def models(self) -> list[PulledModel]:
         """What this server has pulled. The agent is developed on one machine
         and runs on another, so "what is actually on that box" has to be a
         question the agent itself can answer."""
-        return self._call("GET", "/api/tags", _PulledModels).models
+        return (await self._call("GET", "/api/tags", _PulledModels)).models
 
-    def running(self) -> list[RunningModel]:
+    async def running(self) -> list[RunningModel]:
         """What the server is holding in memory right now."""
-        return self._call("GET", "/api/ps", _RunningModels).models
+        return (await self._call("GET", "/api/ps", _RunningModels)).models
 
-    def _call[T: BaseModel](
+    async def _call[T: BaseModel](
         self, method: str, path: str, reply: type[T], body: BaseModel | None = None
     ) -> T:
         payload = None if body is None else body.model_dump(mode="json", exclude_none=True)
         try:
-            resp = self._http.request(method, path, json=payload)
+            resp = await self._http.request(method, path, json=payload)
+        # A cancellation (asyncio.CancelledError) passes through untouched:
+        # it is a BaseException, not an httpx.HTTPError, so it can never be
+        # mistaken for an unavailable server.
         except httpx.HTTPError as err:
             kind = ServerUnavailableError if _unreachable(err) else LLMError
             raise kind(f"{method} {path}: {err}") from err

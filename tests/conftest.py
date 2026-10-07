@@ -5,9 +5,11 @@ defined here is available to every test by naming it as a parameter.
 """
 
 import json
+import select
 import socket
 import struct
 import threading
+import time
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -19,6 +21,12 @@ import pytest
 FIXTURES = Path(__file__).parent / "fixtures"
 
 
+@pytest.fixture
+def anyio_backend() -> str:
+    """Async tests (marked anyio) run on asyncio, which the agent uses."""
+    return "asyncio"
+
+
 def fixture(name: str) -> bytes:
     """A reply captured from a real Ollama server (tests/fixtures/ollama)."""
     return (FIXTURES / "ollama" / name).read_bytes()
@@ -28,13 +36,15 @@ def fixture(name: str) -> bytes:
 class Reply:
     """One answer. drop=True closes the connection without replying, the way
     a restarting Ollama does; reset=True aborts it, so the client sees the
-    connection reset by its peer."""
+    connection reset by its peer; hang=True never answers, as a long
+    generation doesn't, until the client gives up."""
 
     body: bytes = b""
     status: int = 200
     content_type: str = "application/json"
     drop: bool = False
     reset: bool = False
+    hang: bool = False
 
 
 @dataclass
@@ -54,6 +64,18 @@ class FakeOllama:
     )
     paths: list[str] = field(default_factory=lambda: list[str]())
     bodies: list[dict[str, Any]] = field(default_factory=lambda: list[dict[str, Any]]())
+    # How many hanging requests the client gave up on by closing the
+    # connection, which is how Ollama learns to stop generating.
+    hangups: int = 0
+    released: threading.Event = field(default_factory=threading.Event)
+
+    def wait_for_hangups(self, n: int, seconds: float = 2) -> bool:
+        """Whether n hang-ups were seen within seconds: the server's thread
+        notices a closed connection a moment after the client closes it."""
+        deadline = time.monotonic() + seconds
+        while self.hangups < n and time.monotonic() < deadline:
+            time.sleep(0.01)
+        return self.hangups >= n
 
     @property
     def host_port(self) -> str:
@@ -83,6 +105,9 @@ def ollama() -> Iterator[FakeOllama]:
                 # Returning without a response; the server closes the socket.
                 self.close_connection = True
                 return
+            if reply.hang:
+                self._wait_for_hangup()
+                return
             if reply.reset:
                 # Lingering for zero seconds makes close() send a TCP reset.
                 self.connection.setsockopt(
@@ -96,6 +121,15 @@ def ollama() -> Iterator[FakeOllama]:
             self.end_headers()
             self.wfile.write(reply.body)
 
+        def _wait_for_hangup(self) -> None:
+            # Readable with nothing to read means the client closed its end.
+            while not fake.released.is_set():
+                readable, _, _ = select.select([self.connection], [], [], 0.01)
+                if readable and self.connection.recv(1, socket.MSG_PEEK) == b"":
+                    fake.hangups += 1
+                    return
+            self.close_connection = True
+
         def log_message(self, format: str, *args: Any) -> None:
             pass  # keep the test output quiet
 
@@ -108,6 +142,7 @@ def ollama() -> Iterator[FakeOllama]:
     thread = threading.Thread(target=server.serve_forever, args=(0.01,), daemon=True)
     thread.start()
     yield fake
+    fake.released.set()  # let any request still hanging go
     server.shutdown()
     server.server_close()
 
