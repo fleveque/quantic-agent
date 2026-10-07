@@ -7,10 +7,11 @@ The agent is developed on a laptop and runs on the desktop: Ryzen, 64GB RAM, RTX
 Nothing in the code is machine-specific (see [design §4](design.md#4-stack)), so the same checkout
 works on both machines; only the models pulled and the numbers measured differ.
 
-**The Python version is at milestone 5.** The check, the benchmark (sections 4–6) and the tool-call
-evaluation (section 7) are this repository's commands. The run history (section 8) is still the Go
-version's, run from a checkout of [quantic-agent-go](https://github.com/fleveque/quantic-agent-go)
-(archived, still working), until milestones 7 and 8 are ported.
+**The Python version is at milestone 7.** The check, the benchmark (sections 4–6), the tool-call
+evaluation (section 7) and the run history (section 8) are this repository's commands. Resuming a run
+is still the Go version's, in a checkout of
+[quantic-agent-go](https://github.com/fleveque/quantic-agent-go) (archived, still working), until
+milestone 8 is ported.
 
 ---
 
@@ -150,19 +151,17 @@ model can be worth measuring even when it's bigger than the card — see the dec
 
 ## 8. Run history
 
-Every `agent -research` run is stored with its tool calls in
-`~/.local/state/quantic-agent/agent.db` (override with `-db` or `QUANTIC_AGENT_DB`). From the Go
-checkout, until milestones 7 and 8 are ported:
+Every `--research` run is stored with its tool calls in `~/.local/state/quantic-agent/agent.db`
+(override with `--db` or `QUANTIC_AGENT_DB`):
 
 ```sh
-go run ./cmd/agent -runs        # the last 20 runs: state, phase, tool calls, tokens, question
-go run ./cmd/agent -run 3       # one run: its calls, its answer, and a fresh provenance check
-go run ./cmd/agent -resume 3    # carry on a run that was stopped or failed before answering
+uv run quantic-agent --runs     # the last 20 runs: state, tool calls, question
+uv run quantic-agent --run 3    # one run: its calls, its answer, and a fresh provenance check
 ```
 
-A run stopped by Ctrl-C or `SIGTERM` (exit 130), one that couldn't reach Ollama or Quantic (exit 3),
-or one whose research gathered no data (exit 5) keeps everything it did. `-resume` continues it from its phase with the model it started with: a run
-stopped while writing calls no tool again. An answered run can't be resumed; ask again instead.
+A run stopped by Ctrl-C or `SIGTERM` (exit 130), or one that couldn't reach Ollama or Quantic (exit
+3), keeps everything it did, and is recorded as interrupted or failed. Carrying such a run on
+(`-resume` in the Go version) arrives with milestone 8.
 
 It's an ordinary SQLite file. Back it up by copying it while the agent isn't running (or with
 `sqlite3 agent.db ".backup copy.db"` while it is). The tables are described in
