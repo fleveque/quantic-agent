@@ -8,6 +8,9 @@ layout is enforced by the language, and the checks that make it hold are tools I
 Coming from Elixir and Ruby daily, and from Go, which I learned building
 [the first version of this agent](https://github.com/fleveque/quantic-agent-go).
 
+*Also readable as a [formatted page](https://claude.ai/artifact/2gGJyhaVj83SxVquTc4ATD), with a [code walkthrough](https://claude.ai/artifact/CoifveReWASLXJkBjt9aj9) of every file the
+milestone added.*
+
 ---
 
 ## `pyproject.toml` is `go.mod`, but the project has two names
