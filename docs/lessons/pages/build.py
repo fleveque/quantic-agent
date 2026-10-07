@@ -27,6 +27,9 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
 MARKER = re.compile(r"\[\[([^|\]]+)\|([^|\]]+)\|([^\]]+)\]\]")
+# What a marker the pattern above can't read looks like, such as one whose
+# start text contains "]": "[[", a path, "|".
+LEFTOVER = re.compile(r"\[\[[\w./-]+\|")
 LANGUAGES = {"go": "go", "sql": "sql", "py": "python", "toml": "toml", "sh": "bash"}
 
 
@@ -72,6 +75,9 @@ def main() -> None:
     name = sys.argv[2] if len(sys.argv) > 2 else "walkthrough"
     template = sys.argv[3] if len(sys.argv) > 3 else "template.html"
     out, n = MARKER.subn(excerpt, (here / template).read_text())
+    if leftover := LEFTOVER.search(out):
+        line = out[leftover.end() :].split("\n", 1)[0]
+        sys.exit(f"unreadable marker (no ] or | in its text): {leftover.group(0)}{line}")
     (here / f"{name}.html").write_text(out)
     print(f"{n} excerpts, {len(out) // 1024} KB")
 

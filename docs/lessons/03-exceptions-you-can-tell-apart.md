@@ -7,6 +7,9 @@ stops when it goes away. In Go this took three shapes of error and two `%w` verb
 string. In Python it took one shape, a class, and one surprise: a guard the Go version needed turned
 out to do nothing at all.
 
+*Also readable as a [formatted page](https://claude.ai/artifact/URFbirkFqqQNFbe2xfRqLJ), with a [code walkthrough](https://claude.ai/artifact/KjWES5unohRZjtyiMhxCBE) of every change the
+milestone made.*
+
 ---
 
 ## What landed
