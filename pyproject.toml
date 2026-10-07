@@ -7,12 +7,16 @@ license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "Francesc Leveque" }]
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "httpx>=0.28.1",
+    "pydantic>=2.13.5",
+]
 
-# `uv sync` installs this as .venv/bin/quantic-agent: a small script that
-# imports quantic_agent.cli and exits with what main() returns.
+# `uv sync` installs each as a small script in .venv/bin that imports the
+# module and exits with what its main() returns.
 [project.scripts]
 quantic-agent = "quantic_agent.cli:main"
+quantic-bench = "quantic_agent.bench:main"
 
 # Tools for working on the agent, not for running it: `uv sync` installs them,
 # a built wheel doesn't carry them.

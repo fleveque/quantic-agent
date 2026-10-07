@@ -7,11 +7,10 @@ The agent is developed on a laptop and runs on the desktop: Ryzen, 64GB RAM, RTX
 Nothing in the code is machine-specific (see [design §4](design.md#4-stack)), so the same checkout
 works on both machines; only the models pulled and the numbers measured differ.
 
-**The Python version is at milestone 0**, so it has no commands yet. The checks, the benchmark and the
-run history below are the Go version's, run from a checkout of
-[quantic-agent-go](https://github.com/fleveque/quantic-agent-go) (archived, still working). Each section
-switches to this repository's command as its milestone is ported: the check and the benchmark with
-milestone 2, the tool-call evaluation with 5, the run history with 7 and 8.
+**The Python version is at milestone 2.** The check and the benchmark (sections 4–6) are this
+repository's commands. The run history (section 8) is still the Go version's, run from a checkout of
+[quantic-agent-go](https://github.com/fleveque/quantic-agent-go) (archived, still working), until
+milestones 7 and 8 are ported; the tool-call evaluation arrives with milestone 5.
 
 ---
 
@@ -61,16 +60,14 @@ ollama pull hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S      # 13.0 GB — primary c
 ollama pull hf.co/unsloth/Qwen3.8-27B-GGUF:UD-Q3_K_XL    # 14.1 GB — quality step, less room for context
 ```
 
-Sizes are decimal GB, as `ollama list` and `agent -check` print them. `-check` shows `UD-Q3_K_XL` as
+Sizes are decimal GB, as `ollama list` and `quantic-agent --check` print them. `--check` shows `UD-Q3_K_XL` as
 `Q3_K_L`: that's the file-type label in the GGUF, since Unsloth's dynamic mixes have no code of their own.
 
 ## 4. Check what the server has
 
-From the Go checkout, until milestone 2 is ported:
-
 ```sh
-go run ./cmd/agent -check
-go run ./cmd/agent -check -model hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S
+uv run quantic-agent --check
+uv run quantic-agent --check --model hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S
 ```
 
 Each line ends with the model's **capabilities**. Two matter:
@@ -81,16 +78,14 @@ Each line ends with the model's **capabilities**. Two matter:
   which the design already treats as the reliable floor.
 - `thinking` — the agent always sends `think:false`; this says whether that's doing anything.
 
-`-check` exits 1 if the selected model isn't pulled. Names match case-insensitively, the way Ollama
+`--check` exits 1 if the selected model isn't pulled. Names match case-insensitively, the way Ollama
 resolves them.
 
 ## 5. Run the benchmark
 
-From the Go checkout, until milestone 2 is ported:
-
 ```sh
-go run ./cmd/bench                    # table, for reading
-go run ./cmd/bench -json > bench.json # the same, for keeping
+uv run quantic-bench                     # table, for reading
+uv run quantic-bench --json > bench.json # the same, for keeping
 ```
 
 Defaults: the three models above at 8K, 32K and 64K context. Expect several minutes — each 64K row
@@ -125,7 +120,7 @@ sudo systemctl edit ollama
 #   [Service]
 #   Environment="OLLAMA_KV_CACHE_TYPE=q8_0"
 sudo systemctl restart ollama
-go run ./cmd/bench -json > bench-kvq8.json
+uv run quantic-bench --json > bench-kvq8.json
 ```
 
 Compare the 64K rows of the two files. If `size_bytes` and `fraction_on_gpu` don't move, quantisation
@@ -146,7 +141,7 @@ and that gets measured once milestone 5 exists.
 
 **Results, 2026-09-26:** [decision 0005](decisions/0005-default-model-by-measurement.md). The 9B stays
 the default; the raw files are in [`benchmarks/`](benchmarks/). To evaluate a new model later, the same
-steps apply: pull it, `agent -check` for `tools`, then `cmd/bench -models <name>`. A mixture-of-experts
+steps apply: pull it, `quantic-agent --check` for `tools`, then `quantic-bench --models <name>`. A mixture-of-experts
 model can be worth measuring even when it's bigger than the card — see the decision for why.
 
 ## 8. Run history
@@ -206,7 +201,7 @@ sudo systemctl edit ollama
 sudo systemctl restart ollama
 ```
 
-Then, from the laptop: `go run ./cmd/agent -ollama http://<desktop>:11434 -check`.
+Then, from the laptop: `uv run quantic-agent --ollama http://<desktop>:11434 --check`.
 
 Ollama has **no authentication**. Binding to `0.0.0.0` exposes it to the whole network, so only do
 this on a trusted LAN, ideally with a firewall rule limiting port 11434 to the laptop.

@@ -304,4 +304,5 @@ A green tick now always means all five checks ran.
 
 ---
 
-**Previous:** [Lesson 00 — Layout, packages, and privacy by convention](00-layout-packages-and-privacy-by-convention.md)
+**Previous:** [Lesson 00 — Layout, packages, and privacy by convention](00-layout-packages-and-privacy-by-convention.md) ·
+**Next:** [Lesson 02 — Pydantic models and one HTTP call](02-pydantic-models-and-one-http-call.md)

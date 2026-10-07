@@ -11,7 +11,9 @@ names, so the excerpts are that commit's.
 
 End forms:
   ^    the end of the top-level block that starts there: the last non-blank
-       line before the next unindented one (Python has no closing brace)
+       line before the next unindented one (Python has no closing brace).
+       A closing bracket at the start of a line doesn't count, so a
+       signature wrapped over several lines stays in one block.
   $    the end of the file
   }    the next line that is exactly "}" (the end of a top-level Go declaration)
   A>B  the next line containing A, then the next line whose stripped text is B
@@ -28,11 +30,15 @@ MARKER = re.compile(r"\[\[([^|\]]+)\|([^|\]]+)\|([^\]]+)\]\]")
 LANGUAGES = {"go": "go", "sql": "sql", "py": "python", "toml": "toml", "sh": "bash"}
 
 
+def _starts_a_block(line: str) -> bool:
+    return bool(line) and not line[0].isspace() and line[0] not in ")]}"
+
+
 def span(lines: list[str], start: str, end: str) -> tuple[int, int]:
     a = next(i for i, line in enumerate(lines) if start in line)
     if end == "^":
         after = range(a + 1, len(lines))
-        nxt = next((i for i in after if lines[i] and not lines[i][0].isspace()), len(lines))
+        nxt = next((i for i in after if _starts_a_block(lines[i])), len(lines))
         return a, max(i for i in range(a, nxt) if lines[i].strip())
     if end == "$":
         return a, max(i for i in range(a, len(lines)) if lines[i].strip())
