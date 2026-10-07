@@ -6,6 +6,9 @@ as every function's first argument. Python has no context. It has two ways to ge
 and they lead to different code for every milestone after this one. So this milestone starts with a
 decision, and the code follows from it.
 
+*Also readable as a [formatted page](https://claude.ai/artifact/Rrre4qcYJJdAMwTrMw1RLq), with a [code walkthrough](https://claude.ai/artifact/LjytQhW7PHSoTDN8XDn5Ps) of every change the
+milestone made.*
+
 ---
 
 ## The decision: async
