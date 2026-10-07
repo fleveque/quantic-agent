@@ -1,0 +1,43 @@
+[project]
+name = "quantic-agent"
+version = "0.0.0"
+description = "A local agent that drafts data-grounded content for Quantic, using local models."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Francesc Leveque" }]
+requires-python = ">=3.14"
+dependencies = []
+
+# Tools for working on the agent, not for running it: `uv sync` installs them,
+# a built wheel doesn't carry them.
+[dependency-groups]
+dev = [
+    "pyright>=1.1.414",
+    "pytest>=9.1.1",
+    "ruff>=0.16.10",
+]
+
+# What turns src/quantic_agent into an installable package. uv installs it
+# into .venv in editable mode, so tests import the code as any user would.
+[build-system]
+requires = ["uv_build>=0.12.23,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+# E/W pycodestyle, F pyflakes, I import order, UP newer syntax, B likely bugs,
+# SIM simpler forms, PT pytest style, RUF ruff's own.
+select = ["E", "W", "F", "I", "UP", "B", "SIM", "PT", "RUF"]
+
+[tool.pyright]
+include = ["src", "tests", "docs"]
+typeCheckingMode = "strict"
+
+[tool.pytest]
+testpaths = ["tests"]
+# Unknown markers, config keys and xfail passes are errors, not warnings.
+strict = true
+addopts = ["-ra"]
