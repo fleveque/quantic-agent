@@ -13,7 +13,7 @@ The schema is a series of Alembic migrations shipped in the package
 import fcntl
 import json
 import sqlite3
-from collections.abc import Callable, Generator
+from collections.abc import Callable, Generator, Sequence
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -27,6 +27,7 @@ from alembic.config import Config
 from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
 
+from quantic_agent import memory
 from quantic_agent.agent import Call, Limit
 from quantic_agent.provenance import Finding, Kind, Record
 
@@ -42,6 +43,11 @@ class NotFoundError(StoreError):
 class NotResumableError(StoreError):
     """The run can't be resumed: it doesn't exist, it finished with an
     answer, or it is running."""
+
+
+class NotReviewableError(StoreError):
+    """The run has no answer to review, or (to approve it) its answer has
+    figures no tool returned."""
 
 
 class State(StrEnum):
@@ -79,6 +85,15 @@ class Draft:
     created_at: datetime | None = None
 
 
+@dataclass(frozen=True)
+class Review:
+    """A reviewer's verdict on a run's answer."""
+
+    verdict: str  # "approved" or "rejected"
+    note: str
+    decided_at: datetime
+
+
 @dataclass
 class Run:
     """One run as stored. calls and draft are filled in by Store.run."""
@@ -97,6 +112,9 @@ class Run:
     call_count: int
     calls: list[Call] = field(default_factory=lambda: list[Call]())
     draft: Draft | None = None
+    review: Review | None = None
+    # The approved answers its writer was shown: (their run, similarity).
+    examples: list[tuple[int, float]] = field(default_factory=lambda: list[tuple[int, float]]())
 
     def records(self) -> list[Record]:
         """The run's successful calls as provenance records: exactly what its
@@ -273,6 +291,89 @@ class Store:
             )
         return self.run(run_id)
 
+    def approve(
+        self, run_id: int, note: str, model: str, vector: Sequence[float], text: str
+    ) -> None:
+        """Approves a run's answer and stores its vector from model, at unit
+        length (memory.nearest relies on it): from now on it is style memory.
+        Only an answered run can be approved, one whose every figure traced:
+        an answer with invented figures is not an example to follow.
+        Approving again replaces the note and the vector."""
+        with self._transaction():
+            state = self._reviewable(run_id)
+            if state is not State.ANSWERED:
+                raise NotReviewableError(
+                    f"run {run_id} is {state}: only an answer whose every figure traced "
+                    "can be approved"
+                )
+            self._verdict(run_id, "approved", note)
+            self._db.execute(
+                "INSERT INTO embeddings "
+                "(source_kind, source_id, model, dims, vector, text, created_at) "
+                "VALUES ('answer', ?, ?, ?, ?, ?, ?) "
+                "ON CONFLICT (source_kind, source_id, model) DO UPDATE SET "
+                "dims = excluded.dims, vector = excluded.vector, text = excluded.text, "
+                "created_at = excluded.created_at",
+                (
+                    run_id,
+                    model,
+                    len(vector),
+                    memory.encode(memory.unit(vector)),
+                    text,
+                    self._stamp(),
+                ),
+            )
+
+    def reject(self, run_id: int, note: str) -> None:
+        """Rejects a run's answer. If it was approved, it stops being style
+        memory: its vectors are deleted in the same transaction."""
+        with self._transaction():
+            self._reviewable(run_id)
+            self._verdict(run_id, "rejected", note)
+            self._db.execute(
+                "DELETE FROM embeddings WHERE source_kind = 'answer' AND source_id = ?", (run_id,)
+            )
+
+    def _reviewable(self, run_id: int) -> State:
+        row = self._db.execute(
+            "SELECT r.state FROM runs r JOIN drafts d ON d.run_id = r.id WHERE r.id = ?",
+            (run_id,),
+        ).fetchone()
+        if row is None:
+            raise NotReviewableError(f"run {run_id} has no answer to review")
+        return State(row[0])
+
+    def _verdict(self, run_id: int, verdict: str, note: str) -> None:
+        self._db.execute(
+            "INSERT INTO reviews (run_id, verdict, note, decided_at) VALUES (?, ?, ?, ?) "
+            "ON CONFLICT (run_id) DO UPDATE SET verdict = excluded.verdict, "
+            "note = excluded.note, decided_at = excluded.decided_at",
+            (run_id, verdict, note or None, self._stamp()),
+        )
+
+    def memories(self, model: str) -> list[memory.Memory]:
+        """Every approved answer embedded with model: the style memory a
+        writer can be shown. Only approved answers have vectors: approve
+        stores one, and reject deletes it. Vectors from another model aren't
+        comparable, so they're not returned."""
+        rows = self._db.execute(
+            "SELECT source_id, text, vector FROM embeddings "
+            "WHERE source_kind = 'answer' AND model = ? ORDER BY source_id",
+            (model,),
+        )
+        return [memory.Memory(run_id, text, memory.decode(blob)) for run_id, text, blob in rows]
+
+    def record_examples(self, run_id: int, matches: Sequence[memory.Match]) -> None:
+        """Which approved answers a run's writer is about to be shown. A
+        resumed run that writes again records them again, replacing the
+        scores."""
+        with self._transaction():
+            self._db.executemany(
+                "INSERT INTO examples (run_id, example_run, score) VALUES (?, ?, ?) "
+                "ON CONFLICT (run_id, example_run) DO UPDATE SET score = excluded.score",
+                [(run_id, m.memory.run_id, m.score) for m in matches],
+            )
+
     def runs(self, limit: int = 20) -> list[Run]:
         """The most recent runs, newest first, without their calls."""
         return self._query("ORDER BY r.id DESC LIMIT ?", (limit,))
@@ -302,6 +403,18 @@ class Store:
             "SELECT content, truncated, findings, created_at FROM drafts WHERE run_id = ?",
             (run_id,),
         ).fetchone()
+        review = self._db.execute(
+            "SELECT verdict, note, decided_at FROM reviews WHERE run_id = ?", (run_id,)
+        ).fetchone()
+        if review is not None:
+            verdict, note, decided = review
+            run.review = Review(verdict, note or "", datetime.fromisoformat(decided))
+        run.examples = list(
+            self._db.execute(
+                "SELECT example_run, score FROM examples WHERE run_id = ? ORDER BY score DESC",
+                (run_id,),
+            )
+        )
         if row is not None:  # no draft: the run failed or was stopped before answering
             content, truncated, findings, created = row
             run.draft = Draft(

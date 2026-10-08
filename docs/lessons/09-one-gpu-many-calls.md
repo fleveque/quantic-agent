@@ -206,4 +206,5 @@ converted. N1 says converted figures don't pass, and they don't.
 
 ---
 
-**Previous:** [Lesson 08 — A loop that can stop](08-a-loop-that-can-stop.md)
+**Previous:** [Lesson 08 — A loop that can stop](08-a-loop-that-can-stop.md) ·
+**Next:** [Lesson 10 — A memory for the house voice](10-a-memory-for-the-house-voice.md)

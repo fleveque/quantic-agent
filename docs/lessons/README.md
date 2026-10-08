@@ -21,6 +21,7 @@ Ruby that turned out wrong, and what changed from the Go version and why.
 | [07](07-a-memory-that-can-be-audited.md) | A memory that can be audited | 7 — SQLite: runs, drafts, audit log | [A memory that can be audited](https://claude.ai/artifact/GioJKqVLzs6r5fKFbgu2yn) | [The run history, line by line](https://claude.ai/artifact/BmisnMg62AC2VpT7TcbzW4) |
 | [08](08-a-loop-that-can-stop.md) | A loop that can stop | 8 — the research loop: budgets, retries, phases, resume | [A loop that can stop](https://claude.ai/artifact/VqfYLE86knX1NP1Agt9XNP) | [The research loop, line by line](https://claude.ai/artifact/R4AmcMHTenLcAeaQqAWeDY) |
 | [09](09-one-gpu-many-calls.md) | One GPU, many calls | 9 — the worker pool: serialised GPU, parallel I/O | [One GPU, many calls](https://claude.ai/artifact/7yD52xXv3yLvBBbVwCJoQG) | [The worker pool, line by line](https://claude.ai/artifact/WQCK76jbtKB5WtQRRh5Qgv) |
+| [10](10-a-memory-for-the-house-voice.md) | A memory for the house voice | 10 — retrieval: embeddings, brute-force cosine, style memory | [A memory for the house voice](https://claude.ai/artifact/X7S4oMKwVZt3gSCJGnox6V) | [Style memory, line by line](https://claude.ai/artifact/6SFcTdLKojwjeAts7cf1np) |
 
 Lessons tell the story of a milestone: what surprised me and why. Walkthroughs go through the code
 itself in reading order, the way a tech lead would with a new teammate. Formatted pages are built

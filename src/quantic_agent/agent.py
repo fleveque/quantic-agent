@@ -341,10 +341,14 @@ class Writer:
     model: Model
     today: date | None = None
     options: llm.Options | None = None
+    # Approved answers to earlier questions, shown as examples of the house
+    # voice (design §3.4). Language only: they're not data, and their figures
+    # are in no manifest.
+    examples: Sequence[str] = ()
 
     async def write(self, question: str, research: Research) -> Draft:
         """Answers question from what research gathered."""
-        messages = write_messages(question, self.today, research)
+        messages = write_messages(question, self.today, research, self.examples)
         resp = await self.model.chat(messages, think=False, options=self.options)
         tokens = resp.prompt_eval_count + resp.eval_count
         if not resp.message.content.strip():
@@ -352,15 +356,23 @@ class Writer:
         return Draft(text=resp.message.content, truncated=resp.truncated, tokens=tokens)
 
 
-def write_messages(question: str, today: date | None, research: Research) -> list[llm.Message]:
+def write_messages(
+    question: str, today: date | None, research: Research, examples: Sequence[str] = ()
+) -> list[llm.Message]:
     """The writer's whole view of the world: the standing instruction, today's
-    date, the question, and each successful call's result labelled with the
-    call that produced it. Failed calls are left out: they are errors the
-    research model was shown, not data. Public, so the prompt can be inspected
-    exactly as the model gets it."""
+    date, examples of approved answers if any, the question, and each
+    successful call's result labelled with the call that produced it. Failed
+    calls are left out: they are errors the research model was shown, not
+    data. Public, so the prompt can be inspected exactly as the model gets it."""
     parts: list[str] = []
     if today is not None:
         parts.append(f"Today's date: {today.isoformat()}")
+    if examples:
+        parts.append(
+            "Answers a reviewer approved for earlier questions, as examples of tone and "
+            "structure only. Their facts, dates and figures are out of date: use none of them."
+        )
+        parts.extend(f"Example {i}:\n{text}" for i, text in enumerate(examples, 1))
     parts.append(f"Question: {question}")
     data = [c for c in research.calls if not c.failed]
     for c in data:

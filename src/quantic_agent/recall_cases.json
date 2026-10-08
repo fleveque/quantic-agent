@@ -1,0 +1,127 @@
+{
+  "answers": [
+    {
+      "id": "this-week",
+      "question": "What goes ex-dividend this week?",
+      "text": "The data shows that the following companies have ex-dividend dates within a seven-day period starting from 2026-10-08:\n\n*   **Microsoft** (Symbol: MSFT, Sector: Technology) goes ex-dividend on **2026-10-08** with a quarterly payment frequency.\n*   **Johnson & Johnson** (Symbol: JNJ, Sector: Healthcare) goes ex-dividend on **2026-10-08** with a quarterly payment frequency.\n*   **Apple Inc.** (Symbol: AAPL, Sector: Technology) goes ex-dividend on **2026-10-09** with a quarterly payment frequency.\n*   **Iberdrola** (Symbol: IBE.MC, Sector: Utilities) goes ex-dividend on **2026-10-10** with a semi_annual payment frequency.\n\nThe data does not specify the amount of dividends or declare which dates constitute \"this week\" specifically relative to the current date beyond the provided seven-day range."
+    },
+    {
+      "id": "ten-days",
+      "question": "Which companies go ex-dividend in the next 10 days?",
+      "text": "Based on the provided data, the following companies go ex-dividend within the 10-day period starting from October 8, 2026:\n\n*   **Microsoft (MSFT)**: Ex-dividend date is **2026-10-08**.\n*   **Johnson & Johnson (JNJ)**: Ex-dividend date is **2026-10-08**.\n*   **Apple Inc. (AAPL)**: Ex-dividend date is **2026-10-09**.\n*   **Iberdrola (IBE.MC)**: Ex-dividend date is **2026-10-10**.\n\nThe data also lists **Procter & Gamble (PG)** and **Coca-Cola (KO)**, but their ex-dividend dates are **2026-10-16** and **2026-10-17** respectively, which fall outside the \"next 10 days\" from October 8."
+    },
+    {
+      "id": "msft-month",
+      "question": "Is Microsoft going ex-dividend this month?",
+      "text": "Yes, Microsoft is going ex-dividend today, 2026-10-08. According to the data, Microsoft (symbol MSFT) in the Technology sector has an ex_dividend_date of 2026-10-08 and a payment_frequency of quarterly. This date falls within October 2026."
+    },
+    {
+      "id": "ko-streak",
+      "question": "How many years in a row has Coca-Cola raised its dividend?",
+      "text": "According to the data provided, Coca-Cola has raised its dividend for 28 consecutive years. This information is indicated by the \"streak_years\" field within the \"dividend_profile\" section of the dataset. The annual dividend amounts paid from 2014 through 2025 are listed as follows: $1.22 (2014), $1.32 (2015), $1.40 (2016), $1.48 (2017), $1.56 (2018), $1.60 (2019), $1.64 (2020), $1.68 (2021), $1.76 (2022), $1.84 (2023), $1.94 (2024), and $2.04 (2025). The dataset also notes a dividend payment history from October 2020 to September 2026 with specific quarterly payment months listed as [4, 7, 10, 12]."
+    },
+    {
+      "id": "six-months",
+      "question": "Which stocks go ex-dividend in the next six months?",
+      "text": "Based on the provided data, the following companies have ex-dividend dates that fall on or before the end of the next six months from today (2026-10-08):\n\n*   **Microsoft (MSFT)**: Technology sector; Ex-dividend date 2026-10-08; Payment frequency quarterly.\n*   **Johnson & Johnson (JNJ)**: Healthcare sector; Ex-dividend date 2026-10-08; Payment frequency quarterly.\n*   **Apple Inc. (AAPL)**: Technology sector; Ex-dividend date 2026-10-09; Payment frequency quarterly.\n*   **Iberdrola (IBE.MC)**: Utilities sector; Ex-dividend date 2026-10-10; Payment frequency semi_annual.\n*   **Procter & Gamble (PG)**: Consumer Defensive sector; Ex-dividend date 2026-10-16; Payment frequency quarterly.\n*   **Coca-Cola (KO)**: Consumer Defensive sector; Ex-dividend date 2026-10-17; Payment frequency quarterly.\n*   **Banco Santander (SAN.MC)**: Financial Services sector; Ex-dividend date 2026-10-19; Payment frequency semi_annual.\n*   **Verizon Communications (VZ)**: Communication Services sector; Ex-dividend date 2026-10-21; Payment frequency quarterly.\n*   **Diageo plc (DGE.L)**: Consumer Defensive sector; Ex-dividend date 2026-10-21; Payment frequency semi_annual.\n\nThe data does not include any companies with ex-dividend dates after 2026-10-21. No counts, sums, or averages are calculated from this list."
+    },
+    {
+      "id": "safety-14-days",
+      "question": "Compare the dividend safety and growth streaks of the companies that go ex-dividend in the next 14 days.",
+      "text": "Based on the provided data, here are the safety and growth streak details for the companies going ex-dividend within the next 14 days from October 8, 2026:\n\n**Safety Status (as of 2026-10-08)**\n*   **Safe**: Apple Inc. (AAPL), Johnson & Johnson (JNJ), Microsoft (MSFT), Coca-Cola (KO), Banco Santander (SAN.MC), and Diageo plc (DGE.L).\n*   **Watch**: Iberdrola (IBE.MC), Procter & Gamble (PG), and Verizon Communications (VZ).\n\n**Safety Reasons Provided in Data**\n*   **Safe companies** cite \"growing_dividend\" and/or \"long_growth_streak\". Microsoft additionally cites \"low_leverage\".\n*   **Watch companies** cite \"growing_dividend\" and/or \"long_growth_streak\", alongside a warning for \"tight_liquidity\".\n\n**Growth Streaks and Years**\n*   **15 years**: Microsoft (MSFT).\n*   **28 years**: Johnson & Johnson (JNJ), Procter & Gamble (PG), and Coca-Cola (KO).\n*   **4 years**: Banco Santander (SAN.MC).\n*   **1 year**: Diageo plc (DGE.L).\n*   Iberdrola, Verizon Communications, Apple Inc., Microsoft, Procter & Gamble, and Coca-Cola have specific snowflake growth scores provided but no explicit streak year count in the `dividend_profile` for those specific entries, except where noted above. Verizon and Iberdrola do not have a listed `streak_years` value in their provided JSON snippets (only MSFT, JNJ, PG, KO, SAN.MC, DGE.L).\n*   *Correction based strictly on text*: Microsoft lists 15 years; Johnson & Johnson lists 28 years; Procter & Gamble lists 28 years; Coca-Cola lists 28 years; Banco Santander lists 4 years; Diageo plc lists 1 year. The provided data for Apple, Iberdrola, and Verizon does not contain a `streak_years` integer in the dividend profile section.\n\n**Additional Financial Context from Data**\n*   **Iberdrola** has a debt-to-equity ratio of 100.03.\n*   **Verizon Communications** has a debt-to-equity ratio of 184.081.\n*   **Procter & Gamble** has a current_ratio of 0.677 and quick_ratio of 0.413.\n*   **Johnson & Johnson** has a current_ratio of 1.089 and debt-to-equity of 57.709.\n*   **Microsoft** has a current_ratio of 1.23, debt-to-equity of 29.118, and lists \"low_leverage\" as a positive safety reason.\n*   **Apple Inc.** has a current_ratio of 1.003 and quick_ratio of 0.812.\n*   **Coca-Cola** has a current_ratio of 1.305 and quick_ratio of 0.798.\n*   **Banco Santander** lists null for current_ratio, ebitda, debt_to_equity, and quick_ratio in the leverage section but lists total_debt as 404829011968.0 and total_cash as 315343011840.0.\n*   **Diageo plc** has a current_ratio of 1.604 and debt-to-equity of 171.345."
+    }
+  ],
+  "queries": [
+    {
+      "query": "Which stocks have ex-dividend dates in the coming two weeks?",
+      "want": [
+        "this-week",
+        "ten-days",
+        "six-months"
+      ],
+      "language": "en"
+    },
+    {
+      "query": "List the upcoming ex-dividend dates for next month.",
+      "want": [
+        "this-week",
+        "ten-days",
+        "six-months"
+      ],
+      "language": "en"
+    },
+    {
+      "query": "¿Qué empresas tienen fecha ex-dividendo esta semana?",
+      "want": [
+        "this-week",
+        "ten-days",
+        "six-months"
+      ],
+      "language": "es"
+    },
+    {
+      "query": "Does Apple go ex-dividend before the end of October?",
+      "want": [
+        "msft-month"
+      ],
+      "language": "en"
+    },
+    {
+      "query": "When is Johnson & Johnson's next ex-dividend date?",
+      "want": [
+        "msft-month"
+      ],
+      "language": "en"
+    },
+    {
+      "query": "¿Cuándo es la próxima fecha ex-dividendo de Microsoft?",
+      "want": [
+        "msft-month"
+      ],
+      "language": "es"
+    },
+    {
+      "query": "How long has PepsiCo been increasing its dividend?",
+      "want": [
+        "ko-streak"
+      ],
+      "language": "en"
+    },
+    {
+      "query": "Has Procter & Gamble raised its payout every year?",
+      "want": [
+        "ko-streak"
+      ],
+      "language": "en"
+    },
+    {
+      "query": "¿Cuántos años seguidos ha subido Coca-Cola su dividendo?",
+      "want": [
+        "ko-streak"
+      ],
+      "language": "es"
+    },
+    {
+      "query": "Which of this month's ex-dividend companies have the safest dividends?",
+      "want": [
+        "safety-14-days"
+      ],
+      "language": "en"
+    },
+    {
+      "query": "Compare the dividend growth of Verizon and Diageo.",
+      "want": [
+        "safety-14-days",
+        "ko-streak"
+      ],
+      "language": "en"
+    },
+    {
+      "query": "¿Qué dividendos son más seguros entre las empresas que cotizan ex-dividendo pronto?",
+      "want": [
+        "safety-14-days"
+      ],
+      "language": "es"
+    }
+  ]
+}

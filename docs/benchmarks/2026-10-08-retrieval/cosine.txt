@@ -1,0 +1,18 @@
+Brute-force search for the 2 nearest of n random vectors, one query, on the target machine (Ryzen 7
+7800X3D), Python 3.14. "zip+sum" and "sumprod" compute the full cosine, both lengths included;
+numpy is one matrix multiply. Then plain Python again over unit vectors, one math.sumprod each, as
+memory.nearest does.
+
+  768 dims    500 vectors  zip+sum     46.5ms  sumprod     23.7ms  numpy      0.8ms
+  768 dims   5000 vectors  zip+sum    459.5ms  sumprod    235.7ms  numpy      2.8ms
+  768 dims  20000 vectors  zip+sum   1831.0ms  sumprod    950.7ms  numpy     11.2ms
+ 1024 dims    500 vectors  zip+sum     61.0ms  sumprod     31.3ms  numpy      3.0ms
+ 1024 dims   5000 vectors  zip+sum    611.7ms  sumprod    314.4ms  numpy      2.8ms
+ 1024 dims  20000 vectors  zip+sum   2445.8ms  sumprod   1254.2ms  numpy     11.2ms
+
+  768 dims    500 unit vectors  one sumprod each     9.2ms
+  768 dims   5000 unit vectors  one sumprod each    78.4ms
+  768 dims  20000 unit vectors  one sumprod each   318.9ms
+ 1024 dims    500 unit vectors  one sumprod each    10.8ms
+ 1024 dims   5000 unit vectors  one sumprod each   104.7ms
+ 1024 dims  20000 unit vectors  one sumprod each   419.8ms
