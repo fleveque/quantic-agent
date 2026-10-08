@@ -10,7 +10,8 @@ import socket
 import struct
 import threading
 import time
-from collections.abc import Iterator
+from collections.abc import Generator, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -51,7 +52,8 @@ class Reply:
     """One answer. drop=True closes the connection without replying, the way
     a restarting Ollama does; reset=True aborts it, so the client sees the
     connection reset by its peer; hang=True never answers, as a long
-    generation doesn't, until the client gives up."""
+    generation doesn't, until the client gives up. delay is how many seconds
+    the answer takes, as a generation does."""
 
     body: bytes = b""
     status: int = 200
@@ -59,6 +61,7 @@ class Reply:
     drop: bool = False
     reset: bool = False
     hang: bool = False
+    delay: float = 0.0
 
 
 @dataclass
@@ -82,6 +85,10 @@ class FakeOllama:
     # connection, which is how Ollama learns to stop generating.
     hangups: int = 0
     released: threading.Event = field(default_factory=threading.Event)
+    # The most requests the server was answering at the same moment.
+    peak: int = 0
+    _busy: int = 0
+    _count: threading.Lock = field(default_factory=threading.Lock)
 
     def wait_for_hangups(self, n: int, seconds: float = 2) -> bool:
         """Whether n hang-ups were seen within seconds: the server's thread
@@ -90,6 +97,18 @@ class FakeOllama:
         while self.hangups < n and time.monotonic() < deadline:
             time.sleep(0.01)
         return self.hangups >= n
+
+    @contextmanager
+    def answering(self) -> Generator[None]:
+        """Counts a request as being answered for the length of the block."""
+        with self._count:
+            self._busy += 1
+            self.peak = max(self.peak, self._busy)
+        try:
+            yield
+        finally:
+            with self._count:
+                self._busy -= 1
 
     @property
     def host_port(self) -> str:
@@ -108,7 +127,8 @@ def ollama() -> Iterator[FakeOllama]:
         def do_POST(self) -> None:
             length = int(self.headers.get("Content-Length", 0))
             fake.bodies.append(json.loads(self.rfile.read(length)))
-            self._answer()
+            with fake.answering():
+                self._answer()
 
         def _answer(self) -> None:
             fake.paths.append(self.path)
@@ -122,6 +142,8 @@ def ollama() -> Iterator[FakeOllama]:
             if reply.hang:
                 self._wait_for_hangup()
                 return
+            if reply.delay:
+                time.sleep(reply.delay)
             if reply.reset:
                 # Lingering for zero seconds makes close() send a TCP reset.
                 self.connection.setsockopt(

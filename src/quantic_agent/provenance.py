@@ -62,6 +62,7 @@ class Source:
 
 
 _ISO_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
+_ISO_MONTH = re.compile(r"\d{4}-\d{2}")
 
 # What json.loads can return, defined in terms of itself.
 type JSON = bool | int | float | str | list[JSON] | dict[str, JSON] | None
@@ -76,6 +77,7 @@ class Manifest:
         self._numbers: dict[int | float, list[Source]] = {}
         self._strings: dict[str, list[Source]] = {}
         self._dates: dict[str, list[Source]] = {}  # YYYY-MM-DD
+        self._months: set[str] = set()  # YYYY-MM, as in a price history's "from"
         for i, record in enumerate(records):
             try:
                 value: JSON = json.loads(record.result)
@@ -97,6 +99,8 @@ class Manifest:
                 self._strings.setdefault(value, []).append(at)
                 if _ISO_DATE.fullmatch(value):
                     self._dates.setdefault(value, []).append(at)
+                elif _ISO_MONTH.fullmatch(value):
+                    self._months.add(value)
             case list():
                 # How many items a list has is part of what the tool returned.
                 length = Source(call=at.call, tool=at.tool, path=f"len({at.path})")
@@ -105,7 +109,21 @@ class Manifest:
                     self._index(item, _child(at, f"[{i}]"))
             case dict():
                 for key, item in value.items():
+                    # Keys are returned data too: get_stock's
+                    # dividend_by_year is keyed by year, "2014": 1.12.
+                    self._index_key(key, _child(at, f".{key}"))
                     self._index(item, _child(at, f".{key}"))
+
+    def _index_key(self, key: str, at: Source) -> None:
+        """A key that is a figure (a year, a date) counts as returned, as its
+        value does. Other keys are field names, and aren't indexed: a tool
+        that returns {"days": 10} hasn't returned the string "days"."""
+        if key.isdigit():
+            self._numbers.setdefault(int(key), []).append(at)
+        elif _ISO_DATE.fullmatch(key):
+            self._dates.setdefault(key, []).append(at)
+        elif _ISO_MONTH.fullmatch(key):
+            self._months.add(key)
 
     def add_text(self, source: str, text: str) -> None:
         """Adds the figures written in text as a source, labelled source: the
@@ -137,10 +155,13 @@ class Manifest:
         return self._strings.get(s, [])
 
     def has_year(self, year: int) -> bool:
-        """Whether any date falls in year. A bare year in prose ("in 2026") is
-        accounted for by a returned date in that year: the year is part of a
-        figure a tool returned."""
-        return any(d.startswith(f"{year:04d}-") for d in self._dates)
+        """Whether any date or year-month falls in year. A bare year in prose
+        ("in 2026") is accounted for by a returned date in that year: the
+        year is part of a figure a tool returned."""
+        prefix = f"{year:04d}-"
+        return any(d.startswith(prefix) for d in self._dates) or any(
+            m.startswith(prefix) for m in self._months
+        )
 
     def has_month_day(self, month: int, day: int) -> bool:
         """Whether any date falls on this month and day, in any year, for prose

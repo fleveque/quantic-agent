@@ -1,0 +1,163 @@
+Real runs of quantic-agent --research, qwen3.5:9b, live quantic.finance data, 2026-10-08, on the
+target machine (RTX 4070 Ti Super 16GB, Ollama 0.34.4). The same question at Ollama's default
+context window and at 32K. Budgets at the time: 16 calls, 96,000 tokens.
+
+=== --num-ctx 4096
+tool dividend_calendar {"days": 14} → 1232 bytes (299ms)
+tool get_stock {"symbol": "JNJ"} → 1514 bytes (129ms)
+tool get_stock {"symbol": "MSFT"} → 1538 bytes (135ms)
+tool get_stock {"symbol": "AAPL"} → 1506 bytes (137ms)
+tool get_stock {"symbol": "IBE.MC"} → 1495 bytes (139ms)
+tool get_stock {"symbol": "PG"} → 1583 bytes (126ms)
+tool get_stock {"symbol": "SAN.MC"} → 1425 bytes (125ms)
+tool get_stock {"symbol": "KO"} → 1514 bytes (134ms)
+tool get_stock {"symbol": "VZ"} → 1570 bytes (132ms)
+tool get_stock {"symbol": "DGE.L"} → 1489 bytes (128ms)
+quantic-agent: 18 figure(s) in the answer came from no tool result:
+  '20%' (number 20)
+  '1.8' (number 1.8)
+  '1.7' (number 1.7)
+  '3.1%' (number 3.1)
+  '20%' (number 20)
+  '184' (number 184)
+  '0.60' (number 0.6)
+  '2.7%' (number 2.7)
+  '100%' (number 100)
+  '171' (number 171)
+  '$40' (number 40)
+  '$60' (number 60)
+  '$60' (number 60)
+  '$32' (number 32)
+  '$45' (number 45)
+  '$40' (number 40)
+  '$16' (number 16)
+  '100%' (number 100)
+quantic-agent: run 1 unverified
+Based on the data provided, here is a comparative analysis of **Altria (MO)**, **Verizon (VZ)**, and **Diageo (DGE.L)** to help you evaluate them based on dividend safety, growth, and financial health.
+
+### ⚠️ Important Data Note
+The "last known price" dates in your data are listed as **2026-10-08**. Since today is not in the future, these prices reflect a hypothetical or projected scenario in your dataset. The analysis below assumes these figures represent the current state of those specific stocks within this context.
+
+---
+
+### 1. Executive Summary: Which fits your strategy?
+
+| Feature | **Altria (MO)** | **Verizon (VZ)** | **Diageo (DGE.L)** |
+| :--- | :--- | :--- | :--- |
+| **Primary Strategy** | **High Yield & Stability**: Best for income-focused investors seeking the highest current yield with solid safety. | **Value & Cash Flow**: Good yield with strong growth, but carries higher leverage risk than MO. | **Dividend Grower**: Lowest current yield but highest historical consistency and safety score. |
+| **Safety Status** | **Safe** (28+ years streak) | **Watch** (High debt/Equity ratio) | **Safe** (19 years streak, strong balance sheet) |
+| **Growth Potential** | Moderate (~4% CAGR) | High Growth (~3% TTM, 5y ~20%) | Strong recent growth momentum |
+| **Leverage Risk** | Low (Very manageable debt) | **High** (Debt/Equity > 1.8) | Moderate (Debt/Equity ~1.7) |
+
+---
+
+### 2. Detailed Stock Analysis
+
+#### 🚬 Altria Group, Inc. (`MO`)
+*   **The "Dividend King" Candidate:** With a **28-year dividend streak** and a "Safe" status, MO is the most stable pick here regarding pure income reliability.
+*   **Yield Profile:** Offers a current yield of roughly **9%**. The historical band (5-year average) shows it has been significantly above 3%, currently sitting near its high end.
+*   **Financial Health:** Despite heavy cash requirements for R&D or M&A in tobacco, the company maintains a "Safe" payout status. The leverage is contained relative to cash flows.
+*   **Growth:** Moderate growth trajectory (~4% CAGR over 5 years), driven more by pricing power and market share than volume expansion typical of tech/growth stocks.
+*   **Verdict:** Ideal if your priority is **maximizing immediate income** without sacrificing too much safety, provided you accept sector concentration risk.
+
+#### 📶 Verizon Communications (`VZ`)
+*   **The Growth Value Play:** VZ stands out with the highest recent growth rate among the three (**~3.1% TTM**) and a strong 5-year CAGR of nearly **20%** (though this seems inflated by price compression or specific accounting adjustments in the data, suggesting high relative performance).
+*   **Yield Profile:** High yield (~6%), but with significant fluctuation history (Low 5y: 4.58%, High 5y: 7.07%). It pays dividends quarterly with a semi-annual frequency pattern listed (likely an artifact of data aggregation, standard for US telecom is quarterly).
+*   **Risk Factor:** The leverage metrics are concerning. A Debt-to-Equity ratio of **184** and a Current Ratio of **0.60** indicates tight liquidity and high interest burden. This keeps its safety status at **"Watch"** rather than "Safe."
+*   **Verdict:** Suitable for investors who want **higher growth** potential in the telecom sector but must accept higher financial risk (debt load).
+
+#### 🥃 Diageo plc (`DGE.L`) - London Listing
+*   **The Safe Haven:** With a perfect **Safety Score of 1.0** and "Safe" status, Diageo represents the most robust balance sheet among the three.
+*   **Yield Profile:** Lower current yield (~2.7% avg 5y). While the current yield looks lower, the data shows a massive recent growth jump (`growth_ttm`: **100%**), suggesting a potential special event or restatement recently.
+*   **Liquidity vs. Debt:** Interestingly, while Diageo has higher Debt-to-Equity (171) than Altria's typical structure, its current ratio (1.6) and quick ratio (0.5) suggest it can manage short-term obligations better than Verizon. However, the high debt/equity is still notable.
+*   **Verdict:** Best for **long-term capital preservation** and steady compounding. If you are looking to buy a stock that won't cut dividends during a recession, Diageo is the strongest candidate here.
+
+---
+
+### 3. Comparative Metrics Breakdown
+
+#### A. Dividend Safety (Payout Sustainability)
+1.  **Altria (MO):** **Highest Safety.** 28 years of growth. Status: Safe. The reason for caution ("tight liquidity") is noted in VZ, not MO.
+2.  **Diageo (DGE.L):** **High Safety.** 19 years streak. Status: Safe. High growth momentum recently.
+3.  **Verizon (VZ):** **Moderate Risk.** Only 19 years streak. Status: Watch. The high debt load creates vulnerability to interest rate hikes.
+
+#### B. Price Performance & Momentum
+*   **Altria:** Stable price range ($40–$60 over the period shown). Low momentum score suggests steady, unexciting movement.
+*   **Verizon:** High volatility (High: $60, Low: $32). The latest price ($45) is near the middle, suggesting recovery.
+*   **Diageo:** Significant undervaluation potential? The price dropped from high of $40 to $16, but growth metrics are exploding.
+
+#### C. Leverage & Balance Sheet Health
+*   **Altria:** Total Debt ~$44B vs Cash ~$16B. Net debt is significant but manageable for cash flow generation.
+*   **Verizon:** Total Debt ~$193B vs Cash ~$1.8B. **Highly leveraged.** This explains the "Watch" status and "tight liquidity" warning. In a high-interest rate environment, this hurts profitability.
+*   **Diageo:** Total Debt ~$22B vs Cash ~$1.7B. Lower absolute debt than Verizon, though high relative to equity.
+
+### 4. Final Recommendation
+
+*   **Choose Altria (MO) if:** You want the highest yield with a proven track record of safety. It is the most defensive stock of the three regarding dividend cuts, assuming no regulatory changes in the tobacco industry.
+*   **Choose Verizon (VZ) if:** You are aggressive and believe telecom consolidation will continue to drive massive earnings growth, outweighing the risk of their high debt load. *Caution: Monitor interest rates closely.*
+*   **Choose Diageo (DGE.L) if:** You prioritize capital safety above current yield. The recent 100% growth metric suggests a turnaround or strategic shift is underway that could lead to yield expansion over time.
+
+**Risk Warning:** Always verify the "2026" dates in your data source, as they indicate future timestamps relative to the current real-world date. If these are indeed projections, ensure your model accounts for the probability of those scenarios occurring.
+exit 4, wall 25721ms
+=== --num-ctx 32768
+tool dividend_calendar {"days": 14} → 1232 bytes (308ms)
+tool get_stock {"symbol": "AAPL"} → 1506 bytes (133ms)
+tool get_stock {"symbol": "JNJ"} → 1514 bytes (135ms)
+tool get_stock {"symbol": "IBE.MC"} → 1495 bytes (138ms)
+tool get_stock {"symbol": "MSFT"} → 1538 bytes (143ms)
+tool get_stock {"symbol": "PG"} → 1583 bytes (131ms)
+tool get_stock {"symbol": "KO"} → 1514 bytes (130ms)
+tool get_stock {"symbol": "SAN.MC"} → 1425 bytes (130ms)
+tool get_stock {"symbol": "VZ"} → 1570 bytes (129ms)
+tool get_stock {"symbol": "DGE.L"} → 1489 bytes (128ms)
+quantic-agent: run 2 answered
+Based on the provided data, here are the safety and growth streak details for the companies going ex-dividend within the next 14 days from October 8, 2026:
+
+**Safety Status (as of 2026-10-08)**
+*   **Safe**: Apple Inc. (AAPL), Johnson & Johnson (JNJ), Microsoft (MSFT), Coca-Cola (KO), Banco Santander (SAN.MC), and Diageo plc (DGE.L).
+*   **Watch**: Iberdrola (IBE.MC), Procter & Gamble (PG), and Verizon Communications (VZ).
+
+**Safety Reasons Provided in Data**
+*   **Safe companies** cite "growing_dividend" and/or "long_growth_streak". Microsoft additionally cites "low_leverage".
+*   **Watch companies** cite "growing_dividend" and/or "long_growth_streak", alongside a warning for "tight_liquidity".
+
+**Growth Streaks and Years**
+*   **15 years**: Microsoft (MSFT).
+*   **28 years**: Johnson & Johnson (JNJ), Procter & Gamble (PG), and Coca-Cola (KO).
+*   **4 years**: Banco Santander (SAN.MC).
+*   **1 year**: Diageo plc (DGE.L).
+*   Iberdrola, Verizon Communications, Apple Inc., Microsoft, Procter & Gamble, and Coca-Cola have specific snowflake growth scores provided but no explicit streak year count in the `dividend_profile` for those specific entries, except where noted above. Verizon and Iberdrola do not have a listed `streak_years` value in their provided JSON snippets (only MSFT, JNJ, PG, KO, SAN.MC, DGE.L).
+*   *Correction based strictly on text*: Microsoft lists 15 years; Johnson & Johnson lists 28 years; Procter & Gamble lists 28 years; Coca-Cola lists 28 years; Banco Santander lists 4 years; Diageo plc lists 1 year. The provided data for Apple, Iberdrola, and Verizon does not contain a `streak_years` integer in the dividend profile section.
+
+**Additional Financial Context from Data**
+*   **Iberdrola** has a debt-to-equity ratio of 100.03.
+*   **Verizon Communications** has a debt-to-equity ratio of 184.081.
+*   **Procter & Gamble** has a current_ratio of 0.677 and quick_ratio of 0.413.
+*   **Johnson & Johnson** has a current_ratio of 1.089 and debt-to-equity of 57.709.
+*   **Microsoft** has a current_ratio of 1.23, debt-to-equity of 29.118, and lists "low_leverage" as a positive safety reason.
+*   **Apple Inc.** has a current_ratio of 1.003 and quick_ratio of 0.812.
+*   **Coca-Cola** has a current_ratio of 1.305 and quick_ratio of 0.798.
+*   **Banco Santander** lists null for current_ratio, ebitda, debt_to_equity, and quick_ratio in the leverage section but lists total_debt as 404829011968.0 and total_cash as 315343011840.0.
+*   **Diageo plc** has a current_ratio of 1.604 and debt-to-equity of 171.345.
+exit 0, wall 29204ms
+
+=== Ollama's log for the two runs (journalctl -u ollama), the lines about the context
+srv    load_model: initializing, n_slots = 1, n_ctx_slot = 4096, kv_unified = 'false'
+slot   operator(): id  0 | task 0 | new prompt, n_ctx_slot = 4096, n_keep = 4, task.n_tokens = 562
+slot      release: id  0 | task 0 | stop processing: n_tokens = 590, truncated = 0
+slot   operator(): id  0 | task 32 | new prompt, n_ctx_slot = 4096, n_keep = 4, task.n_tokens = 971
+slot      release: id  0 | task 32 | stop processing: n_tokens = 1214, truncated = 0
+slot   operator(): id  0 | task 278 | new prompt, n_ctx_slot = 4096, n_keep = 4, task.n_tokens = 4060
+slot      release: id  0 | task 278 | stop processing: n_tokens = 4095, truncated = 1
+time=2026-10-08T09:04:22.189+02:00 level=WARN source=llama_server.go:320 msg="truncating input prompt" limit=2050 prompt=6945 keep=4 new=2050
+slot   operator(): id  0 | task 323 | new prompt, n_ctx_slot = 4096, n_keep = 4, task.n_tokens = 2050
+slot      release: id  0 | task 323 | stop processing: n_tokens = 3692, truncated = 0
+srv    load_model: initializing, n_slots = 1, n_ctx_slot = 32768, kv_unified = 'false'
+slot   operator(): id  0 | task 0 | new prompt, n_ctx_slot = 32768, n_keep = 4, task.n_tokens = 562
+slot      release: id  0 | task 0 | stop processing: n_tokens = 590, truncated = 0
+slot   operator(): id  0 | task 31 | new prompt, n_ctx_slot = 32768, n_keep = 4, task.n_tokens = 971
+slot      release: id  0 | task 31 | stop processing: n_tokens = 1214, truncated = 0
+slot   operator(): id  0 | task 277 | new prompt, n_ctx_slot = 32768, n_keep = 4, task.n_tokens = 7566
+slot      release: id  0 | task 277 | stop processing: n_tokens = 8524, truncated = 0
+slot   operator(): id  0 | task 1244 | new prompt, n_ctx_slot = 32768, n_keep = 4, task.n_tokens = 6945
+slot      release: id  0 | task 1244 | stop processing: n_tokens = 7751, truncated = 0

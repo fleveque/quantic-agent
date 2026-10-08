@@ -4,7 +4,9 @@ It still has no scheduled tasks. What it can do so far: --check reports the
 model server and its models, --ask sends one prompt and prints the reply, and
 --research answers a question in two phases: research, where the model calls
 Quantic's tools (each call traced to stderr as it completes), then writing,
-where it answers from what they returned and nothing else. Every research run
+where it answers from what they returned and nothing else. Given several
+times, it answers the questions at once: their model calls take turns at the
+GPU, and their tool calls share one pace under Quantic's rate limit. Every research run
 is stored with its tool calls in a SQLite database: --runs lists them, --run N
 shows one and re-checks its answer against the data it was given, and
 --resume N carries on with a run that stopped, from the phase it had reached.
@@ -13,7 +15,8 @@ Exit status: 0 success, 1 failure (including --timeout running out), 2 wrong
 usage, 3 the model server or the MCP server wasn't there to answer (or
 Quantic's rate limit didn't clear), 4 a --research answer contains figures no
 tool returned (design N1), 5 research gathered no data, so nothing was
-written, 130 stopped by Ctrl-C or SIGTERM. After 3, 5 or 130, --resume
+written, 130 stopped by Ctrl-C or SIGTERM. For several questions, the status
+is the first one that isn't 0, in the order the questions were given. After 3, 5 or 130, --resume
 continues the run (design §3.6). On 130 the request in flight was cancelled,
 and Ollama stops working on it too.
 """
@@ -30,7 +33,7 @@ from pathlib import Path
 from typing import TextIO
 
 from quantic_agent import agent, llm, provenance, quantic, store
-from quantic_agent.tools import DIVIDEND_CALENDAR
+from quantic_agent.tools import DIVIDEND_CALENDAR, GET_STOCK
 
 # The safe choice for the target hardware (design §4): it fits any 16GB card
 # with room to spare. Development happens on a different machine, so both
@@ -51,6 +54,12 @@ EXIT_INTERRUPTED = 130  # 128 + SIGINT, the shell's convention for Ctrl-C
 # short enough to cut off a load: cancelling a load aborts it, and the next
 # attempt starts from zero.
 DEFAULT_TIMEOUT = 300.0
+
+# The context window research and writing ask Ollama for. Its own default,
+# 4096 tokens, is silently exceeded by a handful of get_stock results, and
+# Ollama then drops the start of the conversation. 32K kept the default model
+# wholly on a 16GB GPU (docs/benchmarks); see lesson 09 for the measurement.
+DEFAULT_NUM_CTX = 32768
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -75,7 +84,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     action.add_argument("--ask", metavar="PROMPT", help="send one prompt and print the reply")
     action.add_argument(
-        "--research", metavar="QUESTION", help="answer a question using Quantic's tools"
+        "--research",
+        metavar="QUESTION",
+        action="append",
+        help="answer a question using Quantic's tools; give it several times to answer several "
+        "questions at once",
     )
     action.add_argument(
         "--resume",
@@ -112,11 +125,19 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="the database of runs and tool calls (default: $QUANTIC_AGENT_DB, else %(default)s)",
     )
     parser.add_argument(
+        "--num-ctx",
+        type=int,
+        default=int(os.environ.get("QUANTIC_NUM_CTX") or DEFAULT_NUM_CTX),
+        metavar="TOKENS",
+        help="the model's context window for research and writing "
+        "(default: $QUANTIC_NUM_CTX, else %(default)s)",
+    )
+    parser.add_argument(
         "--timeout",
         type=float,
         default=DEFAULT_TIMEOUT,
         metavar="SECONDS",
-        help="give up on the model server after this long; 0 for no limit (default: %(default)g)",
+        help="give up on a run after this long; 0 for no limit (default: %(default)g)",
     )
     args = parser.parse_args(argv)
 
@@ -143,17 +164,25 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 async def _run(args: argparse.Namespace) -> int:
     cancel_on_sigterm()
-    if args.research is not None or args.resume is not None:
+    if args.resume is not None:
         with store.Store(args.db) as db:
             try:
-                run = _start_or_resume(db, args)
+                run = db.resume(args.resume)
             except store.NotResumableError as err:
                 _error(str(err))
                 return EXIT_FAILED
+            _error(
+                f"resuming run {run.id} in its {run.phase} phase, "
+                f"with {len(run.calls)} tool call(s) recorded"
+            )
             # A resumed run goes on with the model it started with, which is
             # the one its record names.
             async with llm.Client(args.ollama, run.model) as client:
-                return await _research(client, db, run, args)
+                return await _research(client, db, args, _pace(), run=run)
+    if args.research is not None:
+        with store.Store(args.db) as db:
+            async with llm.Client(args.ollama, args.model) as client:
+                return await _research_all(client, db, args)
     async with llm.Client(args.ollama, args.model) as client:
         try:
             # One deadline for the whole run, whatever it does inside; None
@@ -259,26 +288,60 @@ async def _check(client: llm.Client, base_url: str) -> int:
     return EXIT_OK
 
 
-def _start_or_resume(db: store.Store, args: argparse.Namespace) -> store.Run:
-    """Records a new run, or claims the one being resumed."""
-    if args.resume is not None:
-        run = db.resume(args.resume)
-        _error(
-            f"resuming run {run.id} in its {run.phase} phase, "
-            f"with {len(run.calls)} tool call(s) recorded"
-        )
-        return run
-    return db.run(db.start_run("research", args.research, args.model))
+def _pace() -> quantic.Pace:
+    """The pace every MCP session in this process shares."""
+
+    def on_wait(seconds: float) -> None:
+        _error(f"pacing: waiting {seconds:.1f}s to stay under Quantic's rate limit")
+
+    return quantic.Pace(on_wait=on_wait)
+
+
+async def _research_all(client: llm.Client, db: store.Store, args: argparse.Namespace) -> int:
+    """Answers every --research question at once, each its own run. They
+    share the model client, whose semaphore makes their model calls take
+    turns at the GPU, and one pace for Quantic. The status is the first that
+    isn't 0, in question order: a scheduler reads one number."""
+    pace = _pace()
+    questions: list[str] = args.research
+    if len(questions) == 1:
+        return await _research(client, db, args, pace, question=questions[0])
+    async with asyncio.TaskGroup() as group:
+        tasks = [
+            group.create_task(_research(client, db, args, pace, question=q, batch=True))
+            for q in questions
+        ]
+    return next((code for t in tasks if (code := t.result()) != EXIT_OK), EXIT_OK)
 
 
 async def _research(
-    client: llm.Client, db: store.Store, run: store.Run, args: argparse.Namespace
+    client: llm.Client,
+    db: store.Store,
+    args: argparse.Namespace,
+    pace: quantic.Pace,
+    *,
+    question: str = "",
+    run: store.Run | None = None,
+    batch: bool = False,
 ) -> int:
     """Answers one question in two phases, research then write (design §3.1),
     recording the run as it goes: the run when it starts, each tool call as it
     completes, a checkpoint when research is done, and the outcome and draft
-    when it ends. A resumed run starts at the phase it had reached: one
-    stopped while writing doesn't call a single tool again."""
+    when it ends. A resumed run, passed as run, starts at the phase it had
+    reached: one stopped while writing doesn't call a single tool again.
+
+    A new run is recorded here, in the task that answers it, before its first
+    await. A task cancelled before it starts never runs a line, so it leaves
+    no run behind; one recorded before the task started would stay "running"
+    for ever. In a batch, each line on stderr names its run."""
+    if run is None:
+        run = db.run(db.start_run("research", question, client.model))
+    label = f"run {run.id}: " if batch else ""
+    options = llm.Options(num_ctx=args.num_ctx)
+
+    def say(message: str) -> None:
+        _error(label + message)
+
     # The record's calls, continued in place by the research phase.
     gathered = agent.Research(calls=run.calls, tokens=run.tokens, exhausted=run.exhausted)
     written = 0  # tokens the writer used, if it got that far
@@ -289,7 +352,7 @@ async def _research(
         db.finish(run.id, state, error, draft, tokens=gathered.tokens + written)
         _error(f"run {run.id} {state}")
         if draft is None:
-            _error(f"to carry on from where it stopped: quantic-agent --resume {run.id}")
+            say(f"to carry on from where it stopped: quantic-agent --resume {run.id}")
 
     # "Today" is the day the run started, when its data was fetched, even for
     # a run resumed later: the answer describes that data.
@@ -301,21 +364,22 @@ async def _research(
         # different outcomes.
         async with asyncio.timeout(args.timeout or None):
             if run.phase is store.Phase.RESEARCH:
-                await _research_phase(client, db, run, gathered, args)
+                await _research_phase(client, db, run, gathered, args, pace, options, label)
                 if not gathered.has_data:
                     # Nothing to write from. Writing anyway produced "no data
                     # was retrieved" answers that counted as answered. The run
                     # stays in research, so resuming tries again.
-                    _error("research gathered no data (no tool call succeeded); nothing to write")
+                    say("research gathered no data (no tool call succeeded); nothing to write")
                     finish(store.State.NO_DATA, "research gathered no data")
                     return EXIT_NO_DATA
                 if gathered.exhausted is not None:
-                    _error(
+                    say(
                         f"research stopped when its {gathered.exhausted} budget ran out; "
                         "writing from what it gathered"
                     )
                 db.checkpoint(run.id, store.Phase.WRITE, gathered.tokens, gathered.exhausted)
-            draft = await agent.Writer(client, today=today).write(run.input, gathered)
+            writer = agent.Writer(client, today=today, options=options)
+            draft = await writer.write(run.input, gathered)
             written = draft.tokens
     except asyncio.CancelledError:
         # Recorded, then passed on. finish() is synchronous, so it runs to the
@@ -328,24 +392,26 @@ async def _research(
     except agent.NothingWrittenError as err:
         written = err.tokens
         finish(store.State.FAILED, str(err))
-        _error(str(err))
+        say(str(err))
         return EXIT_FAILED
     except (llm.LLMError, quantic.ToolServerError) as err:
         finish(store.State.FAILED, str(err))
         return _fail(err, args)
 
+    if batch:
+        print(f"=== run {run.id}: {run.input}")
     print(draft.text)
     if draft.truncated:
-        _error("the answer was truncated: the model hit its token limit")
+        say("the answer was truncated: the model hit its token limit")
     try:
         findings = _check_figures(run, draft.text, gathered.calls)
     except provenance.ProvenanceError as err:
         finish(store.State.FAILED, str(err))
-        _error(str(err))
+        say(str(err))
         return EXIT_FAILED
     saved = store.Draft(content=draft.text, truncated=draft.truncated, findings=findings)
     if findings:
-        _report_findings(findings, sys.stderr)
+        _report_findings(findings, sys.stderr, label)
         finish(store.State.UNVERIFIED, draft=saved)
         return EXIT_UNVERIFIED
     finish(store.State.ANSWERED, draft=saved)
@@ -358,19 +424,24 @@ async def _research_phase(
     run: store.Run,
     gathered: agent.Research,
     args: argparse.Namespace,
+    pace: quantic.Pace,
+    options: llm.Options,
+    label: str,
 ) -> None:
     """Lets the model call Quantic's tools, recording each call as it
     completes, and carrying on from what gathered already holds."""
 
     def on_call(seq: int, call: agent.Call) -> None:
-        _trace(call)
+        _trace(call, label)
         db.record_call(run.id, seq, call)
 
     def on_retry(method: str, retry: int, wait: float) -> None:
-        _error(f"Quantic's rate limit; retry {retry} of {method} in {wait:.1f}s")
+        _error(f"{label}Quantic's rate limit; retry {retry} of {method} in {wait:.1f}s")
 
-    async with quantic.Server(args.mcp, on_retry=on_retry) as server:
-        researcher = agent.Researcher(model=client, server=server, tools=[DIVIDEND_CALENDAR])
+    async with quantic.Server(args.mcp, on_retry=on_retry, pace=pace) as server:
+        researcher = agent.Researcher(
+            model=client, server=server, tools=[DIVIDEND_CALENDAR, GET_STOCK], options=options
+        )
         await researcher.research(run.input, gathered, on_call=on_call)
 
 
@@ -389,9 +460,9 @@ def _check_figures(
     return provenance.check_prose(text, manifest)
 
 
-def _report_findings(findings: Sequence[provenance.Finding], out: TextIO) -> None:
+def _report_findings(findings: Sequence[provenance.Finding], out: TextIO, label: str = "") -> None:
     print(
-        f"quantic-agent: {len(findings)} figure(s) in the answer came from no tool result:",
+        f"quantic-agent: {label}{len(findings)} figure(s) in the answer came from no tool result:",
         file=out,
     )
     for finding in findings:
@@ -456,11 +527,12 @@ def _shorten(text: str, n: int) -> str:
     return text if len(text) <= n else text[: n - 1] + "…"
 
 
-def _trace(call: agent.Call) -> None:
+def _trace(call: agent.Call, label: str = "") -> None:
     """One line per tool call on stderr: what was asked, and what came back."""
     outcome = call.result if call.failed else f"{len(call.result)} bytes"
     ms = round(call.duration.total_seconds() * 1000)
-    print(f"tool {call.tool} {json.dumps(call.arguments)} → {outcome} ({ms}ms)", file=sys.stderr)
+    line = f"{label}tool {call.tool} {json.dumps(call.arguments)} → {outcome} ({ms}ms)"
+    print(line, file=sys.stderr)
 
 
 async def _ask(client: llm.Client, prompt: str) -> int:

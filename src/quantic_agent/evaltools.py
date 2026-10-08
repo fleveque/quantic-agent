@@ -25,23 +25,34 @@ from pydantic import BaseModel, TypeAdapter
 
 from quantic_agent import agent, llm
 from quantic_agent.cli import cancel_on_sigterm
-from quantic_agent.tools import DIVIDEND_CALENDAR, ArgumentsError, DividendCalendarArgs, Tool
+from quantic_agent.tools import (
+    DIVIDEND_CALENDAR,
+    GET_STOCK,
+    ArgumentsError,
+    DividendCalendarArgs,
+    GetStockArgs,
+    Tool,
+)
 
 DEFAULT_MODELS = "qwen3.5:9b,qwen3.6:35b,hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S"
 DEFAULT_TIMEOUT = 600.0
-ALLOWED: list[Tool[Any]] = [DIVIDEND_CALENDAR]
+ALLOWED: list[Tool[Any]] = [DIVIDEND_CALENDAR, GET_STOCK]
 
 
 class Case(BaseModel):
     """One question and its right first move. want_tool "" means the right
-    move is not to call a tool; days_min and days_max both 0 accept any
-    window."""
+    move is not to call a tool; or_tool is another tool that's also right.
+    days_min and days_max both 0 accept any window. symbols, for get_stock,
+    are the companies the first reply must ask for, all of them at once: one
+    call each, in the same reply."""
 
     name: str
     question: str
     want_tool: str
+    or_tool: str = ""
     days_min: int = 0
     days_max: int = 0
+    symbols: list[str] = []
 
 
 class Outcome(BaseModel):
@@ -157,28 +168,38 @@ def judge(case: Case, message: llm.Message) -> Outcome:
             outcome.reason = f"answered without calling {case.want_tool}"
         return outcome
 
-    call = message.tool_calls[0].function
-    outcome.called = call.name
-    outcome.args = json.dumps(call.arguments, separators=(",", ":"))
-    tool = next((t for t in ALLOWED if t.name == call.name), None)
-    if tool is None:
-        outcome.reason = "called a tool that doesn't exist"
-        return outcome
-    try:
-        args = tool.decode_args(call.arguments)
-    except ArgumentsError as err:
-        outcome.reason = str(err)
-        return outcome
+    calls = [c.function for c in message.tool_calls]
+    outcome.called = ",".join(c.name for c in calls)
+    outcome.args = ",".join(json.dumps(c.arguments, separators=(",", ":")) for c in calls)
+    decoded: list[Any] = []
+    for call in calls:
+        tool = next((t for t in ALLOWED if t.name == call.name), None)
+        if tool is None:
+            outcome.reason = "called a tool that doesn't exist"
+            return outcome
+        try:
+            decoded.append(tool.decode_args(call.arguments))
+        except ArgumentsError as err:
+            outcome.reason = str(err)
+            return outcome
     outcome.valid = True
 
+    names = {c.name for c in calls}
     if case.want_tool == "":
         outcome.reason = "called a tool for a question that needs none"
-    elif call.name != case.want_tool:
+    elif len(names) > 1 or not names <= {case.want_tool, case.or_tool}:
         outcome.reason = "called the wrong tool"
-    elif len(message.tool_calls) > 1:
-        outcome.reason = f"made {len(message.tool_calls)} calls where one was needed"
+    elif names == {GET_STOCK.name}:
+        got = sorted(a.symbol.upper() for a in decoded if isinstance(a, GetStockArgs))
+        want = sorted(case.symbols) if case.symbols else got
+        if got != want:
+            outcome.reason = f"asked for {', '.join(got)}, want {', '.join(want)}"
+        else:
+            outcome.correct = True
+    elif len(calls) > 1:
+        outcome.reason = f"made {len(calls)} calls where one was needed"
     else:
-        # The only tool allowed so far, so its arguments are dividend_calendar's.
+        [args] = decoded
         assert isinstance(args, DividendCalendarArgs)
         if case.days_max > 0 and not case.days_min <= args.days <= case.days_max:
             outcome.reason = f"asked for {args.days} days, want {case.days_min}-{case.days_max}"

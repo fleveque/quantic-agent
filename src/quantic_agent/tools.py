@@ -97,6 +97,31 @@ DIVIDEND_CALENDAR = Tool(
 )
 
 
+class GetStockArgs(ToolArgs):
+    symbol: str = Field(
+        min_length=1,
+        max_length=20,
+        description='The ticker, as the calendar lists it: "KO", "MSFT", "IBE.MC".',
+    )
+
+
+# The second public reference tool: one company's dividend profile. The Week
+# Ahead needs it once per company, for the amounts and yields the calendar
+# doesn't have. The server's description promises a "live quote", but outside
+# market hours the quote is null and the price comes from last_known_price,
+# whose note says not to present it as current; this description says the same.
+GET_STOCK = Tool(
+    name="get_stock",
+    description=(
+        "Look up one company by ticker: its sector and industry, dividend history by year, "
+        "dividend growth rates and streak, dividend safety, payment months and frequency, "
+        "next ex-dividend date, yield range and leverage. A price, when present, may be the "
+        "last one recorded rather than a live one. Call it once per company."
+    ),
+    args=GetStockArgs,
+)
+
+
 def pct_change(previous: float, current: float) -> float:
     """The percentage change from previous to current: 1.50 → 1.55 is 3.33…, not 0.0333….
 

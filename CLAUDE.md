@@ -32,13 +32,20 @@ starting point here.
   `BEGIN IMMEDIATE`, `flock` around WAL switch and migrating); `--research` records runs and calls as
   they happen; `--runs`, `--run N`, `--db`. Tests are isolated from the real state directory by an
   autouse fixture (`isolated_state`); lesson 07.
-- **Milestone 8 in review** (branch `m8-research-loop`): migrations with Alembic (ADR 0010,
+- **Milestone 8 merged** (#9): migrations with Alembic (ADR 0010,
   `migrations/env.py` + `versions/0001..0003`, a M7 database handed over once); `agent.Research` /
   `Researcher.research` (budgets, replay of recorded calls, continued in place) and `agent.Writer`
   (no tools, told the run's start date); `quantic.py` retries 429 in an httpx2 transport under the
   SDK; phases, checkpoints, `--resume N`, `no_data` (exit 5); provenance with Go's later fixes plus
   weekdays next to a date and "Oct 8-10" ranges; real runs in `docs/benchmarks/2026-10-08-python-writer/`
   (4/9 traced); lesson 08. The Python version is now where the Go version stopped.
+- **Milestone 9 in review** (branch `m9-worker-pool`), the first with no Go version (ADR 0011):
+  `tools.GET_STOCK`; a reply's tool calls run at once in a `TaskGroup` (4 at a time, failures
+  returned, not raised); `llm.Client(slots=1)` is the GPU queue; `--research` given several times
+  runs a batch; `quantic.Pace` (50 requests in any 60s, shared) in the MCP transport; `--num-ctx`
+  (default 32768, measured: at 4096 the writer's prompt was cut to 2,050 of 6,945 tokens); budget 16
+  calls / 64,000 tokens; provenance indexes numeric and date keys and year-months; evaltools offers
+  both tools (45/50). The author decided: "today" stays the agent's local date; lesson 09.
 - design.md keeps Go's "As built in Go" notes next to this repository's "As built" notes.
 - PRs are squash-merged, so a walkthrough built from a branch commit cites a SHA `main` won't have.
   After merge, rebuild the walkthrough page from the merge commit and republish the artifact. That
@@ -54,16 +61,14 @@ starting point here.
 
 ## Next, in order
 
-1. **Milestone 9 — the worker pool**: serialised GPU, parallel I/O. The Week Ahead needs
-   `get_stock` per company (amounts, yields), 20–40 calls paced under Quantic's 60/min limit. The
-   first milestone with no Go version to port.
-2. `num_ctx` is Ollama's default 4096 for chat; fine for one calendar, not for the Week Ahead's data.
+1. **Milestone 10 — retrieval**: embeddings, brute-force cosine, style memory (README roadmap).
+2. Ollama's truncation is invisible in its replies (only its log says `truncating input prompt`);
+   detecting it from the agent is open.
 3. Seen in real runs, not caught: counts of a filtered subset ("four companies") are flagged though
    right; a wrong statement whose figures all trace ("no companies in the next 10 days") passes; the
    9B sometimes reasons out loud in an answer despite `think: false`.
-4. Which date is "today": the writer is told the agent's local date when the run started; Quantic's
-   calendar uses its own (UTC). Just after midnight in Spain they differ by a day (seen 2026-10-08).
-   A design question for the author, not decided.
+4. Ratios in get_stock (`cagr_5y` 0.1023) written as percentages ("10.23%") are flagged as
+   converted figures, correctly by N1; a percentage calculator tool would let them through.
 
 ## Conventions
 
@@ -139,6 +144,8 @@ starting point here.
 - `/api/chat` takes `tools`; a reply asking for one has empty `content` and `tool_calls` whose
   `arguments` is a JSON object (not a string). Send the tool result back as `role: "tool"` with
   `tool_name`.
+- Changing `num_ctx` between requests reloads the model. Overflowing it truncates silently: the
+  reply's `prompt_eval_count` is just smaller; the log says `truncating input prompt`.
 - Cancelling a request mid-generation stops the GPU work within about a second; cancelling while a
   model is loading aborts the load. Deadlines must allow for a cold start (up to ~31s measured).
 

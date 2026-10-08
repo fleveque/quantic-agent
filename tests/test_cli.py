@@ -502,3 +502,63 @@ def test_a_run_stopped_while_writing_is_checkpointed(
         store.Phase.WRITE,
         (321 + 29) + (610 + 219),
     )
+
+
+def test_research_asks_for_its_context_window(ollama: FakeOllama, quantic_mcp: FakeMCP) -> None:
+    research_servers(ollama, quantic_mcp)
+
+    assert main(["--ollama", ollama.url, "--mcp", quantic_mcp.url, "--research", "q"]) == 0
+    # Every turn, research and writing, asks for the same window: a model
+    # loaded with another size would be reloaded.
+    assert {b["options"]["num_ctx"] for b in ollama.bodies} == {32768}
+
+
+def test_the_context_window_can_be_chosen(
+    ollama: FakeOllama, quantic_mcp: FakeMCP, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    research_servers(ollama, quantic_mcp)
+    monkeypatch.setenv("QUANTIC_NUM_CTX", "16384")
+
+    args = ["--ollama", ollama.url, "--mcp", quantic_mcp.url, "--research", "q"]
+    assert main([*args, "--num-ctx", "8192"]) == 0
+    research_servers(ollama, quantic_mcp)
+    assert main(args) == 0
+
+    sizes = [b["options"]["num_ctx"] for b in ollama.bodies]
+    assert sizes == [8192] * 3 + [16384] * 3
+
+
+def test_several_questions_take_turns_at_the_model(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    isolated_state: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # Every model turn answers without a tool, so each run ends no_data. The
+    # point is how they ran: at once, but one at a time at the model.
+    ollama.replies["/api/chat"] = Reply(says("From memory."), delay=0.1)
+    questions = ["--research", "first?", "--research", "second?", "--research", "third?"]
+
+    assert main(["--ollama", ollama.url, "--mcp", quantic_mcp.url, *questions]) == 5
+
+    assert ollama.peak == 1
+    err = capsys.readouterr().err
+    for n in (1, 2, 3):
+        assert f"run {n}: research gathered no data" in err
+    runs = stored_runs(isolated_state)
+    assert sorted(r.input for r in runs) == ["first?", "second?", "third?"]
+    assert {r.state for r in runs} == {store.State.NO_DATA}
+
+
+def test_a_stopped_batch_records_every_run(
+    ollama: FakeOllama, quantic_mcp: FakeMCP, isolated_state: Path
+) -> None:
+    # The first run holds the GPU, the second waits for it; SIGTERM stops both.
+    ollama.replies["/api/chat"] = Reply(b"", hang=True)
+    threading.Timer(0.5, os.kill, (os.getpid(), signal.SIGTERM)).start()
+
+    args = ["--ollama", ollama.url, "--mcp", quantic_mcp.url, "--research", "a", "--research", "b"]
+    assert main(args) == 130
+
+    runs = stored_runs(isolated_state)
+    assert [r.state for r in runs] == [store.State.INTERRUPTED] * 2

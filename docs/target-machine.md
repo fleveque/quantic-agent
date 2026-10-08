@@ -7,7 +7,7 @@ The agent is developed on a laptop and runs on the desktop: Ryzen, 64GB RAM, RTX
 Nothing in the code is machine-specific (see [design §4](design.md#4-stack)), so the same checkout
 works on both machines; only the models pulled and the numbers measured differ.
 
-**The Python version is at milestone 8**, where the Go version
+**The Python version is at milestone 9**, past where the Go version
 ([quantic-agent-go](https://github.com/fleveque/quantic-agent-go), archived) stopped. The check, the
 benchmark (sections 4–6), the tool-call evaluation (section 7), the run history and resuming a run
 (section 8) are all this repository's commands.
@@ -159,6 +159,17 @@ uv run quantic-agent --run 3      # one run: its calls, its answer, and a fresh 
 uv run quantic-agent --resume 3   # carry on with a run that stopped before answering
 ```
 
+Several questions can go in one command, `--research "..." --research "..."`. They run at once,
+taking turns at the GPU; each line on stderr names its run, and each answer is printed under a
+`=== run N: question` line as it's ready. The exit status is the first one that isn't 0, in the order
+the questions were given.
+
+Research and writing ask Ollama for a 32K context window (`--num-ctx`, or `QUANTIC_NUM_CTX`). Ollama
+drops what doesn't fit without saying so in its reply, only in its log (`truncating input prompt`), so
+on a smaller GPU lower it only after checking `journalctl -u ollama` for that line. `--ask` doesn't
+send it, and Ollama reloads a model when the window changes, so an `--ask` between two research runs
+costs a reload.
+
 A run stopped by Ctrl-C or `SIGTERM` (exit 130), one that couldn't reach Ollama or Quantic or ran
 into Quantic's rate limit (exit 3), and one whose research gathered no data (exit 5) keep everything
 they did, and say how to carry on: `quantic-agent --resume N`. A run resumes from its phase. Stopped
@@ -229,6 +240,8 @@ this on a trusted LAN, ideally with a firewall rule limiting port 11434 to the l
 | `no model server answering at …`, exit status 3 | Ollama stopped, restarting, or on another host that's off | `systemctl status ollama`; start it (section 9), then `quantic-agent --resume N` with the run number it printed |
 | `research gathered no data`, exit status 5 | The model answered without calling a tool, or every call it made was refused. Nothing was written | `quantic-agent --resume N` to try the research again; if it keeps happening for a question, the question may not fit the tools |
 | `Quantic's rate limit; retry …` lines, then possibly `rate limit didn't clear`, exit status 3 | More than 60 anonymous MCP requests a minute from this IP address, from the agent or anything else on it | The agent waits it out by itself (between one and two minutes). If it still gave up, `quantic-agent --resume N` later |
+| `pacing: waiting …s to stay under Quantic's rate limit` | The agent has sent 50 MCP requests in the last minute, a big batch or a long research | Nothing: it waits its turn rather than being refused |
+| An answer with many unsourced figures after research that called many tools | The conversation outgrew `--num-ctx`, and Ollama dropped part of it (`journalctl -u ollama -e \| grep truncating`) | Raise `--num-ctx`, if the GPU has room (`ollama ps`) |
 | `run N can't be resumed` | The run answered already, is running, or doesn't exist | `quantic-agent --runs` for its state |
 | `the model server failed; its log has the cause` | Ollama answered 5xx, e.g. a model it couldn't load | `journalctl -u ollama -e` |
 | `figure(s) in the answer came from no tool result`, exit status 4 | `--research` answer contains a number or date no tool returned: invented, rounded, or derived by the model (e.g. "4 months" from 120 days) | Working as intended (design N1). The answer is shown so you can see it, but it isn't trustworthy |

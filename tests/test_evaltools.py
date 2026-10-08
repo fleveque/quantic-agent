@@ -15,6 +15,16 @@ WINDOW = Case(
     days_max=10,
 )
 NO_TOOL = Case(name="definition", question="what is an ex-date?", want_tool="")
+TWO_STOCKS = Case(
+    name="two", question="MSFT and JNJ?", want_tool="get_stock", symbols=["JNJ", "MSFT"]
+)
+APPLE = Case(
+    name="apple",
+    question="When does Apple go ex-dividend?",
+    want_tool="dividend_calendar",
+    or_tool="get_stock",
+    symbols=["AAPL"],
+)
 
 
 def calls(*requests: tuple[str, dict[str, Any]]) -> llm.Message:
@@ -88,6 +98,44 @@ def calls(*requests: tuple[str, dict[str, Any]]) -> llm.Message:
             "called a tool for a question that needs none",
             id="unneeded call",
         ),
+        # Several companies: one get_stock each, all in the first reply.
+        pytest.param(
+            TWO_STOCKS,
+            calls(("get_stock", {"symbol": "MSFT"}), ("get_stock", {"symbol": "jnj"})),
+            True,
+            True,
+            "",
+            id="both companies at once",
+        ),
+        pytest.param(
+            TWO_STOCKS,
+            calls(("get_stock", {"symbol": "MSFT"})),
+            False,
+            True,
+            "asked for MSFT, want JNJ, MSFT",
+            id="one company at a time",
+        ),
+        pytest.param(
+            TWO_STOCKS,
+            calls(("get_stock", {"symbol": "MSFT"}), ("dividend_calendar", {})),
+            False,
+            True,
+            "called the wrong tool",
+            id="mixed tools",
+        ),
+        pytest.param(
+            TWO_STOCKS,
+            calls(("get_stock", {"symbol": ""})),
+            False,
+            False,
+            "get_stock arguments: symbol: String should have at least 1 character",
+            id="empty symbol",
+        ),
+        # Either tool answers "when does Apple go ex-dividend?".
+        pytest.param(
+            APPLE, calls(("get_stock", {"symbol": "AAPL"})), True, True, "", id="the other tool"
+        ),
+        pytest.param(APPLE, calls(("dividend_calendar", {})), True, True, "", id="the first tool"),
     ],
 )
 def test_judge(case: Case, message: llm.Message, correct: bool, valid: bool, reason: str) -> None:
@@ -98,11 +146,14 @@ def test_judge(case: Case, message: llm.Message, correct: bool, valid: bool, rea
 def test_the_cases_are_well_formed() -> None:
     # The cases are data a person edits, so they're checked like code.
     cases = evaltools.load_cases()
-    assert len(cases) == 8
+    assert len(cases) == 10
     assert len({c.name for c in cases}) == len(cases)
+    tools = {t.name for t in evaltools.ALLOWED}
     for c in cases:
-        assert c.want_tool in ("", "dividend_calendar"), c.name
+        assert c.want_tool in {"", *tools}, c.name
+        assert c.or_tool in {"", *tools}, c.name
         assert 0 <= c.days_min <= c.days_max <= 120, c.name
+        assert bool(c.symbols) == ("get_stock" in (c.want_tool, c.or_tool)), c.name
 
 
 def test_a_run_scores_each_model(ollama: FakeOllama, capsys: pytest.CaptureFixture[str]) -> None:
@@ -116,7 +167,8 @@ def test_a_run_scores_each_model(ollama: FakeOllama, capsys: pytest.CaptureFixtu
     [score] = json.loads(capsys.readouterr().out)
 
     # Right for the explicit 10-day window, "no window" and "one company"; wrong elsewhere.
-    assert (score["model"], score["runs"], score["correct"]) == ("m", 16, 6)
+    assert (score["model"], score["runs"], score["correct"]) == ("m", 20, 6)
     # Each request showed the model exactly what the research loop shows it.
     assert ollama.bodies[0]["messages"][0]["role"] == "system"
-    assert ollama.bodies[0]["tools"][0]["function"]["name"] == "dividend_calendar"
+    offered = [t["function"]["name"] for t in ollama.bodies[0]["tools"]]
+    assert offered == ["dividend_calendar", "get_stock"]
