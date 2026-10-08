@@ -8,6 +8,9 @@ the GPU. Every request to Quantic waits its turn under the rate limit instead of
 the agent finally asks Ollama for a context window big enough to hold what it fetched, after I
 watched what happens when it doesn't.
 
+*Also readable as a [formatted page](https://claude.ai/artifact/7yD52xXv3yLvBBbVwCJoQG), with a [code walkthrough](https://claude.ai/artifact/WQCK76jbtKB5WtQRRh5Qgv) of every change the
+milestone made.*
+
 ---
 
 ## Choosing, for once
