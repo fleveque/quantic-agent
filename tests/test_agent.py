@@ -1,4 +1,6 @@
-from collections.abc import Sequence
+import asyncio
+import json
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import date
 from typing import Any
@@ -55,20 +57,37 @@ class ScriptedModel:
         return self.script.pop(0)
 
 
+# A result worked out from the call's arguments.
+type Answer = Callable[[dict[str, Any]], quantic.Result | Exception]
+
+
 @dataclass
 class FakeServer:
-    """Answers tool calls from a table, or raises what it's given."""
+    """Answers tool calls from a table, or raises what it's given. delay says
+    how long a call takes, from its arguments; peak is the most calls it was
+    answering at once."""
 
-    results: dict[str, quantic.Result | Exception] = field(
-        default_factory=lambda: dict[str, quantic.Result | Exception]()
+    results: dict[str, quantic.Result | Exception | Answer] = field(
+        default_factory=lambda: dict[str, quantic.Result | Exception | Answer]()
     )
     received: list[tuple[str, dict[str, Any]]] = field(
         default_factory=lambda: list[tuple[str, dict[str, Any]]]()
     )
+    delay: Callable[[dict[str, Any]], float] = lambda _: 0.0
+    peak: int = 0
+    busy: int = 0
 
     async def call_tool(self, name: str, arguments: dict[str, Any]) -> quantic.Result:
         self.received.append((name, arguments))
+        self.busy += 1
+        self.peak = max(self.peak, self.busy)
+        try:
+            await asyncio.sleep(self.delay(arguments))
+        finally:
+            self.busy -= 1
         result = self.results[name]
+        if callable(result):
+            result = result(arguments)
         if isinstance(result, Exception):
             raise result
         return result
@@ -205,7 +224,7 @@ async def test_a_reply_that_crosses_the_token_budget_isnt_run() -> None:
 async def test_a_spent_budget_asks_nothing() -> None:
     # A resumed run may have spent its tokens already.
     model = ScriptedModel([])
-    spent = agent.Research(tokens=16_000)
+    spent = agent.Research(tokens=agent.DEFAULT_BUDGET.tokens)
 
     await research(researcher(model, FakeServer()), spent)
 
@@ -314,3 +333,83 @@ async def test_an_empty_answer_is_not_a_draft() -> None:
         await agent.Writer(model).write("q", gathered_data())
 
     assert caught.value.tokens == 300
+
+
+# ---- several calls in one reply -------------------------------------------
+
+
+def days(*n: int) -> llm.ChatResponse:
+    """A reply asking for the calendar once per window, all at once."""
+    return asks(*(("dividend_calendar", {"days": d}) for d in n))
+
+
+async def test_one_replys_calls_run_at_once() -> None:
+    # The 30-day call is the slowest and the 10-day one the quickest.
+    model = ScriptedModel([days(30, 20, 10), answers("done")])
+
+    def echo(arguments: dict[str, Any]) -> quantic.Result:
+        return quantic.Result(text=json.dumps(arguments), is_error=False)
+
+    server = FakeServer({"dividend_calendar": echo}, delay=lambda a: a["days"] / 300)
+    traced: list[int] = []
+
+    gathered = agent.Research()
+    await researcher(model, server).research(
+        "q", gathered, on_call=lambda _, c: traced.append(c.arguments["days"])
+    )
+
+    assert server.peak == 3
+    # Recorded as they finished...
+    assert traced == [10, 20, 30]
+    # ...and shown to the model in the order it asked.
+    results = [json.loads(m.content)["days"] for m in model.shown[1] if m.role == "tool"]
+    assert results == [30, 20, 10]
+
+
+async def test_parallel_bounds_how_many_at_once() -> None:
+    model = ScriptedModel([days(1, 2, 3, 4), answers("done")])
+    server = FakeServer({"dividend_calendar": CALENDAR}, delay=lambda _: 0.05)
+    r = agent.Researcher(
+        model=model,
+        server=server,
+        tools=[DIVIDEND_CALENDAR],
+        budget=agent.Budget(calls=10),
+        parallel=2,
+    )
+
+    await research(r)
+
+    assert server.peak == 2
+    assert len(server.received) == 4
+
+
+async def test_a_failure_waits_for_the_calls_beside_it() -> None:
+    # One call finds the server gone at once; the other two are still
+    # answering. They finish and are recorded before the failure is raised.
+    gone = quantic.ToolServerUnavailableError("connection refused")
+    model = ScriptedModel([days(10, 20, 30)])
+
+    def some_gone(arguments: dict[str, Any]) -> quantic.Result | Exception:
+        return gone if arguments["days"] == 10 else CALENDAR
+
+    server = FakeServer({"dividend_calendar": some_gone}, delay=lambda a: a["days"] / 300)
+    gathered = agent.Research()
+
+    with pytest.raises(quantic.ToolServerUnavailableError):
+        await researcher(model, server).research("q", gathered)
+
+    assert sorted((c.arguments["days"], c.failed) for c in gathered.calls) == [
+        (10, True),
+        (20, False),
+        (30, False),
+    ]
+
+
+async def test_calls_beyond_the_budget_are_dropped() -> None:
+    model = ScriptedModel([days(10, 20, 30)])
+    server = FakeServer({"dividend_calendar": CALENDAR})
+
+    gathered = await research(researcher(model, server, agent.Budget(calls=2)))
+
+    assert [a["days"] for _, a in server.received] == [10, 20]
+    assert gathered.exhausted is agent.Limit.CALLS

@@ -171,3 +171,38 @@ def test_the_default_backoff_outlasts_a_minute() -> None:
 def test_a_wait_is_capped_however_late_the_retry() -> None:
     b = quantic.DEFAULT_BACKOFF
     assert b.wait(2000, lambda: 1) == b.max
+
+
+async def test_a_pace_waits_when_its_window_is_full() -> None:
+    waits: list[float] = []
+    pace = quantic.Pace(limit=3, per=0.3, on_wait=waits.append)
+    loop = asyncio.get_running_loop()
+    start = loop.time()
+
+    for _ in range(6):
+        await pace.wait()
+
+    # Three at once, then the fourth waited for the first to leave the
+    # window, and the fifth and sixth came in with it.
+    assert 0.3 <= loop.time() - start < 0.5
+    assert len(waits) == 1
+
+
+async def test_sessions_share_a_pace(quantic_mcp: FakeMCP) -> None:
+    # One session sends five requests (the handshake, its notification, the
+    # refused event stream, a list, the closing DELETE): within a limit of
+    # six. Two sessions sharing one pace send ten, so the second waits.
+    loop = asyncio.get_running_loop()
+
+    async def session(pace: quantic.Pace) -> None:
+        async with quantic.Server(quantic_mcp.url, pace=pace) as server:
+            await server.list_tools()
+
+    start = loop.time()
+    await session(quantic.Pace(limit=6, per=0.3))
+    assert loop.time() - start < 0.2
+
+    shared = quantic.Pace(limit=6, per=0.3)
+    start = loop.time()
+    await asyncio.gather(session(shared), session(shared))
+    assert loop.time() - start >= 0.3

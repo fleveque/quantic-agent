@@ -1,0 +1,22 @@
+Three questions answered one command at a time, then as one command (--research three times),
+qwen3.5:9b warmed up first, live quantic.finance data, 2026-10-08. Each model call takes turns at the
+GPU in both cases; the batch shares one process, one model client and one pace.
+
+warm-up: 8.3 s
+  sequential:   6.6s exit 0  Which companies go ex-dividend in the next 10 days?
+  sequential:   3.0s exit 0  Is Microsoft going ex-dividend this month?
+  sequential:   4.8s exit 0  How many years in a row has Coca-Cola raised its dividend?
+round 1 sequential total: 14.4s
+round 1 batch: 10.4s exit 0
+  sequential:   8.1s exit 4  Which companies go ex-dividend in the next 10 days?
+  sequential:   3.4s exit 0  Is Microsoft going ex-dividend this month?
+  sequential:   3.3s exit 0  How many years in a row has Coca-Cola raised its dividend?
+round 2 sequential total: 14.8s
+round 2 batch: 10.5s exit 0
+
+Starting one command (python -X importtime, and 5 timed runs of --version and --runs):
+['--version'] min 0.55s median 0.55s
+['--runs'] min 0.55s median 0.56s
+import time:       125 |     257137 |       mcp
+import time:       872 |     107327 |   quantic_agent.store
+import time:       250 |     479439 | quantic_agent.cli

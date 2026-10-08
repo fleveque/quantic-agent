@@ -6,6 +6,7 @@ tools at all: it gets the question and the data research gathered, and
 nothing else, so it can't fetch, and it can't wander.
 """
 
+import asyncio
 import json
 import time
 from collections.abc import Callable, Sequence
@@ -49,13 +50,15 @@ class Budget:
     bound, wall-clock time, is the caller's asyncio.timeout.
 
     The defaults are for one question. A question about one calendar needs
-    one call and about 2,000 tokens (measured, docs/benchmarks); this leaves
-    room for a model that corrects itself a few times, and stops one that
-    keeps asking.
+    one call and about 2,000 tokens; one about the companies in a 14-day
+    calendar needed ten calls (the calendar, then get_stock for nine) and
+    about 10,000 tokens of research (measured, lesson 09). Sixteen calls
+    cover the calendar and fifteen companies; the tokens leave room for a
+    model that corrects itself a few times, and stop one that keeps asking.
     """
 
-    calls: int = 4  # tool calls
-    tokens: int = 16_000  # tokens the model processes and generates
+    calls: int = 16  # tool calls
+    tokens: int = 64_000  # tokens the model processes and generates
 
 
 DEFAULT_BUDGET = Budget()
@@ -118,6 +121,11 @@ class Researcher:
     server: ToolServer | None
     tools: Sequence[Tool[Any]]
     budget: Budget = DEFAULT_BUDGET
+    # How many of one reply's tool calls run at once. The rest wait their
+    # turn; the tool server's own rate limit applies on top (quantic.Pace).
+    parallel: int = 4
+    # Sent with every model call: num_ctx above all (llm.Options).
+    options: llm.Options | None = None
 
     async def research(
         self,
@@ -142,6 +150,11 @@ class Researcher:
         stops the loop: the exception propagates, and the call it happened in
         has already been recorded.
 
+        When one reply asks for several tools, they run at once, at most
+        parallel at a time, and each is recorded as it completes, so their
+        positions in the run are the order they finished in. The model is
+        shown the results in the order it asked.
+
         When the model stops asking, whatever it says is discarded: the answer
         is the writing phase's job.
         """
@@ -161,7 +174,9 @@ class Researcher:
             if gathered.tokens >= self.budget.tokens:
                 gathered.exhausted = Limit.TOKENS
                 return
-            resp = await self.model.chat(messages, tools=definitions, think=False)
+            resp = await self.model.chat(
+                messages, tools=definitions, think=False, options=self.options
+            )
             gathered.tokens += resp.prompt_eval_count + resp.eval_count
             if not resp.message.tool_calls:
                 return
@@ -170,14 +185,16 @@ class Researcher:
                 return
 
             # The model's request goes into the history unchanged, followed by
-            # one tool message per call it made.
+            # one tool message per call it made. Requests beyond the call
+            # budget are dropped, as before, and end research.
             messages.append(resp.message)
-            for request in resp.message.tool_calls:
-                if len(gathered.calls) >= self.budget.calls:
-                    gathered.exhausted = Limit.CALLS
-                    return
-                call = await self._run(request.function, record)
+            room = self.budget.calls - len(gathered.calls)
+            requests = [r.function for r in resp.message.tool_calls[: max(room, 0)]]
+            for call in await self._run_all(requests, record):
                 messages.append(llm.Message(role="tool", tool_name=call.tool, content=call.result))
+            if len(resp.message.tool_calls) > len(requests):
+                gathered.exhausted = Limit.CALLS
+                return
 
     def first_messages(self, question: str) -> list[llm.Message]:
         """The conversation that opens the loop: the standing instructions and
@@ -199,17 +216,48 @@ class Researcher:
             for t in self.tools
         ]
 
-    async def _run(self, request: llm.FunctionCall, record: Callable[[Call], None]) -> Call:
-        """Runs one tool call and records it, whatever happens. Only a failure
-        the model can't fix is raised."""
+    async def _run_all(
+        self, requests: Sequence[llm.FunctionCall], record: Callable[[Call], None]
+    ) -> list[Call]:
+        """Runs one reply's tool calls at once, at most parallel at a time, and
+        returns them in the order they were asked for. If any hit a failure
+        the model can't fix, the first such failure is raised, once every
+        call has finished and been recorded.
+
+        Each task returns its failure instead of raising it. In a TaskGroup,
+        a task that raises cancels its siblings: their calls would end
+        unfinished and unrecorded, and the audit log would lose calls that
+        were already on their way to the server.
+        """
+        slots = asyncio.Semaphore(self.parallel)
+
+        async def one(request: llm.FunctionCall) -> tuple[Call, quantic.ToolServerError | None]:
+            async with slots:
+                return await self._run(request, record)
+
+        async with asyncio.TaskGroup() as group:
+            tasks = [group.create_task(one(r)) for r in requests]
+        done = [t.result() for t in tasks]
+        failure = next((err for _, err in done if err is not None), None)
+        if failure is not None:
+            raise failure
+        return [call for call, _ in done]
+
+    async def _run(
+        self, request: llm.FunctionCall, record: Callable[[Call], None]
+    ) -> tuple[Call, quantic.ToolServerError | None]:
+        """Runs one tool call and records it, whatever happens. A failure the
+        model can't fix is returned beside the call, for the caller to raise."""
         start = time.monotonic()
         call = Call(tool=request.name, arguments=request.arguments)
 
-        def finish(result: str, *, failed: bool = False) -> Call:
+        def finish(
+            result: str, *, failed: bool = False, error: quantic.ToolServerError | None = None
+        ) -> tuple[Call, quantic.ToolServerError | None]:
             call.result, call.failed = result, failed
             call.duration = timedelta(seconds=time.monotonic() - start)
             record(call)
-            return call
+            return call, error
 
         tool = next((t for t in self.tools if t.name == request.name), None)
         if tool is None:
@@ -224,14 +272,13 @@ class Researcher:
             return finish(f"error: {err}", failed=True)
 
         if self.server is None:
-            raise RuntimeError("Researcher.ask needs a tool server")
+            raise RuntimeError("Researcher.research needs a tool server")
         try:
             result = await self.server.call_tool(tool.name, args.model_dump())
         except quantic.RPCError as err:
             return finish(f"error: {err}", failed=True)  # the request was at fault
         except quantic.ToolServerError as err:
-            finish(f"error: {err}", failed=True)
-            raise
+            return finish(f"error: {err}", failed=True, error=err)
         if result.is_error:
             return finish(f"error: {result.text}", failed=True)  # the tool ran and declined
         return finish(result.text)
@@ -293,10 +340,12 @@ class Writer:
 
     model: Model
     today: date | None = None
+    options: llm.Options | None = None
 
     async def write(self, question: str, research: Research) -> Draft:
         """Answers question from what research gathered."""
-        resp = await self.model.chat(write_messages(question, self.today, research), think=False)
+        messages = write_messages(question, self.today, research)
+        resp = await self.model.chat(messages, think=False, options=self.options)
         tokens = resp.prompt_eval_count + resp.eval_count
         if not resp.message.content.strip():
             raise NothingWrittenError(tokens)

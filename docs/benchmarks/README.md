@@ -12,6 +12,8 @@ in the [runbook](../target-machine.md#5-run-the-benchmark).
 | [`2026-10-06-toolcalls-schema-maximum.json`](2026-10-06-toolcalls-schema-maximum.json) | The same evaluation, rerun | The limit also in the schema (`maximum: 120`) and enforced by the agent |
 | [`2026-10-07-writer/`](2026-10-07-writer/README.md) | `agent -research` end to end: milestone 7's single loop against three versions of milestone 8's writing phase, 9 runs each | `qwen3.5:9b`, live quantic.finance data |
 | [`2026-10-08-python-writer/`](2026-10-08-python-writer/README.md) | `quantic-agent --research` end to end, the Python version's milestone 8, 9 runs; and a real stop and resume | `qwen3.5:9b`, live quantic.finance data |
+| [`2026-10-08-toolcalls-get-stock.json`](2026-10-08-toolcalls-get-stock.json) | `quantic-evaltools`, `qwen3.5:9b`, 10 cases × 5 runs with `get_stock` offered too | Both tools in the allowlist |
+| [`2026-10-08-worker-pool/`](2026-10-08-worker-pool/README.md) | Milestone 9: the context window at 4096 and 32K; three questions one by one and as a batch | `qwen3.5:9b`, live quantic.finance data |
 
 Common to both: RTX 4070 Ti Super 16GB (driver 610.57.04), Ryzen 7 7800X3D, 64GB RAM, Ollama 0.34.4,
 flash attention on, one parallel slot. The desktop was in normal use, holding about 1.2GB of VRAM

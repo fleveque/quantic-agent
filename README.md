@@ -86,8 +86,8 @@ Python with Go. Milestones 0–8 are ports of the Go version; the lessons say wh
 | 5 | The first tool: MCP client, schemas from types | the MCP SDK, JSON Schema from Pydantic, `typing.Protocol`, exception groups |
 | 6 | Provenance | `re` with named groups, structural `match`, recursive type aliases |
 | 7 | SQLite: runs, drafts, audit log | `sqlite3`, migrations, transactions, file locks |
-| 8 | The research loop: budgets, retries, phases, resume *(you are here)* | Alembic, mutable arguments, backoff with jitter, an HTTP transport |
-| 9 | Worker pool: serialised GPU, parallel I/O | concurrency in Python |
+| 8 | The research loop: budgets, retries, phases, resume | Alembic, mutable arguments, backoff with jitter, an HTTP transport |
+| 9 | Worker pool: serialised GPU, parallel I/O *(you are here)* | `TaskGroup`, semaphores, a rate limiter, measuring a bottleneck |
 | 10 | Retrieval: embeddings, brute-force cosine, style memory | vectors, BLOBs, benchmarks |
 | 11 | Week Ahead end to end, 7 locales, translation validator | dates, YAML, package data |
 | 12 | GitHub PR flow | a GitHub client, auth |
@@ -110,6 +110,7 @@ uv run quantic-agent --version
 uv run quantic-agent --check                 # is the model server up, and what does it have?
 uv run quantic-agent --ask "say hello"       # one prompt, one reply
 uv run quantic-agent --research "What goes ex-dividend this week?"   # model + Quantic's tools
+uv run quantic-agent --research "..." --research "..."   # several questions at once
 uv run quantic-agent --runs                  # past runs; --run N shows one, --resume N carries it on
 uv run quantic-bench                         # tokens/second and GPU residency per model
 uv run quantic-evaltools                     # how reliably each model calls tools

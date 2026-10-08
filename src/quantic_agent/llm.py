@@ -19,6 +19,7 @@ ModelNotFoundError when it is but lacks the model, APIError for any other
 refusal. All are LLMErrors.
 """
 
+import asyncio
 from collections.abc import Sequence
 from datetime import datetime, timedelta
 from typing import Annotated, Any, Literal, Self
@@ -279,9 +280,15 @@ class Client:
 
     It holds a pool of HTTP connections, so close it when done, or use it as an
     async context manager: `async with Client(url, model) as client: ...`.
+
+    It is also the GPU's queue (design §3.6). At most slots requests that use
+    the model (generate, chat) are sent at once; the others wait here. With
+    one GPU that is one: concurrent runs take turns
+    at the model, and spend their waits on everything else. Requests that
+    don't touch the model (version, models, running) never wait.
     """
 
-    def __init__(self, base_url: str, model: str) -> None:
+    def __init__(self, base_url: str, model: str, *, slots: int = 1) -> None:
         # OLLAMA_HOST is conventionally "host:port", which isn't a URL.
         if "://" not in base_url:
             base_url = "http://" + base_url
@@ -290,6 +297,7 @@ class Client:
         # sixth of a cold model load). How long a call may take is decided by
         # whoever awaits it.
         self._http = httpx.AsyncClient(base_url=base_url.rstrip("/"), timeout=None)
+        self._gpu = asyncio.Semaphore(slots)
 
     @property
     def model(self) -> str:
@@ -314,7 +322,8 @@ class Client:
         the model's own default alone.
         """
         body = _GenerateBody(model=self._model, prompt=prompt, think=think, options=options)
-        return await self._call("POST", "/api/generate", GenerateResponse, body)
+        async with self._gpu:
+            return await self._call("POST", "/api/generate", GenerateResponse, body)
 
     async def chat(
         self,
@@ -331,7 +340,8 @@ class Client:
         body = _ChatBody(
             model=self._model, messages=messages, tools=tools, think=think, options=options
         )
-        return await self._call("POST", "/api/chat", ChatResponse, body)
+        async with self._gpu:
+            return await self._call("POST", "/api/chat", ChatResponse, body)
 
     async def version(self) -> str:
         """The server's version. Doubles as a reachability check that costs

@@ -21,6 +21,8 @@ before a retry.
 import asyncio
 import json
 import random
+import time
+from collections import deque
 from collections.abc import Callable, Iterator
 from contextlib import AsyncExitStack
 from dataclasses import dataclass
@@ -122,6 +124,53 @@ class Backoff:
 
 DEFAULT_BACKOFF = Backoff()
 
+
+class Pace:
+    """At most limit requests in any per seconds, for every session given the
+    same Pace: how the agent stays under Quantic's anonymous limit instead of
+    running into it (decision 0006). The 429 retry stays, for whatever else
+    shares the IP address.
+
+    Quantic counts in fixed one-minute windows. A sliding window is stricter:
+    if no 60 seconds anywhere hold more than limit requests, no clock minute
+    does either. The default leaves 10 of the 60 for anything else on the
+    same address.
+
+    It keeps the times of the requests sent in the last per seconds. A
+    request that would be one too many waits until the oldest leaves the
+    window. Waiters queue on a lock, so they go one at a time and in turn;
+    a cancellation ends a wait like any other await.
+    """
+
+    def __init__(
+        self,
+        limit: int = 50,
+        per: float = 60.0,
+        *,
+        on_wait: Callable[[float], None] | None = None,
+    ) -> None:
+        self.limit = limit
+        self.per = per
+        self._on_wait = on_wait
+        self._sent: deque[float] = deque()
+        self._turn = asyncio.Lock()
+
+    async def wait(self) -> None:
+        """Returns when one more request fits in the window, and counts it."""
+        async with self._turn:
+            while True:
+                now = time.monotonic()
+                while self._sent and self._sent[0] <= now - self.per:
+                    self._sent.popleft()
+                if len(self._sent) < self.limit:
+                    self._sent.append(now)
+                    return
+                pause = self._sent[0] + self.per - now
+                if self._on_wait is not None:
+                    self._on_wait(pause)
+                await asyncio.sleep(pause)
+
+
 # Called before each retry's wait with the JSON-RPC method, the retry's number
 # and the wait in seconds, so the operator sees why a run has gone quiet.
 type OnRetry = Callable[[str, int, float], None]
@@ -133,8 +182,8 @@ _RATE_LIMITED = -32029
 
 
 class _RetryRateLimited(httpx2.AsyncBaseTransport):
-    """An HTTP transport that retries a POST the server refused with 429,
-    after a pause (Backoff).
+    """An HTTP transport that paces every request (Pace) and retries a POST
+    the server refused with 429, after a pause (Backoff).
 
     It sits under the SDK, because the SDK has no retry of its own: it turns
     a 429 into a JSON-RPC error, "Server returned an error response"
@@ -154,8 +203,9 @@ class _RetryRateLimited(httpx2.AsyncBaseTransport):
     and closing a session (a DELETE) shouldn't wait for minutes.
     """
 
-    def __init__(self, backoff: Backoff, on_retry: OnRetry | None) -> None:
+    def __init__(self, pace: Pace, backoff: Backoff, on_retry: OnRetry | None) -> None:
         self._inner = httpx2.AsyncHTTPTransport()
+        self._pace = pace
         self._backoff = backoff
         self._on_retry = on_retry
 
@@ -163,6 +213,9 @@ class _RetryRateLimited(httpx2.AsyncBaseTransport):
         attempts = max(self._backoff.attempts, 1)
         retry = 0
         while True:
+            # Every request counts against Quantic's limit, retries included,
+            # and so does the handshake and the closing DELETE.
+            await self._pace.wait()
             response = await self._inner.handle_async_request(request)
             if response.status_code != 429 or request.method != "POST":
                 return response
@@ -205,15 +258,18 @@ class Server:
         *,
         backoff: Backoff | None = None,
         on_retry: OnRetry | None = None,
+        pace: Pace | None = None,
     ) -> None:
-        """backoff is how a 429 is retried: DEFAULT_BACKOFF unless given."""
+        """backoff is how a 429 is retried: DEFAULT_BACKOFF unless given.
+        pace is shared by every session that should count against the same
+        limit, such as a batch of runs; a session given none paces itself."""
         self.url = url
         # The timeouts the SDK gives its own client (30s, and 300s to read,
         # since a server may hold a stream open), with the retrying transport
         # under them.
         self._http = httpx2.AsyncClient(
             timeout=httpx2.Timeout(30.0, read=300.0),
-            transport=_RetryRateLimited(backoff or DEFAULT_BACKOFF, on_retry),
+            transport=_RetryRateLimited(pace or Pace(), backoff or DEFAULT_BACKOFF, on_retry),
         )
         info = types.Implementation(name="quantic-agent", version=version("quantic-agent"))
         # mode="legacy" goes straight to the initialize handshake, which is what

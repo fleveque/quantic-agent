@@ -373,4 +373,5 @@ on the other side of it, in a real run.
 
 ---
 
-**Previous:** [Lesson 07 — A memory that can be audited](07-a-memory-that-can-be-audited.md)
+**Previous:** [Lesson 07 — A memory that can be audited](07-a-memory-that-can-be-audited.md) ·
+**Next:** [Lesson 09 — One GPU, many calls](09-one-gpu-many-calls.md)

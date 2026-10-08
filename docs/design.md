@@ -142,6 +142,11 @@ frozen dataclass whose defaults are the defaults (Go needed `cmp.Or` to read 0 a
 `--timeout` for wall clock. Recorded calls of a resumed run count against the call budget, and its
 recorded tokens against the token budget. Real runs used 1,780–3,301 tokens across both phases.
 
+**As built (milestone 9).** With `get_stock`, a question about the companies in a 14-day calendar
+made ten calls (the calendar, then nine companies in one reply) and used about 10,000 tokens of
+research. The defaults became 16 calls (the calendar and fifteen companies) and 64,000 tokens. Calls
+a reply asks for beyond the budget are dropped, and research ends there.
+
 ### 3.3 Provenance
 
 The hard part, and the most interesting piece of engineering here.
@@ -212,6 +217,12 @@ both from real runs. A weekday written with a date must be the weekday that date
 7's audit log passed "Tuesday, October 9" for a Friday. A weekday alone ("on Friday") isn't checked;
 nothing says which Friday. And a range of days, "Oct 8-10" or "Oct 16–17", is two dates, where the
 end was read as the number -10.
+
+**As built (milestone 9).** `get_stock` returns some figures as keys (`dividend_by_year`:
+`{"2014": 1.12, ...}`) and year-months (`"from": "2020-10"`). Keys that are numbers or dates, and
+year-months, now count as returned; a real answer's "$1.12 in 2014" was flagged until they did. Its
+growth rates are ratios (`cagr_5y`: 0.1023...), so "10.23%" is a converted figure and is reported,
+as N1 requires.
 
 ### 3.4 Retrieval (RAG)
 
@@ -295,9 +306,18 @@ The interesting shape: **one GPU, many network calls.**
 
 - LLM inference is a serialised resource — a semaphore of capacity 1 (configurable) around the model
   client. Queued tasks wait; they do not thrash the GPU. This matters more with an agentic loop,
-  since one task now makes many sequential model calls.
+  since one task now makes many sequential model calls. *(As built, milestone 9: `llm.Client(...,
+  slots=1)` around `generate` and `chat`; `--research` given several times runs the questions at
+  once, sharing the client. Measured: three questions as one batch took 10.4s against 14.4s one
+  after another, about a quarter of the saving from starting Python once and the rest from network
+  work overlapping the other runs' model calls
+  ([benchmarks](benchmarks/2026-10-08-worker-pool/README.md)).)*
 - Tool fetches within a research step fan out, bounded so Quantic isn't hammered (Go's `errgroup`;
-  Python's equivalent is chosen at milestone 9).
+  Python's equivalent is chosen at milestone 9). *(As built, milestone 9,
+  [decision 0011](decisions/0011-worker-pool.md): an `asyncio.TaskGroup` per model reply, four calls at
+  a time behind a semaphore, each task returning its failure rather than raising it so the calls
+  beside it finish and are recorded. Every MCP request in the process shares one `quantic.Pace`: at
+  most 50 in any 60 seconds.)*
 - Each run carries one deadline and one way to cancel it, threaded through both phases (Go's
   `context`; Python's way is milestone 4's subject).
 - Translation of the six non-source locales is embarrassingly parallel in principle but serialised in

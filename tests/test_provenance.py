@@ -263,3 +263,27 @@ def test_text_as_a_source() -> None:
 
 def test_a_list_length_is_a_source() -> None:
     assert [str(s) for s in CAL.number(10)] == ["dividend_calendar#0 len($.stocks)"]
+
+
+def get_stock_msft() -> Manifest:
+    """The real get_stock result for MSFT, captured from quantic.finance."""
+    result = (FIXTURES / "provenance" / "get-stock-msft.json").read_text()
+    return Manifest([Record("get_stock", result)])
+
+
+@pytest.mark.parametrize(
+    ("text", "reported"),
+    [
+        # dividend_by_year is keyed by year: "2014": 1.12. A real answer said
+        # this, and the years were reported until keys were indexed.
+        ("The dividend went from $1.12 in 2014 to $3.32 in 2025.", []),
+        # The price history runs "from": "2020-10": a year-month, not a date.
+        ("Prices since 2020 ranged from 202.47 to 533.5.", []),
+        ("Raised for 15 years in a row.", []),
+        # cagr_5y is 0.10230450734403207: as a percentage, it's converted.
+        ("Five-year growth of 10.23%.", ["Five", "10.23%"]),
+        ("A dividend of 3.6 in 2013.", ["3.6", "2013"]),
+    ],
+)
+def test_get_stock(text: str, reported: list[str]) -> None:
+    assert [f.text for f in check_prose(text, get_stock_msft())] == reported

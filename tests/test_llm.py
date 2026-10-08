@@ -300,3 +300,38 @@ async def test_chat_sends_a_tool_result_back(ollama: FakeOllama) -> None:
     sent = ollama.bodies[0]["messages"]
     assert sent[0]["tool_calls"][0]["function"]["arguments"] == {"days": 10}
     assert sent[1] == {"role": "tool", "content": '{"stocks":[]}', "tool_name": "dividend_calendar"}
+
+
+QUESTION = [llm.Message(role="user", content="q")]
+
+
+async def test_model_calls_take_turns(ollama: FakeOllama) -> None:
+    # Three runs asking at once, one GPU: the server sees one at a time.
+    ollama.replies["/api/chat"] = Reply(fixture("chat-tool-answer.json"), delay=0.1)
+
+    async with llm.Client(ollama.url, "qwen3.5:9b") as client:
+        await asyncio.gather(*(client.chat(QUESTION) for _ in range(3)))
+
+    assert len(ollama.bodies) == 3
+    assert ollama.peak == 1
+
+
+async def test_more_slots_let_more_through(ollama: FakeOllama) -> None:
+    ollama.replies["/api/chat"] = Reply(fixture("chat-tool-answer.json"), delay=0.1)
+
+    async with llm.Client(ollama.url, "qwen3.5:9b", slots=3) as client:
+        await asyncio.gather(*(client.chat(QUESTION) for _ in range(3)))
+
+    assert ollama.peak == 3
+
+
+async def test_what_doesnt_use_the_model_doesnt_wait(ollama: FakeOllama) -> None:
+    ollama.replies["/api/chat"] = Reply(fixture("chat-tool-answer.json"), delay=0.5)
+    ollama.replies["/api/version"] = Reply(b'{"version":"0.34.4"}')
+
+    async with llm.Client(ollama.url, "qwen3.5:9b") as client:
+        chat = asyncio.create_task(client.chat(QUESTION))
+        await asyncio.sleep(0.05)  # the chat is on the GPU
+        async with asyncio.timeout(0.3):
+            assert await client.version() == "0.34.4"
+        await chat

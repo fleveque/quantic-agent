@@ -35,7 +35,28 @@
   {
     "name": "one company",
     "question": "When does Apple next go ex-dividend?",
-    "want_tool": "dividend_calendar"
+    "want_tool": "dividend_calendar",
+    "or_tool": "get_stock",
+    "symbols": [
+      "AAPL"
+    ]
+  },
+  {
+    "name": "one stock",
+    "question": "How many years in a row has Coca-Cola raised its dividend?",
+    "want_tool": "get_stock",
+    "symbols": [
+      "KO"
+    ]
+  },
+  {
+    "name": "two stocks",
+    "question": "Compare the dividend safety of Microsoft and Johnson & Johnson.",
+    "want_tool": "get_stock",
+    "symbols": [
+      "JNJ",
+      "MSFT"
+    ]
   },
   {
     "name": "definition, no tool",
