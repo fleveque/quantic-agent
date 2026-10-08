@@ -13,7 +13,9 @@ tool call; nothing ships without a human.
 > the official SDK, tracing each tool call; `quantic-evaltools` measures how reliably models call
 > tools. Every research answer is checked: a number or date no tool returned is reported, and the
 > run exits 4. Every research run is stored in SQLite with each tool call as it happens (`--runs`,
-> `--run N` re-checks one). The deterministic calculators for derived figures are in, with their tests. The agent was first built in Go, up to milestone 8:
+> `--run N` re-checks one). The deterministic calculators for derived figures are in, with their tests.
+> `--week-ahead` writes the Dividend Week Ahead in seven locales into a folder: data from the tools,
+> prose with no figures in it, each translation checked. The agent was first built in Go, up to milestone 8:
 > [quantic-agent-go](https://github.com/fleveque/quantic-agent-go), now archived. It continues here
 > in Python, chosen for what comes next: retrieval, document handling, model evaluation and
 > experimenting with local models ([decision 0007](docs/decisions/0007-continue-in-python.md)).
@@ -88,8 +90,8 @@ Python with Go. Milestones 0–8 are ports of the Go version; the lessons say wh
 | 7 | SQLite: runs, drafts, audit log | `sqlite3`, migrations, transactions, file locks |
 | 8 | The research loop: budgets, retries, phases, resume | Alembic, mutable arguments, backoff with jitter, an HTTP transport |
 | 9 | Worker pool: serialised GPU, parallel I/O | `TaskGroup`, semaphores, a rate limiter, measuring a bottleneck |
-| 10 | Retrieval: embeddings, brute-force cosine, style memory *(you are here)* | `array`, `math.sumprod`, `heapq`, vectors as BLOBs, measuring retrieval |
-| 11 | Week Ahead end to end, 7 locales, translation validator | dates, YAML, package data |
+| 10 | Retrieval: embeddings, brute-force cosine, style memory | `array`, `math.sumprod`, `heapq`, vectors as BLOBs, measuring retrieval |
+| 11 | Week Ahead end to end, 7 locales, translation validator *(you are here)* | dates, YAML, package data |
 | 12 | GitHub PR flow | a GitHub client, auth |
 | 13 | Ship it: logging, a systemd unit | structured logging, packaging an application |
 
@@ -113,6 +115,7 @@ uv run quantic-agent --research "What goes ex-dividend this week?"   # model + Q
 uv run quantic-agent --research "..." --research "..."   # several questions at once
 uv run quantic-agent --runs                  # past runs; --run N shows one, --resume N carries it on
 uv run quantic-agent --approve N             # a reviewed answer becomes style memory
+uv run quantic-agent --week-ahead --out DIR  # next week's post, one file per locale
 uv run quantic-bench                         # tokens/second and GPU residency per model
 uv run quantic-evaltools                     # how reliably each model calls tools
 uv run quantic-evalrecall                    # how well each embedding model finds an example

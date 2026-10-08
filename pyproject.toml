@@ -13,6 +13,7 @@ dependencies = [
     "httpx2>=2.13.1",
     "mcp>=2.3.0",
     "pydantic>=2.13.5",
+    "pyyaml>=6.0.3",
 ]
 
 # `uv sync` installs each as a small script in .venv/bin that imports the
@@ -31,6 +32,7 @@ dev = [
     "pyright>=1.1.414",
     "pytest>=9.1.1",
     "ruff>=0.16.10",
+    "types-pyyaml>=6.0.12.20260906",
 ]
 
 # What turns src/quantic_agent into an installable package. uv installs it

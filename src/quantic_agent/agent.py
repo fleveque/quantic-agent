@@ -33,6 +33,7 @@ class Model(Protocol):
         *,
         tools: Sequence[llm.ToolDef] | None = None,
         think: bool | None = None,
+        format: dict[str, Any] | None = None,
         options: llm.Options | None = None,
     ) -> llm.ChatResponse: ...
 

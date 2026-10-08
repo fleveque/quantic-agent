@@ -1,0 +1,30 @@
+{
+  "en": {
+    "language": "English",
+    "headings": { "summary": "The week ahead", "watch": "What to watch" }
+  },
+  "es": {
+    "language": "Spanish (Spain), in an informal register: tú, not usted",
+    "headings": { "summary": "La semana que viene", "watch": "Qué vigilar" }
+  },
+  "ca": {
+    "language": "Catalan, in an informal register: tu, not vostè",
+    "headings": { "summary": "La setmana que ve", "watch": "Què cal vigilar" }
+  },
+  "fr": {
+    "language": "French, in an informal register: tu, not vous",
+    "headings": { "summary": "La semaine à venir", "watch": "À surveiller" }
+  },
+  "de": {
+    "language": "German, in an informal register: du, not Sie",
+    "headings": { "summary": "Die kommende Woche", "watch": "Im Blick" }
+  },
+  "it": {
+    "language": "Italian, in an informal register: tu, not Lei",
+    "headings": { "summary": "La settimana in arrivo", "watch": "Da tenere d'occhio" }
+  },
+  "pt": {
+    "language": "Brazilian Portuguese, in an informal register: você",
+    "headings": { "summary": "A semana que vem", "watch": "O que acompanhar" }
+  }
+}

@@ -197,7 +197,8 @@ class FakeMCP:
     It answers by JSON-RPC method with replies captured from quantic.finance
     (tests/fixtures/mcp), rewriting each reply's id to the request's. tools
     maps a tool name to the fixture its tools/call answers with, or to "hang"
-    for a call that never answers; requests records every JSON-RPC message
+    for a call that never answers; "name:SYMBOL" answers a call with that
+    symbol argument, ahead of the name alone; requests records every JSON-RPC message
     received, in order. rate_limited is how many POSTs to refuse first with
     429, the way Quantic refuses an anonymous caller over its limit.
     """
@@ -211,6 +212,15 @@ class FakeMCP:
     def calls(self) -> list[dict[str, Any]]:
         """The params of every tools/call received."""
         return [r["params"] for r in self.requests if r.get("method") == "tools/call"]
+
+
+def tool_result(name: str) -> str:
+    """The tool output inside a captured tools/call reply (tests/fixtures/mcp):
+    the JSON document in its first content item's text."""
+    for line in (FIXTURES / "mcp" / name).read_text().splitlines():
+        if line.startswith("data: "):
+            return json.loads(line.removeprefix("data: "))["result"]["content"][0]["text"]
+    raise ValueError(f"{name} has no data line")
 
 
 def _with_id(fixture_text: str, request_id: object) -> str:
@@ -249,10 +259,13 @@ def quantic_mcp() -> Iterator[FakeMCP]:
             if "id" not in message:  # a notification: acknowledged, no reply
                 self._reply(202, b"", "application/json")
                 return
+            params: dict[str, Any] = message.get("params", {})
+            tool = params.get("name", "")
+            symbol = params.get("arguments", {}).get("symbol")
             name = {
                 "initialize": "initialize.sse",
                 "tools/list": "tools-list.json",
-                "tools/call": fake.tools.get(message.get("params", {}).get("name", ""), ""),
+                "tools/call": fake.tools.get(f"{tool}:{symbol}", fake.tools.get(tool, "")),
             }.get(method, "")
             if name == "hang":
                 fake.released.wait(5)  # set at teardown

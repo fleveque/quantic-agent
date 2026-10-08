@@ -43,6 +43,9 @@ class ScriptedModel:
     tools: list[Sequence[llm.ToolDef] | None] = field(
         default_factory=lambda: list[Sequence[llm.ToolDef] | None]()
     )
+    formats: list[dict[str, Any] | None] = field(
+        default_factory=lambda: list[dict[str, Any] | None]()
+    )
 
     async def chat(
         self,
@@ -50,10 +53,12 @@ class ScriptedModel:
         *,
         tools: Sequence[llm.ToolDef] | None = None,
         think: bool | None = None,
+        format: dict[str, Any] | None = None,
         options: llm.Options | None = None,
     ) -> llm.ChatResponse:
         self.shown.append(list(messages))
         self.tools.append(tools)
+        self.formats.append(format)
         return self.script.pop(0)
 
 

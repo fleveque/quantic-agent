@@ -46,13 +46,25 @@ starting point here.
   (default 32768, measured: at 4096 the writer's prompt was cut to 2,050 of 6,945 tokens); budget 16
   calls / 64,000 tokens; provenance indexes numeric and date keys and year-months; evaltools offers
   both tools (45/50). The author decided: "today" stays the agent's local date; lesson 09.
-- **Milestone 10 in review** (branch `m10-retrieval`, ADR 0012): style memory. `--approve N` /
+- **Milestone 10 merged** (#11, ADR 0012): style memory. `--approve N` /
   `--reject N` / `--note` / `--recall Q`; migration 0004 (reviews, embeddings, examples);
   `quantic_agent/memory.py` (float32 little-endian BLOBs at unit length, `math.sumprod`, `heapq`);
   `llm.Client.embed` (`truncate: false`, takes its GPU turn); the writer is shown the 2 nearest
   approved answers, recorded per run, never in the manifest; `qwen3-embedding:0.6b` with its query
   instruction, measured by `quantic-evalrecall` (`recall_cases.json`): 10/12 vs nomic's 8/12.
   Plain Python, no numpy (500 vectors ~10ms). Only answered (traced) runs can be approved; lesson 10.
+- **Milestone 11 in review** (branch `m11-week-ahead`, ADR 0013): the Dividend Week Ahead into a
+  folder, `--week-ahead --out DIR`. The author chose: public data only (no amounts, raises, radar;
+  content.md lists the gaps), and the agentic loop for research. `quantic_agent/weekahead.py`:
+  `week_after` (ISO week names the post), `question` (tells today's date: without it the 9B asked
+  for 7 days from a Thursday), `gather` (data built by code from the recorded calls, checked with
+  `check_data`; `IncompleteError` keeps the run in research), `write` (JSON prose via Ollama
+  `format`, no figures, 3 attempts, `WRITER_NAMES` hide `cagr_5y`-style names), `translate` +
+  `check_translation` (figures, length 0.75–1.75), YAML with every string double-quoted, files read
+  back before writing. Prompts and `locales.json` are package data (`importlib.resources`); PyYAML.
+  Migration 0005 (`posts`); exit 6 when a locale is held; a run is recorded before its files are
+  written; week-ahead runs can't be `--approve`d. Real runs: 10/10 published, 0 of 114 translations
+  held, Catalan visibly wrong (design open question 12); lesson 11.
 - design.md keeps Go's "As built in Go" notes next to this repository's "As built" notes.
 - PRs are squash-merged, so a walkthrough built from a branch commit cites a SHA `main` won't have.
   After merge, rebuild the walkthrough page from the merge commit and republish the artifact. That
@@ -68,14 +80,20 @@ starting point here.
 
 ## Next, in order
 
-1. **Milestone 11 — the Week Ahead end to end**, 7 locales, translation validator (README roadmap).
-   Needs Quantic's `/insights` section (design open question 2) before anything can be published.
+1. **Milestone 12 — the GitHub PR flow** (README roadmap). Needs Quantic's `/insights` section
+   (design open question 2), built against milestone 11's files, and an answer to open question 12
+   (the Catalan, and machine-verified locales generally) before anything is published. How a merged
+   PR becomes an approval is undecided.
 2. Ollama's truncation is invisible in its replies (only its log says `truncating input prompt`);
    detecting it from the agent is open.
 3. Seen in real runs, not caught: counts of a filtered subset ("four companies") are flagged though
    right; a wrong statement whose figures all trace ("no companies in the next 10 days") passes; the
    9B sometimes reasons out loud in an answer despite `think: false`.
-4. Ratios in get_stock (`cagr_5y` 0.1023) written as percentages ("10.23%") are flagged as
+4. Seen in milestone 11's real runs, not caught: prose that's wrong without a figure ("recent
+   acceleration" for a slowing dividend; "safety remains strong" for one on watch), and phrasing
+   that leans towards advice ("a stable alternative"). Numbers in words are recognised in English
+   only, so a translation's "dues" passes.
+5. Ratios in get_stock (`cagr_5y` 0.1023) written as percentages ("10.23%") are flagged as
    converted figures, correctly by N1; a percentage calculator tool would let them through.
 
 ## Conventions

@@ -1,0 +1,14 @@
+# The Week Ahead's prose, written 20 times per prompt from run 2's data (section 2 of runs.txt):
+# Procter & Gamble and Coca-Cola, the week of 2026-10-12. qwen3.5:9b, think off, num_ctx 32768,
+# up to 3 attempts, prose with figures sent back with the figures named (weekahead.write).
+# "figures" counts every figure in every attempt, by word.
+
+current       published 18/20  attempts {2: 6, 3: 14}         figures {'two': 39, 'five': 15, 'three': 7, 'twelve': 2, 'thirty': 1}
+counts        published 20/20  attempts {1: 1, 2: 10, 3: 9}   figures {'two': 27, 'five': 13, 'three': 5, 'twelve': 2}
+counts+names  published 19/20  attempts {1: 5, 2: 9, 3: 6}    figures {'two': 22}
+
+# current:      the first prompt.
+# counts:       plus "Never say how many companies there are, in any form: no "two", "pair",
+#               "both" or "duo". Name them, or say "these companies"."
+# counts+names: plus the data shown with streak_years, growth_ttm and cagr_5y renamed
+#               consecutive_raises, recent_growth and long_term_growth (weekahead.WRITER_NAMES).

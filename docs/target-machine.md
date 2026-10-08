@@ -7,10 +7,10 @@ The agent is developed on a laptop and runs on the desktop: Ryzen, 64GB RAM, RTX
 Nothing in the code is machine-specific (see [design §4](design.md#4-stack)), so the same checkout
 works on both machines; only the models pulled and the numbers measured differ.
 
-**The Python version is at milestone 10**, past where the Go version
+**The Python version is at milestone 11**, past where the Go version
 ([quantic-agent-go](https://github.com/fleveque/quantic-agent-go), archived) stopped. The check, the
 benchmark (sections 4–6), the tool-call evaluation (section 7), the run history and resuming a run
-(section 8) are all this repository's commands.
+(section 8) and the Week Ahead (section 8a) are all this repository's commands.
 
 ---
 
@@ -190,6 +190,22 @@ the model the calls it already made and carries on from there. It keeps the mode
 (whatever `--model` says) and the date it started on, which the writer is told is today: the answer
 describes the data fetched then.
 
+## 8a. The Week Ahead
+
+```sh
+uv run quantic-agent --week-ahead --out ~/insights   # next week's post, in seven locales
+```
+
+It researches the week after today (run on a Sunday, the week that starts tomorrow) and writes
+`~/insights/week-ahead-2026-W42/en.md`, `es.md`, and so on: one file per locale, all with the same
+data block. `--out` defaults to `$QUANTIC_AGENT_OUT`, else `insights` in the current directory. It's a
+run like a `--research` one: recorded, listed by `--runs`, shown by `--run N` with each locale's
+status and the data re-checked against the stored tool results, and resumable.
+
+A translation that fails its checks (a figure in it, or a length far from the English) is held: its
+file isn't written, a held locale's file from an earlier run is removed, and the run exits 6. Nothing
+is published by the agent; the files are for review (and, from milestone 12, a pull request).
+
 The database's schema is brought up to date when the agent opens it, by Alembic (decision
 [0010](decisions/0010-alembic-for-migrations.md)). A database from milestone 7 is converted once,
 automatically.
@@ -259,6 +275,10 @@ this on a trusted LAN, ideally with a firewall rule limiting port 11434 to the l
 | `run N can't be resumed` | The run answered already, is running, or doesn't exist | `quantic-agent --runs` for its state |
 | `the model server failed; its log has the cause` | Ollama answered 5xx, e.g. a model it couldn't load | `journalctl -u ollama -e` |
 | `figure(s) in the answer came from no tool result`, exit status 4 | `--research` answer contains a number or date no tool returned: invented, rounded, or derived by the model (e.g. "4 months" from 120 days) | Working as intended (design N1). The answer is shown so you can see it, but it isn't trustworthy |
+| `research didn't gather the whole week`, exit status 1 | The model asked for too short a calendar, or didn't look up every company in the week | `quantic-agent --resume N` to let it carry on; the message names what was missing |
+| `after 3 attempts the prose still has figures: nothing written`, exit status 4 | The Week Ahead's writer kept putting a figure in the prose, usually the number of companies | Run it again; `--run N` shows the last attempt |
+| `xx: held: …`, exit status 6 | A Week Ahead translation failed its checks | The other locales were written; `--run N` lists each locale and why one was held |
+| `only research answers can be approved` | `--approve` on a Week Ahead run | Its review is the pull request (milestone 12) |
 | `gave up after 300s (--timeout)` | The run took longer than `--timeout`: a slow model at a long context, or a stuck server | Raise `--timeout` (seconds; 0 for no limit), or check `ollama ps` for a model that spilled into system RAM. Too short a timeout during a cold load aborts the load |
 | `ON GPU 0% (CPU)` on the desktop | Ollama not using the GPU | `nvidia-smi`; `journalctl -u ollama -b \| grep -iE 'cuda\|gpu'` |
 | 64K row much slower than 32K, `ON GPU` below 100% | Cache no longer fits beside the weights | Expected at the limit — that's the measurement. Try section 6. |

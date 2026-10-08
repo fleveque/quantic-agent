@@ -86,6 +86,17 @@ class Draft:
 
 
 @dataclass(frozen=True)
+class Post:
+    """One locale's file of a post, ready to publish or held. A held one
+    says why, in problems; its content is what the check refused."""
+
+    locale: str
+    ready: bool
+    content: str
+    problems: list[str] = field(default_factory=lambda: list[str]())
+
+
+@dataclass(frozen=True)
 class Review:
     """A reviewer's verdict on a run's answer."""
 
@@ -115,6 +126,7 @@ class Run:
     review: Review | None = None
     # The approved answers its writer was shown: (their run, similarity).
     examples: list[tuple[int, float]] = field(default_factory=lambda: list[tuple[int, float]]())
+    posts: list[Post] = field(default_factory=lambda: list[Post]())  # a Week Ahead's files
 
     def records(self) -> list[Record]:
         """The run's successful calls as provenance records: exactly what its
@@ -230,13 +242,29 @@ class Store:
         draft: Draft | None = None,
         *,
         tokens: int | None = None,
+        posts: Sequence[Post] = (),
     ) -> None:
         """Ends a run: its state, the error that stopped it, its draft if it
-        produced one, and the tokens it used in all (None leaves them as
-        checkpointed). One transaction, so a run is never marked answered
-        without its draft, or the reverse. A run with a draft is done; one
-        without stays in its phase, to resume from."""
+        produced one, its posts if it wrote any, and the tokens it used in all
+        (None leaves them as checkpointed). One transaction, so a run is never
+        marked answered without its draft and posts, or the reverse. A run
+        with a draft is done; one without stays in its phase, to resume from."""
         with self._transaction():
+            self._db.executemany(
+                "INSERT INTO posts (run_id, locale, status, content, problems, created_at) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                [
+                    (
+                        run_id,
+                        p.locale,
+                        "ready" if p.ready else "held",
+                        p.content,
+                        json.dumps(p.problems),
+                        self._stamp(),
+                    )
+                    for p in posts
+                ],
+            )
             if draft is not None:
                 self._db.execute(
                     "INSERT INTO drafts (run_id, content, truncated, findings, created_at) "
@@ -415,6 +443,13 @@ class Store:
                 (run_id,),
             )
         )
+        run.posts = [
+            Post(locale, status == "ready", content, json.loads(problems))
+            for locale, status, content, problems in self._db.execute(
+                "SELECT locale, status, content, problems FROM posts WHERE run_id = ? ORDER BY id",
+                (run_id,),
+            )
+        ]
         if row is not None:  # no draft: the run failed or was stopped before answering
             content, truncated, findings, created = row
             run.draft = Draft(
