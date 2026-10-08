@@ -7,6 +7,9 @@ version wrote a lesson about this before it got here, so its arithmetic is the s
 I measured, chose an embedding model by measuring, and watched what an example actually does to a
 writer.
 
+*Also readable as a [formatted page](https://claude.ai/artifact/X7S4oMKwVZt3gSCJGnox6V), with a [code walkthrough](https://claude.ai/artifact/6SFcTdLKojwjeAts7cf1np) of every change the
+milestone made.*
+
 ---
 
 ## What there was to search
