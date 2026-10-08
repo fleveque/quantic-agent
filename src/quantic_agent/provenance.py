@@ -14,12 +14,17 @@ then checked against it, in one of three ways:
 Matching is exact. A figure the model rounded, converted or calculated is not
 the figure a tool returned, so it is reported: derived figures must come from
 the calculator tools, where they enter the manifest like any other result.
+Two things count as returned besides the values themselves: the length of
+every list in a result (so "nine stocks" is checked against a nine-item
+calendar), and the figures of text added with Manifest.add_text, such as the
+question being answered.
 """
 
 import json
 import re
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from datetime import date
 from enum import StrEnum
 from typing import Any
 
@@ -43,13 +48,16 @@ class Record:
 @dataclass(frozen=True)
 class Source:
     """Where a value was found: the call's position in the run, the tool, and
-    the value's path inside that call's result."""
+    the value's path inside that call's result. A source added with add_text
+    has call -1, its label as tool, and the figure as written as path."""
 
     call: int
     tool: str
     path: str
 
     def __str__(self) -> str:
+        if self.call < 0:  # added with add_text: no call, the text it came from
+            return f"{self.tool}: {self.path!r}"
         return f"{self.tool}#{self.call} {self.path}"
 
 
@@ -90,11 +98,31 @@ class Manifest:
                 if _ISO_DATE.fullmatch(value):
                     self._dates.setdefault(value, []).append(at)
             case list():
+                # How many items a list has is part of what the tool returned.
+                length = Source(call=at.call, tool=at.tool, path=f"len({at.path})")
+                self._numbers.setdefault(len(value), []).append(length)
                 for i, item in enumerate(value):
                     self._index(item, _child(at, f"[{i}]"))
             case dict():
                 for key, item in value.items():
                     self._index(item, _child(at, f".{key}"))
+
+    def add_text(self, source: str, text: str) -> None:
+        """Adds the figures written in text as a source, labelled source: the
+        question being answered ("the next six months"), or today's date.
+        They aren't data, but repeating them isn't inventing anything. Dates
+        without a year are left out, since they name no particular day."""
+        for f in _figures(text):
+            at = Source(call=-1, tool=source, path=f.text)
+            match f.kind:
+                case Kind.DATE if f.year:
+                    self._dates.setdefault(f.value(), []).append(at)
+                case Kind.YEAR:
+                    self._numbers.setdefault(f.year, []).append(at)
+                case Kind.NUMBER:
+                    self._numbers.setdefault(f.number, []).append(at)
+                case _:
+                    pass
 
     def number(self, n: float) -> list[Source]:
         """Where n appears, if anywhere."""
@@ -117,7 +145,11 @@ class Manifest:
     def has_month_day(self, month: int, day: int) -> bool:
         """Whether any date falls on this month and day, in any year, for prose
         that names a date without its year ("Oct 8")."""
-        return any(d.endswith(f"-{month:02d}-{day:02d}") for d in self._dates)
+        return bool(self.dates_on(month, day))
+
+    def dates_on(self, month: int, day: int) -> list[str]:
+        """Every date, YYYY-MM-DD, that falls on this month and day."""
+        return sorted(d for d in self._dates if d.endswith(f"-{month:02d}-{day:02d}"))
 
 
 def _child(at: Source, step: str) -> Source:
@@ -186,6 +218,9 @@ class Kind(StrEnum):
     YEAR = "year"
 
 
+_WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+
+
 @dataclass(frozen=True)
 class Finding:
     """A figure in prose that no tool returned."""
@@ -210,6 +245,7 @@ class _Figure:
     year: int = 0  # dates: 0 when the text names no year
     month: int = 0
     day: int = 0
+    weekday: int | None = None  # dates: the weekday written with it, Monday 0
 
     def value(self) -> str:
         match self.kind:
@@ -224,6 +260,25 @@ class _Figure:
 
     def finding(self) -> Finding:
         return Finding(self.text, self.offset, self.kind, self.value())
+
+    def check(self, manifest: Manifest) -> Finding | None:
+        """What's wrong with this figure, or None if the manifest accounts for
+        it. A date must be one a tool returned; a weekday written with it must
+        be the weekday that date falls on."""
+        if not self.accounted_for(manifest):
+            return self.finding()
+        if self.kind is not Kind.DATE or self.weekday is None:
+            return None
+        # The returned dates this one names: one, or one per year for a date
+        # written without its year. The weekday must be one of theirs.
+        returned = [self.value()] if self.year else manifest.dates_on(self.month, self.day)
+        actual = [date.fromisoformat(d) for d in returned]
+        if any(d.weekday() == self.weekday for d in actual):
+            return None
+        falls = " and ".join(
+            f"{d.isoformat()} is a {_WEEKDAYS[d.weekday()].capitalize()}" for d in actual
+        )
+        return Finding(self.text, self.offset, Kind.DATE, f"{self.value()}, but {falls}")
 
     def accounted_for(self, manifest: Manifest) -> bool:
         match self.kind:
@@ -242,12 +297,16 @@ def check_prose(text: str, manifest: Manifest) -> list[Finding]:
     list means every figure traces to a tool result.
 
     It recognises numbers (with thousands separators, a currency symbol or a
-    percent sign), dates (2026-10-08, "Oct 8", "October 8, 2026", "8 October")
-    and bare years. Figures written as words ("five companies") are not seen;
-    the post format makes that moot, since its prose may hold no figures at
-    all (see no_figures).
+    percent sign), numbers written as words from two to ninety-nine ("nine
+    stocks", "six-month"), dates (2026-10-08, "Oct 8", "October 8, 2026",
+    "8 October", and the second day in "October 16 and 17" or "Oct 16-17"), a
+    weekday written
+    with a date ("Friday, October 9", "October 9 (Friday)"), and bare years.
+    "One" is left out: it is far more often a pronoun ("one of them") than a
+    figure. A weekday on its own ("on Friday") isn't checked: nothing says
+    which Friday.
     """
-    return [f.finding() for f in _figures(text) if not f.accounted_for(manifest)]
+    return [finding for f in _figures(text) if (finding := f.check(manifest))]
 
 
 def no_figures(text: str) -> list[Finding]:
@@ -260,15 +319,57 @@ _MONTHS = (
     "january|february|march|april|may|june|july|august|september|october|november|december|"
     "jan|feb|mar|apr|jun|jul|aug|sept|sep|oct|nov|dec"
 )
-_ISO_IN_PROSE = re.compile(r"\b(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})\b")
+_DAYS = "|".join(_WEEKDAYS) + "|mon|tues|tue|wed|thurs|thu|fri|sat|sun"
+# A weekday written with a date: before it ("Friday, October 9", "Fri 9 Oct")
+# or after it in parentheses ("October 9 (Friday)").
+_BEFORE = rf"(?:(?P<weekday>{_DAYS})\.?,?\s+(?:the\s+)?)?"
+_AFTER = rf"(?:\s+\((?P<weekday_after>{_DAYS})\.?\))?"
+_ORDINAL = r"(?:st|nd|rd|th)?"
+_YEAR = r"(?:,?\s+(?P<year>\d{4})\b)?"
+_ISO_IN_PROSE = re.compile(
+    rf"\b{_BEFORE}(?P<year>\d{{4}})-(?P<month>\d{{2}})-(?P<day>\d{{2}})\b{_AFTER}", re.IGNORECASE
+)
 _MONTH_DAY = re.compile(
-    rf"\b(?P<month>{_MONTHS})\.?\s+(?P<day>\d{{1,2}})(?:st|nd|rd|th)?\b(?:,?\s+(?P<year>\d{{4}})\b)?",
+    rf"\b{_BEFORE}(?P<month>{_MONTHS})\.?\s+(?P<day>\d{{1,2}}){_ORDINAL}\b{_YEAR}{_AFTER}",
     re.IGNORECASE,
 )
 _DAY_MONTH = re.compile(
-    rf"\b(?P<day>\d{{1,2}})(?:st|nd|rd|th)?\s+(?P<month>{_MONTHS})\b\.?(?:,?\s+(?P<year>\d{{4}})\b)?",
+    rf"\b{_BEFORE}(?P<day>\d{{1,2}}){_ORDINAL}\s+(?P<month>{_MONTHS})\b\.?{_YEAR}{_AFTER}",
     re.IGNORECASE,
 )
+# "October 16 and 17", "Oct 16 & 17", "16 and 17 October", "Oct 8-10": a
+# second day sharing the month, or the end of a range of days. Found before
+# the single-day forms, which would otherwise take the first day and leave the
+# second as a bare number ("-10"). A weekday before it goes with the first day.
+_AND = r"\s*(?:and|&|or|-|\u2013)\s*"  # \u2013: an en dash
+_MONTH_DAY_PAIR = re.compile(
+    rf"\b{_BEFORE}(?P<month>{_MONTHS})\.?\s+(?P<day>\d{{1,2}}){_ORDINAL}{_AND}"
+    rf"(?P<day2>\d{{1,2}}){_ORDINAL}\b{_YEAR}",
+    re.IGNORECASE,
+)
+# (?<![\d-]): not the end of an ISO date, "2026-10-08 October".
+_DAY_PAIR_MONTH = re.compile(
+    rf"(?<![\d-])\b{_BEFORE}(?P<day>\d{{1,2}}){_ORDINAL}{_AND}(?P<day2>\d{{1,2}}){_ORDINAL}"
+    rf"\s+(?P<month>{_MONTHS})\b\.?{_YEAR}",
+    re.IGNORECASE,
+)
+# A number in words, two to ninety-nine: "twenty-one" before "twenty", so the
+# compound wins.
+_TENS = "twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety"
+_UNITS = "one|two|three|four|five|six|seven|eight|nine"
+_WORD_NUMBER = re.compile(
+    rf"\b(?:(?P<tens>{_TENS})[- ](?P<unit>{_UNITS})|(?P<word>two|three|four|five|six|seven|"
+    rf"eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|"
+    rf"nineteen|{_TENS}))\b",
+    re.IGNORECASE,
+)
+_BELOW_TWENTY = (
+    "zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|"
+    "fifteen|sixteen|seventeen|eighteen|nineteen"
+)
+_WORD_VALUES = {word: n for n, word in enumerate(_BELOW_TWENTY.split("|"))} | {
+    tens: 20 + 10 * i for i, tens in enumerate(_TENS.split("|"))
+}
 # A number: an optional sign and currency symbol, digits with or without
 # thousands separators, an optional decimal part and percent sign.
 _NUMBER = re.compile(r"-?[$€£]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?%?")
@@ -281,19 +382,24 @@ def _figures(text: str) -> list[_Figure]:
     found: list[_Figure] = []
     masked = text
 
-    for pattern in (_ISO_IN_PROSE, _MONTH_DAY, _DAY_MONTH):
+    for pattern in (_MONTH_DAY_PAIR, _DAY_PAIR_MONTH, _ISO_IN_PROSE, _MONTH_DAY, _DAY_MONTH):
         for m in pattern.finditer(masked):
+            groups = m.groupdict()
             month = m["month"]
-            found.append(
-                _Figure(
-                    text=text[m.start() : m.end()],
-                    offset=m.start(),
-                    kind=Kind.DATE,
-                    year=int(m["year"]) if m["year"] else 0,
-                    month=int(month) if month.isdigit() else _month_number(month),
-                    day=int(m["day"]),
-                )
+            weekday = groups.get("weekday") or groups.get("weekday_after")
+            first = _Figure(
+                text=text[m.start() : m.end()],
+                offset=m.start(),
+                kind=Kind.DATE,
+                year=int(m["year"]) if m["year"] else 0,
+                month=int(month) if month.isdigit() else _month_number(month),
+                day=int(m["day"]),
+                weekday=_weekday_number(weekday) if weekday else None,
             )
+            found.append(first)
+            if groups.get("day2"):
+                # Two figures, one per day, both reported with the whole phrase.
+                found.append(replace(first, day=int(m["day2"]), weekday=None))
             # Same length, so every later offset still points into text.
             masked = masked[: m.start()] + " " * (m.end() - m.start()) + masked[m.end() :]
 
@@ -309,6 +415,14 @@ def _figures(text: str) -> list[_Figure]:
         else:
             found.append(_Figure(text=raw, offset=m.start(), kind=Kind.NUMBER, number=number))
 
+    for m in _WORD_NUMBER.finditer(masked):
+        if m["tens"]:
+            n = _WORD_VALUES[m["tens"].lower()] + _WORD_VALUES[m["unit"].lower()]
+        else:
+            n = _WORD_VALUES[m["word"].lower()]
+        found.append(_Figure(text=m.group(), offset=m.start(), kind=Kind.NUMBER, number=n))
+
+    # sorted is stable: the two days of a pair keep their order.
     return sorted(found, key=lambda f: f.offset)
 
 
@@ -329,6 +443,11 @@ def _list_marker(s: str, start: int, end: int) -> bool:
     if s[line_start:start].strip():
         return False
     return s[end : end + 2] in (". ", ") ")
+
+
+def _weekday_number(name: str) -> int:
+    """Monday 0 to Sunday 6, as date.weekday() counts them."""
+    return next(i for i, d in enumerate(_WEEKDAYS) if d.startswith(name.lower()[:3]))
 
 
 def _month_number(name: str) -> int:

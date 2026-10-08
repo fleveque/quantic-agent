@@ -1,16 +1,17 @@
-"""The research loop: the model is offered tools, asks for the ones it needs,
-and answers from what they return.
+"""A question answered in two phases (design §3.1).
 
-This is milestone 5's version: one question, a cap on tool calls, and a record
-of every call. Milestone 8 grows it into the full loop of design §3.1 (budgets
-for time and tokens, retries, phases), and the writing phase that follows it
-never gets tools at all.
+Research is a loop: the model is offered tools, asks for the ones it needs,
+and sees what they return, within a budget. Writing is one model call with no
+tools at all: it gets the question and the data research gathered, and
+nothing else, so it can't fetch, and it can't wander.
 """
 
+import json
 import time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
-from datetime import timedelta
+from datetime import date, timedelta
+from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Protocol
 
 from quantic_agent import llm, quantic
@@ -41,11 +42,33 @@ class ToolServer(Protocol):
     async def call_tool(self, name: str, arguments: dict[str, Any]) -> quantic.Result: ...
 
 
-# A question about one calendar needs one call; the cap stops a model that
-# keeps asking.
-DEFAULT_MAX_CALLS = 4
+@dataclass(frozen=True)
+class Budget:
+    """Bounds the research phase (design §3.2). Running out is not a failure:
+    research stops, and writing goes ahead with what was gathered. The third
+    bound, wall-clock time, is the caller's asyncio.timeout.
 
-# The standing instruction for a research question. Prompts are code (design
+    The defaults are for one question. A question about one calendar needs
+    one call and about 2,000 tokens (measured, docs/benchmarks); this leaves
+    room for a model that corrects itself a few times, and stops one that
+    keeps asking.
+    """
+
+    calls: int = 4  # tool calls
+    tokens: int = 16_000  # tokens the model processes and generates
+
+
+DEFAULT_BUDGET = Budget()
+
+
+class Limit(StrEnum):
+    """The budget that stopped research early."""
+
+    CALLS = "calls"
+    TOKENS = "tokens"
+
+
+# The standing instruction for the research phase. Prompts are code (design
 # open question 6): they live here, reviewed like the rest.
 SYSTEM_PROMPT = (
     "You answer questions about dividends and the companies that pay them. "
@@ -53,12 +76,6 @@ SYSTEM_PROMPT = (
     "If the tools don't provide something, say so instead of guessing. "
     "Describe what the data shows. Do not recommend buying or selling anything."
 )
-
-
-class TooManyCallsError(Exception):
-    """The model was still asking for tools when the cap was reached. Design
-    §3.2 treats running out of budget as an outcome of the run, not a crash:
-    every call made so far has already been recorded."""
 
 
 @dataclass
@@ -75,57 +92,90 @@ class Call:
 
 
 @dataclass
-class Answer:
-    text: str = ""
+class Research:
+    """What the research phase gathered: the calls it made, in order, the
+    tokens it used, and the budget that stopped it, if one did."""
+
     calls: list[Call] = field(default_factory=lambda: list[Call]())
-    truncated: bool = False  # the model ran out of tokens mid-answer
+    tokens: int = 0
+    exhausted: Limit | None = None  # None when the model finished on its own
+
+    @property
+    def has_data(self) -> bool:
+        """Whether research gathered anything to write from: at least one call
+        that succeeded. A model that answered without calling a tool, or whose
+        every call was refused, gathered nothing, and writing would only
+        produce an answer about nothing."""
+        return any(not c.failed for c in self.calls)
 
 
 @dataclass
 class Researcher:
-    """Answers questions with a model and a tool server. tools is the
+    """Runs the research phase with a model and a tool server. tools is the
     allowlist: the only tools offered, and the only ones run."""
 
     model: Model
     server: ToolServer | None
     tools: Sequence[Tool[Any]]
-    max_calls: int = DEFAULT_MAX_CALLS
+    budget: Budget = DEFAULT_BUDGET
 
-    async def ask(self, question: str, on_call: Callable[[Call], None] | None = None) -> Answer:
-        """Runs the loop for one question, calling on_call with each tool call
-        as it completes.
+    async def research(
+        self,
+        question: str,
+        gathered: Research,
+        on_call: Callable[[int, Call], None] | None = None,
+    ) -> None:
+        """Runs the loop for one question until the model stops asking for
+        tools or a budget runs out, calling on_call with each tool call and
+        its position in the run as it completes.
+
+        gathered is continued in place: a new run passes Research(), a resumed
+        one what its record holds. Its calls are replayed to the model as if
+        just made, without calling the tools again, and count against the
+        budget like new ones. It is updated as the loop goes, so when the loop
+        raises, it still says what was done and what it cost.
 
         A model mistake (an unknown tool, arguments that don't fit, a tool's
         refusal, a request the server rejects) is shown to the model as the
-        tool's result so it can correct itself, and counts against the cap. A
-        failure the model can't fix, such as the tool server being down, stops
-        the loop: the exception propagates, and the call it happened in has
-        already been recorded.
+        tool's result so it can correct itself, and counts against the budget.
+        A failure the model can't fix, such as the tool server being down,
+        stops the loop: the exception propagates, and the call it happened in
+        has already been recorded.
+
+        When the model stops asking, whatever it says is discarded: the answer
+        is the writing phase's job.
         """
-        answer = Answer()
+        gathered.exhausted = None
+        messages = self.first_messages(question) + replay(gathered.calls)
+        definitions = self.tool_defs()
 
         def record(call: Call) -> None:
-            answer.calls.append(call)
+            gathered.calls.append(call)
             if on_call is not None:
-                on_call(call)
+                on_call(len(gathered.calls) - 1, call)
 
-        messages = self.first_messages(question)
-        definitions = self.tool_defs()
         while True:
+            # Checked before asking (a resumed run may have spent its tokens
+            # already) and again after: a reply that crosses the budget has
+            # its requests dropped rather than run.
+            if gathered.tokens >= self.budget.tokens:
+                gathered.exhausted = Limit.TOKENS
+                return
             resp = await self.model.chat(messages, tools=definitions, think=False)
+            gathered.tokens += resp.prompt_eval_count + resp.eval_count
             if not resp.message.tool_calls:
-                answer.text = resp.message.content
-                answer.truncated = resp.truncated
-                return answer
+                return
+            if gathered.tokens >= self.budget.tokens:
+                gathered.exhausted = Limit.TOKENS
+                return
 
             # The model's request goes into the history unchanged, followed by
             # one tool message per call it made.
             messages.append(resp.message)
             for request in resp.message.tool_calls:
-                if len(answer.calls) == self.max_calls:
-                    raise TooManyCallsError(
-                        f"the model was still asking for tools after {self.max_calls} calls"
-                    )
+                if len(gathered.calls) >= self.budget.calls:
+                    gathered.exhausted = Limit.CALLS
+                    return
                 call = await self._run(request.function, record)
                 messages.append(llm.Message(role="tool", tool_name=call.tool, content=call.result))
 
@@ -185,6 +235,98 @@ class Researcher:
         if result.is_error:
             return finish(f"error: {result.text}", failed=True)  # the tool ran and declined
         return finish(result.text)
+
+
+def replay(calls: Sequence[Call]) -> list[llm.Message]:
+    """Recorded calls turned back into the conversation that produced them:
+    for each, the model's request and the tool's result. A model that asked
+    for two tools in one message gets them back as two messages, one call
+    each, which says the same thing."""
+    messages: list[llm.Message] = []
+    for c in calls:
+        request = llm.ToolCall(function=llm.FunctionCall(name=c.tool, arguments=c.arguments))
+        messages.append(llm.Message(role="assistant", tool_calls=[request]))
+        messages.append(llm.Message(role="tool", tool_name=c.tool, content=c.result))
+    return messages
+
+
+# ---- writing ---------------------------------------------------------------
+
+# The standing instruction for the writing phase. The writer is shown the data
+# and nothing else, and offered no tools.
+WRITE_PROMPT = (
+    "You write short, factual answers about dividends and the companies that pay them. "
+    "Use only the data you are given: every company, date and figure you mention must appear "
+    "in it. "
+    "Do not work out new figures from it, such as counts, sums, averages or durations. "
+    "If the data doesn't answer the question, say so. "
+    "Describe what the data shows. Do not recommend buying or selling anything."
+)
+
+
+class NothingWrittenError(Exception):
+    """The writer's reply had no text: nothing to check, and nothing to keep.
+    tokens is what the attempt cost."""
+
+    def __init__(self, tokens: int) -> None:
+        super().__init__("the model wrote nothing")
+        self.tokens = tokens
+
+
+@dataclass(frozen=True)
+class Draft:
+    """What the writing phase produced."""
+
+    text: str
+    truncated: bool  # the model ran out of tokens mid-answer
+    tokens: int
+
+
+@dataclass
+class Writer:
+    """Runs the writing phase: one model call, no tools.
+
+    today is the date the research was done, which the writer is told: left
+    to itself, it guesses (one answer in the Go version worked from "October
+    2023"). None tells it nothing.
+    """
+
+    model: Model
+    today: date | None = None
+
+    async def write(self, question: str, research: Research) -> Draft:
+        """Answers question from what research gathered."""
+        resp = await self.model.chat(write_messages(question, self.today, research), think=False)
+        tokens = resp.prompt_eval_count + resp.eval_count
+        if not resp.message.content.strip():
+            raise NothingWrittenError(tokens)
+        return Draft(text=resp.message.content, truncated=resp.truncated, tokens=tokens)
+
+
+def write_messages(question: str, today: date | None, research: Research) -> list[llm.Message]:
+    """The writer's whole view of the world: the standing instruction, today's
+    date, the question, and each successful call's result labelled with the
+    call that produced it. Failed calls are left out: they are errors the
+    research model was shown, not data. Public, so the prompt can be inspected
+    exactly as the model gets it."""
+    parts: list[str] = []
+    if today is not None:
+        parts.append(f"Today's date: {today.isoformat()}")
+    parts.append(f"Question: {question}")
+    data = [c for c in research.calls if not c.failed]
+    for c in data:
+        parts.append(f"Data from {c.tool} {json.dumps(c.arguments)}:\n{c.result}")
+    if not data:
+        parts.append("No data was retrieved.")
+    if research.exhausted is not None:
+        parts.append(
+            f"The research stopped before it was finished (its {research.exhausted} budget "
+            "ran out), so the data may be incomplete. Say what it covers."
+        )
+    return [
+        llm.Message(role="system", content=WRITE_PROMPT),
+        llm.Message(role="user", content="\n\n".join(parts)),
+    ]
 
 
 # The real clients must keep matching the Protocols. These lines run nothing;

@@ -1,13 +1,16 @@
+import json
 import os
 import re
 import signal
 import threading
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 from conftest import DEAD_URL, FakeMCP, FakeOllama, Reply, fixture
 
-from quantic_agent import store
+from quantic_agent import quantic, store
+from quantic_agent.agent import Call
 from quantic_agent.cli import main
 
 
@@ -174,13 +177,23 @@ def test_a_signal_cancels_the_request_in_flight(
     assert ollama.wait_for_hangups(1)
 
 
-def research_servers(ollama: FakeOllama, quantic_mcp: FakeMCP) -> None:
-    # A real exchange with qwen3.5:9b: it asks for the calendar, then answers.
+def research_servers(ollama: FakeOllama, quantic_mcp: FakeMCP, answer: bytes | None = None) -> None:
+    # A real exchange with qwen3.5:9b: it asks for the calendar, then answers,
+    # which ends research (its answer is discarded). The writer then answers,
+    # with answer if given, or the same real answer.
+    writer = fixture("chat-tool-answer.json") if answer is None else answer
     ollama.replies["/api/chat"] = [
         Reply(fixture("chat-tool-call.json")),
         Reply(fixture("chat-tool-answer.json")),
+        Reply(writer),
     ]
     quantic_mcp.tools["dividend_calendar"] = "call-dividend-calendar.sse"
+
+
+def says(text: str) -> bytes:
+    """A model reply with text as its answer."""
+    message = {"role": "assistant", "content": text}
+    return json.dumps({"model": "qwen3.5:9b", "message": message, "done": True}).encode()
 
 
 def test_research(
@@ -196,6 +209,15 @@ def test_research(
     # Each tool call is traced on stderr as it completes.
     assert re.search(r'tool dividend_calendar \{"days": 10\} → \d+ bytes \(\d+ms\)', err)
     assert quantic_mcp.calls() == [{"name": "dividend_calendar", "arguments": {"days": 10}}]
+    # Two research turns, then the writer: offered no tools, told the date the
+    # run started, and given the data.
+    research, writer = ollama.bodies[:2], ollama.bodies[2]
+    assert all("tools" in body for body in research)
+    assert "tools" not in writer
+    assert re.match(
+        r"Today's date: \d{4}-\d{2}-\d{2}\n\nQuestion: next 10 days\?",
+        writer["messages"][1]["content"],
+    )
 
 
 def test_research_without_quantic_exits_3(
@@ -210,15 +232,10 @@ def test_research_without_quantic_exits_3(
 def test_research_reports_figures_no_tool_returned(
     ollama: FakeOllama, quantic_mcp: FakeMCP, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    research_servers(ollama, quantic_mcp)
     # The same exchange, but the answer claims a window the data doesn't cover.
-    ollama.replies["/api/chat"] = [
-        Reply(fixture("chat-tool-call.json")),
-        Reply(
-            b'{"model":"qwen3.5:9b","message":{"role":"assistant","content":'
-            b'"Over the next 180 days, Microsoft goes ex-dividend on Oct 8."},"done":true}'
-        ),
-    ]
+    research_servers(
+        ollama, quantic_mcp, says("Over the next 180 days, Microsoft goes ex-dividend on Oct 8.")
+    )
 
     code = main(["--ollama", ollama.url, "--mcp", quantic_mcp.url, "--research", "q"])
 
@@ -251,11 +268,14 @@ def test_research_records_the_run(
     assert "run 1 answered" in capsys.readouterr().err
 
     [run] = stored_runs(isolated_state)
-    assert (run.input, run.model, run.state) == (
+    assert (run.input, run.model, run.state, run.phase) == (
         "next 10 days?",
         "qwen3.5:9b",
         store.State.ANSWERED,
+        store.Phase.DONE,
     )
+    # Every model turn's tokens, both phases: the fixtures' counts.
+    assert run.tokens == (321 + 29) + (610 + 219) + (610 + 219)
     assert [(c.tool, c.arguments) for c in run.calls] == [("dividend_calendar", {"days": 10})]
     assert run.draft is not None
     assert run.draft.findings == []
@@ -271,7 +291,9 @@ def test_runs_and_run_read_the_history_back(
     # Neither needs the model server or Quantic.
     assert main(["--runs"]) == 0
     listing = capsys.readouterr().out
-    assert re.search(r"^1\s+\S+ \S+\s+answered\s+1\s+next 10 days\?$", listing, re.MULTILINE)
+    assert re.search(
+        r"^1\s+\S+ \S+\s+answered\s+done\s+1\s+2008\s+next 10 days\?$", listing, re.MULTILINE
+    )
 
     assert main(["--run", "1"]) == 0
     shown = capsys.readouterr().out
@@ -282,11 +304,7 @@ def test_runs_and_run_read_the_history_back(
 def test_run_rechecks_an_unverified_answer(
     ollama: FakeOllama, quantic_mcp: FakeMCP, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    research_servers(ollama, quantic_mcp)
-    ollama.replies["/api/chat"] = [
-        Reply(fixture("chat-tool-call.json")),
-        Reply(b'{"model":"m","message":{"role":"assistant","content":"In 180 days."},"done":true}'),
-    ]
+    research_servers(ollama, quantic_mcp, says("In 180 days."))
     assert main(["--ollama", ollama.url, "--mcp", quantic_mcp.url, "--research", "q"]) == 4
     capsys.readouterr()
 
@@ -326,3 +344,161 @@ def test_an_interrupted_run_is_recorded(
     [run] = stored_runs(isolated_state)
     assert run.state is store.State.INTERRUPTED
     assert run.finished_at is not None
+
+
+def test_research_with_no_data_writes_nothing(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    isolated_state: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # The model answers from memory, calling no tool.
+    ollama.replies["/api/chat"] = [Reply(says("Microsoft, I believe, on Oct 8."))]
+
+    assert main(["--ollama", ollama.url, "--mcp", quantic_mcp.url, "--research", "q"]) == 5
+
+    out, err = capsys.readouterr()
+    assert out == ""
+    assert "research gathered no data" in err
+    assert "quantic-agent --resume 1" in err
+    # The writer was never asked.
+    assert len(ollama.bodies) == 1
+    [run] = stored_runs(isolated_state)
+    assert (run.state, run.phase, run.draft) == (store.State.NO_DATA, store.Phase.RESEARCH, None)
+
+
+def stopped_run(
+    db_path: Path,
+    phase: store.Phase,
+    question: str = "next 10 days?",
+    started: datetime | None = None,
+) -> int:
+    """A run stopped in phase, with the real calendar call recorded."""
+    sse = (Path(__file__).parent / "fixtures" / "mcp" / "call-dividend-calendar.sse").read_text()
+    data = json.loads(next(line for line in sse.splitlines() if line.startswith("data: "))[6:])
+    calendar = data["result"]["content"][0]["text"]
+    clock = (lambda: started) if started else None
+    with store.Store(db_path, now=clock) as db:
+        run_id = db.start_run("research", question, "qwen3.5:9b")
+        db.record_call(run_id, 0, Call("dividend_calendar", {"days": 10}, calendar))
+        if phase is store.Phase.WRITE:
+            db.checkpoint(run_id, phase, 1179, None)
+        db.finish(run_id, store.State.INTERRUPTED)
+    return run_id
+
+
+def test_a_run_stopped_while_writing_resumes_without_tools(
+    ollama: FakeOllama, isolated_state: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    run_id = stopped_run(isolated_state, store.Phase.WRITE)
+    ollama.replies["/api/chat"] = [Reply(fixture("chat-tool-answer.json"))]
+
+    # No MCP server at all: a run past research doesn't need one. And the
+    # model is the run's own, whatever --model says.
+    args = ["--ollama", ollama.url, "--mcp", DEAD_URL, "--model", "other", "--resume", str(run_id)]
+    assert main(args) == 0
+
+    assert (
+        "resuming run 1 in its write phase, with 1 tool call(s) recorded" in capsys.readouterr().err
+    )
+    [writer] = ollama.bodies
+    assert writer["model"] == "qwen3.5:9b"
+    [run] = stored_runs(isolated_state)
+    assert (run.state, run.phase, run.tokens) == (
+        store.State.ANSWERED,
+        store.Phase.DONE,
+        1179 + 829,
+    )
+
+
+def test_a_run_stopped_while_researching_replays_its_calls(
+    ollama: FakeOllama, quantic_mcp: FakeMCP, isolated_state: Path
+) -> None:
+    run_id = stopped_run(isolated_state, store.Phase.RESEARCH)
+    ollama.replies["/api/chat"] = [Reply(fixture("chat-tool-answer.json"))]
+
+    args = ["--ollama", ollama.url, "--mcp", quantic_mcp.url, "--resume", str(run_id)]
+    assert main(args) == 0
+
+    # The model was shown the recorded call and its result; Quantic wasn't
+    # asked again.
+    roles = [m["role"] for m in ollama.bodies[0]["messages"]]
+    assert roles == ["system", "user", "assistant", "tool"]
+    assert quantic_mcp.calls() == []
+    [run] = stored_runs(isolated_state)
+    assert run.state is store.State.ANSWERED
+
+
+def test_an_answered_run_cant_be_resumed(
+    ollama: FakeOllama, quantic_mcp: FakeMCP, capsys: pytest.CaptureFixture[str]
+) -> None:
+    research_servers(ollama, quantic_mcp)
+    main(["--ollama", ollama.url, "--mcp", quantic_mcp.url, "--research", "q"])
+    capsys.readouterr()
+
+    assert main(["--ollama", ollama.url, "--resume", "1"]) == 1
+    assert "run 1 can't be resumed" in capsys.readouterr().err
+
+
+def test_a_rate_limit_that_doesnt_clear_exits_3(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    isolated_state: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    research_servers(ollama, quantic_mcp)
+    quantic_mcp.rate_limited = 100
+    monkeypatch.setattr(quantic, "DEFAULT_BACKOFF", quantic.Backoff(attempts=3, base=0.01))
+
+    assert main(["--ollama", ollama.url, "--mcp", quantic_mcp.url, "--research", "q"]) == 3
+
+    err = capsys.readouterr().err
+    assert re.search(r"Quantic's rate limit; retry 1 of initialize in 0\.0s", err)
+    assert "Quantic's rate limit didn't clear; resume the run later." in err
+    [run] = stored_runs(isolated_state)
+    assert run.state is store.State.FAILED
+
+
+def test_the_question_and_the_date_are_sources(
+    ollama: FakeOllama, isolated_state: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # Repeating the question's "seven months", or the date the run started
+    # (which the writer is told is today), invents nothing; "four" does. The
+    # calendar has none of them: ten days, six stocks, other dates.
+    question = "What goes ex-dividend in the next seven months?"
+    started = datetime(2026, 11, 30, 12, tzinfo=UTC)
+    run_id = stopped_run(isolated_state, store.Phase.WRITE, question, started)
+    ollama.replies["/api/chat"] = [Reply(says("As of 2026-11-30, over seven months: four."))]
+
+    assert main(["--ollama", ollama.url, "--mcp", DEAD_URL, "--resume", str(run_id)]) == 4
+
+    err = capsys.readouterr().err
+    assert "1 figure(s) in the answer came from no tool result" in err
+    assert "'four' (number 4)" in err
+    # The writer was told the day the run started, not the day it resumed.
+    assert ollama.bodies[0]["messages"][1]["content"].startswith("Today's date: 2026-11-30")
+
+
+def test_a_run_stopped_while_writing_is_checkpointed(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    isolated_state: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    research_servers(ollama, quantic_mcp)
+    replies = ollama.replies["/api/chat"]
+    assert isinstance(replies, list)
+    replies[2] = Reply(b"", hang=True)  # the writer never answers
+    threading.Timer(0.5, os.kill, (os.getpid(), signal.SIGTERM)).start()
+
+    assert main(["--ollama", ollama.url, "--mcp", quantic_mcp.url, "--research", "q"]) == 130
+
+    assert "quantic-agent --resume 1" in capsys.readouterr().err
+    # Research's work is kept: resuming starts at writing, calling no tool.
+    [run] = stored_runs(isolated_state)
+    assert (run.state, run.phase, run.tokens) == (
+        store.State.INTERRUPTED,
+        store.Phase.WRITE,
+        (321 + 29) + (610 + 219),
+    )
