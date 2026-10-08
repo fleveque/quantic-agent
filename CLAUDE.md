@@ -39,13 +39,20 @@ starting point here.
   SDK; phases, checkpoints, `--resume N`, `no_data` (exit 5); provenance with Go's later fixes plus
   weekdays next to a date and "Oct 8-10" ranges; real runs in `docs/benchmarks/2026-10-08-python-writer/`
   (4/9 traced); lesson 08. The Python version is now where the Go version stopped.
-- **Milestone 9 in review** (branch `m9-worker-pool`), the first with no Go version (ADR 0011):
+- **Milestone 9 merged** (#10), the first with no Go version (ADR 0011):
   `tools.GET_STOCK`; a reply's tool calls run at once in a `TaskGroup` (4 at a time, failures
   returned, not raised); `llm.Client(slots=1)` is the GPU queue; `--research` given several times
   runs a batch; `quantic.Pace` (50 requests in any 60s, shared) in the MCP transport; `--num-ctx`
   (default 32768, measured: at 4096 the writer's prompt was cut to 2,050 of 6,945 tokens); budget 16
   calls / 64,000 tokens; provenance indexes numeric and date keys and year-months; evaltools offers
   both tools (45/50). The author decided: "today" stays the agent's local date; lesson 09.
+- **Milestone 10 in review** (branch `m10-retrieval`, ADR 0012): style memory. `--approve N` /
+  `--reject N` / `--note` / `--recall Q`; migration 0004 (reviews, embeddings, examples);
+  `quantic_agent/memory.py` (float32 little-endian BLOBs at unit length, `math.sumprod`, `heapq`);
+  `llm.Client.embed` (`truncate: false`, takes its GPU turn); the writer is shown the 2 nearest
+  approved answers, recorded per run, never in the manifest; `qwen3-embedding:0.6b` with its query
+  instruction, measured by `quantic-evalrecall` (`recall_cases.json`): 10/12 vs nomic's 8/12.
+  Plain Python, no numpy (500 vectors ~10ms). Only answered (traced) runs can be approved; lesson 10.
 - design.md keeps Go's "As built in Go" notes next to this repository's "As built" notes.
 - PRs are squash-merged, so a walkthrough built from a branch commit cites a SHA `main` won't have.
   After merge, rebuild the walkthrough page from the merge commit and republish the artifact. That
@@ -61,7 +68,8 @@ starting point here.
 
 ## Next, in order
 
-1. **Milestone 10 — retrieval**: embeddings, brute-force cosine, style memory (README roadmap).
+1. **Milestone 11 — the Week Ahead end to end**, 7 locales, translation validator (README roadmap).
+   Needs Quantic's `/insights` section (design open question 2) before anything can be published.
 2. Ollama's truncation is invisible in its replies (only its log says `truncating input prompt`);
    detecting it from the agent is open.
 3. Seen in real runs, not caught: counts of a filtered subset ("four companies") are flagged though

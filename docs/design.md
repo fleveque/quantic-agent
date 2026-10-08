@@ -249,6 +249,18 @@ that's microseconds and no service to run. It is the correct engineering choice 
 shortcut; revisit only if the corpus grows two orders of magnitude. Embeddings from Ollama
 (`nomic-embed-text` or a Qwen3 embedding model) alongside the chat model.
 
+**As built (milestone 10, [`memory.py`](../src/quantic_agent/memory.py),
+[decision 0012](decisions/0012-style-memory.md)).** Style memory only. `--approve N` embeds an
+answer whose every figure traced; `--reject N` deletes its vector. A writer is shown the two approved
+answers most similar to its question, told their facts and figures are out of date, and the run
+records which (`--run N` shows them). Examples never enter the manifest: a test copies an example's
+figure into a new answer and sees it reported. `qwen3-embedding:0.6b` with its documented query
+instruction, by measurement (`quantic-evalrecall`: 10 of 12 against `nomic-embed-text`'s 8). Search
+is plain Python over unit vectors, one `math.sumprod` each: about 10ms for 500, 0.4s for 20,000
+([benchmarks](benchmarks/2026-10-08-retrieval/README.md)). In a real run the writer took an
+approved answer's sentence shapes almost word for word: the review queue decides the voice.
+Don't-repeat-yourself and filing text aren't built.
+
 ### 3.5 Translation
 
 All seven Quantic locales are in scope from the first content milestone. The review burden is the
@@ -371,7 +383,9 @@ to keep a static binary; Python has no binary to keep static).
 - `drafts` — id, run_id, locale, role (`source` | `spot_check` | `auto`), content, state,
   validator_report, created_at
 - `manifests` — draft_id → tool_call_ids *(provenance link, N1)*
-- `embeddings` — id, source_kind, source_id, chunk, vector BLOB, model, created_at
+- `embeddings` — id, source_kind, source_id, chunk, vector BLOB, model, created_at *(as built,
+  milestone 10: with `dims`; `source_kind` is `answer`, an approved run's answer, one vector per
+  model; the run's `examples` are a table of their own)*
 - `reviews` — draft_id, verdict, reviewer_note, decided_at *(feeds both style memory and the
   accept-rate metric)*
 
@@ -453,7 +467,7 @@ the rebuild needs no `PRAGMA` dance, and it ends with `PRAGMA foreign_key_check`
 | Default model | Qwen3.5-9B, Q4_K_M (6.6GB) | Measured on the target card: 100% on GPU up to 64K context (8.0GB), about 80 generated and 4,400–5,000 prompt tokens/second — [decision 0005](decisions/0005-default-model-by-measurement.md). |
 | Candidates | `qwen3.6:35b` (MoE); Qwen3.8-27B `UD-IQ3_S` | The MoE writes at ~70 tokens/second even with 44% of itself in system RAM; the dense 27B fits fully only at 8K. Decided on task quality from milestone 5, not on speed or size. |
 | Fast model | Qwen3.5-4B (3.4GB) | Mechanical passes — data-QA triage, classification — where a 9B is overkill. |
-| Embeddings | `nomic-embed-text` via Ollama | Small, fast, good enough for a few thousand chunks. |
+| Embeddings | `qwen3-embedding:0.6b` via Ollama | Chosen over `nomic-embed-text` by measurement at milestone 10 ([decision 0012](decisions/0012-style-memory.md)): 10 of 12 against 8, 2.4GB of VRAM. |
 | Model I/O | JSON-schema-constrained decoding | Local models are flakier at native tool-calling than frontier models; constrained output is the reliable floor, native tool-calling an optimisation. |
 | Tool schemas | Generated from Pydantic models | Single source of truth; the type *is* the schema. Go generated them from structs by reflection. |
 | Persistence | `sqlite3` | Standard library. |

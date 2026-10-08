@@ -562,3 +562,126 @@ def test_a_stopped_batch_records_every_run(
 
     runs = stored_runs(isolated_state)
     assert [r.state for r in runs] == [store.State.INTERRUPTED] * 2
+
+
+# ---- reviews and style memory ------------------------------------------------
+
+
+def embeds(vector: list[float]) -> Reply:
+    """An /api/embed reply with one vector."""
+    reply = {"model": "qwen3-embedding:0.6b", "embeddings": [vector]}
+    return Reply(json.dumps(reply).encode())
+
+
+def approved_run(ollama: FakeOllama, quantic_mcp: FakeMCP, answer: bytes | None = None) -> None:
+    """Run 1: answered, then approved, its vector [1, 0]."""
+    research_servers(ollama, quantic_mcp, answer)
+    assert main(["--ollama", ollama.url, "--mcp", quantic_mcp.url, "--research", "q"]) == 0
+    ollama.replies["/api/embed"] = embeds([1.0, 0.0])
+    assert main(["--ollama", ollama.url, "--approve", "1", "--note", "the house voice"]) == 0
+
+
+def test_approving_embeds_the_answer(
+    ollama: FakeOllama, quantic_mcp: FakeMCP, isolated_state: Path
+) -> None:
+    approved_run(ollama, quantic_mcp)
+
+    embed = next(b for b, p in zip(ollama.bodies, ollama.paths, strict=True) if p == "/api/embed")
+    [run] = stored_runs(isolated_state)
+    assert run.draft is not None
+    assert embed == {
+        "model": "qwen3-embedding:0.6b",
+        "input": [run.draft.content],
+        "truncate": False,
+    }
+    assert run.review is not None
+    assert (run.review.verdict, run.review.note) == ("approved", "the house voice")
+
+
+def test_an_unverified_answer_cant_be_approved(
+    ollama: FakeOllama, quantic_mcp: FakeMCP, capsys: pytest.CaptureFixture[str]
+) -> None:
+    research_servers(ollama, quantic_mcp, says("In 180 days."))
+    main(["--ollama", ollama.url, "--mcp", quantic_mcp.url, "--research", "q"])
+    ollama.replies["/api/embed"] = embeds([1.0, 0.0])
+    capsys.readouterr()
+
+    assert main(["--ollama", ollama.url, "--approve", "1"]) == 1
+    assert "only an answer whose every figure traced can be approved" in capsys.readouterr().err
+
+
+def test_the_writer_is_shown_approved_answers(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    isolated_state: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    approved_run(ollama, quantic_mcp)
+    [example] = stored_runs(isolated_state)
+    assert example.draft is not None
+    research_servers(ollama, quantic_mcp)
+    ollama.replies["/api/embed"] = embeds([0.9, 0.1])
+
+    assert main(["--ollama", ollama.url, "--mcp", quantic_mcp.url, "--research", "q2"]) == 0
+
+    # The question was embedded as qwen3-embedding's documentation asks.
+    embedded = [b for b, p in zip(ollama.bodies, ollama.paths, strict=True) if p == "/api/embed"]
+    assert embedded[-1]["input"][0].startswith("Instruct: Given a question, retrieve answers")
+    assert embedded[-1]["input"][0].endswith("Query: q2")
+    writer = ollama.bodies[-1]["messages"][1]["content"]
+    assert "Their facts, dates and figures are out of date: use none of them." in writer
+    assert f"Example 1:\n{example.draft.content}" in writer
+    # Recorded, and shown with the run.
+    capsys.readouterr()
+    assert main(["--run", "2"]) == 0
+    assert "examples shown to its writer: run 1 (0.994)" in capsys.readouterr().out
+
+
+def test_an_example_cant_vouch_for_a_figure(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    isolated_state: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # An approved answer whose 4.2% traced to its own run's data...
+    with store.Store(isolated_state) as db:
+        run_id = db.start_run("research", "KO's yield?", "qwen3.5:9b")
+        db.record_call(run_id, 0, Call("get_stock", {"symbol": "KO"}, '{"yield": 4.2}'))
+        db.finish(run_id, store.State.ANSWERED, draft=store.Draft("A yield of 4.2%.", False, []))
+    ollama.replies["/api/embed"] = embeds([1.0, 0.0])
+    assert main(["--ollama", ollama.url, "--approve", str(run_id)]) == 0
+    # ...copied by a later writer into an answer about other data.
+    research_servers(
+        ollama, quantic_mcp, says("Microsoft goes ex-dividend on Oct 8, a yield of 4.2%.")
+    )
+    capsys.readouterr()
+
+    assert main(["--ollama", ollama.url, "--mcp", quantic_mcp.url, "--research", "q2"]) == 4
+
+    # The example was shown, and its figure traced to nothing: examples are
+    # language, not data, and never enter the manifest.
+    assert "A yield of 4.2%." in ollama.bodies[-1]["messages"][1]["content"]
+    assert "'4.2%' (number 4.2)" in capsys.readouterr().err
+
+
+def test_with_nothing_approved_nothing_is_embedded(
+    ollama: FakeOllama, quantic_mcp: FakeMCP
+) -> None:
+    research_servers(ollama, quantic_mcp)
+
+    assert main(["--ollama", ollama.url, "--mcp", quantic_mcp.url, "--research", "q"]) == 0
+    assert "/api/embed" not in ollama.paths
+
+
+def test_recall_and_reject(
+    ollama: FakeOllama, quantic_mcp: FakeMCP, capsys: pytest.CaptureFixture[str]
+) -> None:
+    approved_run(ollama, quantic_mcp)
+    capsys.readouterr()
+
+    assert main(["--ollama", ollama.url, "--recall", "what goes ex-dividend?"]) == 0
+    assert capsys.readouterr().out.startswith("run 1 · 1.000\n")
+
+    assert main(["--reject", "1", "--note", "too long"]) == 0
+    assert main(["--ollama", ollama.url, "--recall", "what goes ex-dividend?"]) == 0
+    assert "no approved answers embedded with qwen3-embedding:0.6b" in capsys.readouterr().out

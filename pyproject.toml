@@ -21,6 +21,7 @@ dependencies = [
 quantic-agent = "quantic_agent.cli:main"
 quantic-bench = "quantic_agent.bench:main"
 quantic-evaltools = "quantic_agent.evaltools:main"
+quantic-evalrecall = "quantic_agent.evalrecall:main"
 
 # Tools for working on the agent, not for running it: `uv sync` installs them,
 # a built wheel doesn't carry them.

@@ -7,7 +7,7 @@ The agent is developed on a laptop and runs on the desktop: Ryzen, 64GB RAM, RTX
 Nothing in the code is machine-specific (see [design §4](design.md#4-stack)), so the same checkout
 works on both machines; only the models pulled and the numbers measured differ.
 
-**The Python version is at milestone 9**, past where the Go version
+**The Python version is at milestone 10**, past where the Go version
 ([quantic-agent-go](https://github.com/fleveque/quantic-agent-go), archived) stopped. The check, the
 benchmark (sections 4–6), the tool-call evaluation (section 7), the run history and resuming a run
 (section 8) are all this repository's commands.
@@ -58,6 +58,8 @@ explicit configuration, so pulling is an explicit step.
 ollama pull qwen3.5:9b                                   # 6.6 GB  — the safe default
 ollama pull hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S      # 13.0 GB — primary candidate, ~3.45 bits/weight
 ollama pull hf.co/unsloth/Qwen3.8-27B-GGUF:UD-Q3_K_XL    # 14.1 GB — quality step, less room for context
+ollama pull qwen3-embedding:0.6b                         # 0.6 GB  — style memory's embeddings
+ollama pull nomic-embed-text                             # 0.3 GB  — only to compare (quantic-evalrecall)
 ```
 
 Sizes are decimal GB, as `ollama list` and `quantic-agent --check` print them. `--check` shows `UD-Q3_K_XL` as
@@ -157,7 +159,17 @@ Every `--research` run is stored with its tool calls in `~/.local/state/quantic-
 uv run quantic-agent --runs       # the last 20 runs: state, phase, tool calls, tokens, question
 uv run quantic-agent --run 3      # one run: its calls, its answer, and a fresh provenance check
 uv run quantic-agent --resume 3   # carry on with a run that stopped before answering
+uv run quantic-agent --approve 3 --note "why"   # its answer becomes style memory
+uv run quantic-agent --reject 3 --note "why"    # it stops being style memory
+uv run quantic-agent --recall "a question"      # the approved answers a writer would be shown
 ```
+
+Approving embeds the answer with `qwen3-embedding:0.6b` (`--embed-model`, `QUANTIC_EMBED_MODEL`), so
+Ollama must be running and the model pulled; only an answer whose every figure traced can be approved.
+From then on, a writer is shown the two approved answers most similar to its question, and `--run N`
+lists which. With nothing approved, research never loads the embedding model. Changing the embedding
+model means measuring again (`uv run quantic-evalrecall`) and re-approving: vectors from one model
+aren't comparable with another's, and the old ones are ignored.
 
 Several questions can go in one command, `--research "..." --research "..."`. They run at once,
 taking turns at the GPU; each line on stderr names its run, and each answer is printed under a
@@ -242,6 +254,8 @@ this on a trusted LAN, ideally with a firewall rule limiting port 11434 to the l
 | `Quantic's rate limit; retry …` lines, then possibly `rate limit didn't clear`, exit status 3 | More than 60 anonymous MCP requests a minute from this IP address, from the agent or anything else on it | The agent waits it out by itself (between one and two minutes). If it still gave up, `quantic-agent --resume N` later |
 | `pacing: waiting …s to stay under Quantic's rate limit` | The agent has sent 50 MCP requests in the last minute, a big batch or a long research | Nothing: it waits its turn rather than being refused |
 | An answer with many unsourced figures after research that called many tools | The conversation outgrew `--num-ctx`, and Ollama dropped part of it (`journalctl -u ollama -e \| grep truncating`) | Raise `--num-ctx`, if the GPU has room (`ollama ps`) |
+| `qwen3-embedding:0.6b is not on this server` during research or `--approve` | Style memory needs the embedding model | `ollama pull qwen3-embedding:0.6b` |
+| `only an answer whose every figure traced can be approved` | The run is `unverified` | Working as intended: an answer with invented figures isn't an example to follow |
 | `run N can't be resumed` | The run answered already, is running, or doesn't exist | `quantic-agent --runs` for its state |
 | `the model server failed; its log has the cause` | Ollama answered 5xx, e.g. a model it couldn't load | `journalctl -u ollama -e` |
 | `figure(s) in the answer came from no tool result`, exit status 4 | `--research` answer contains a number or date no tool returned: invented, rounded, or derived by the model (e.g. "4 months" from 120 days) | Working as intended (design N1). The answer is shown so you can see it, but it isn't trustworthy |

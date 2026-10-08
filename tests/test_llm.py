@@ -1,4 +1,5 @@
 import asyncio
+import math
 import socket
 from datetime import timedelta
 
@@ -335,3 +336,35 @@ async def test_what_doesnt_use_the_model_doesnt_wait(ollama: FakeOllama) -> None
         async with asyncio.timeout(0.3):
             assert await client.version() == "0.34.4"
         await chat
+
+
+async def test_embed_decodes_the_reply(ollama: FakeOllama) -> None:
+    # Captured from a real Ollama: nomic-embed-text, one sentence.
+    ollama.replies["/api/embed"] = Reply(fixture("embed.json"))
+
+    async with llm.Client(ollama.url, "qwen3.5:9b") as client:
+        resp = await client.embed(["Microsoft goes ex-dividend on 2026-10-08."], model="nomic")
+
+    [vector] = resp.embeddings
+    assert len(vector) == 768
+    # Ollama returns unit vectors; the store makes sure of it anyway.
+    assert math.sqrt(math.sumprod(vector, vector)) == pytest.approx(1.0)
+    assert resp.load_duration > timedelta(seconds=1)  # a cold load
+    # The embedding model is named per call, and an overlong input is refused,
+    # not cut to fit.
+    assert ollama.bodies[0] == {
+        "model": "nomic",
+        "input": ["Microsoft goes ex-dividend on 2026-10-08."],
+        "truncate": False,
+    }
+
+
+async def test_embedding_takes_its_turn_at_the_gpu(ollama: FakeOllama) -> None:
+    # Embedding models run on the same GPU: an embedding waits for a chat.
+    ollama.replies["/api/chat"] = Reply(fixture("chat-tool-answer.json"), delay=0.1)
+    ollama.replies["/api/embed"] = Reply(fixture("embed.json"), delay=0.1)
+
+    async with llm.Client(ollama.url, "qwen3.5:9b") as client:
+        await asyncio.gather(client.chat(QUESTION), client.embed(["text"], model="nomic"))
+
+    assert ollama.peak == 1

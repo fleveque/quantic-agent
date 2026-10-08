@@ -1,0 +1,378 @@
+[
+  {
+    "model": "nomic-embed-text",
+    "usage": "plain",
+    "dims": 768,
+    "hits": 8,
+    "runs": 12,
+    "ms_per_text": 613.6134444444446,
+    "outcomes": [
+      {
+        "query": "Which stocks have ex-dividend dates in the coming two weeks?",
+        "language": "en",
+        "found": "ten-days",
+        "score": 0.7951683093433541,
+        "hit": true
+      },
+      {
+        "query": "List the upcoming ex-dividend dates for next month.",
+        "language": "en",
+        "found": "six-months",
+        "score": 0.8168331634735969,
+        "hit": true
+      },
+      {
+        "query": "¿Qué empresas tienen fecha ex-dividendo esta semana?",
+        "language": "es",
+        "found": "six-months",
+        "score": 0.6050488653360622,
+        "hit": true
+      },
+      {
+        "query": "Does Apple go ex-dividend before the end of October?",
+        "language": "en",
+        "found": "ten-days",
+        "score": 0.7864778381673473,
+        "hit": false
+      },
+      {
+        "query": "When is Johnson & Johnson's next ex-dividend date?",
+        "language": "en",
+        "found": "ten-days",
+        "score": 0.7820852413903318,
+        "hit": false
+      },
+      {
+        "query": "¿Cuándo es la próxima fecha ex-dividendo de Microsoft?",
+        "language": "es",
+        "found": "msft-month",
+        "score": 0.6707314667083503,
+        "hit": true
+      },
+      {
+        "query": "How long has PepsiCo been increasing its dividend?",
+        "language": "en",
+        "found": "ko-streak",
+        "score": 0.7721721860853852,
+        "hit": true
+      },
+      {
+        "query": "Has Procter & Gamble raised its payout every year?",
+        "language": "en",
+        "found": "ko-streak",
+        "score": 0.656151619368677,
+        "hit": true
+      },
+      {
+        "query": "¿Cuántos años seguidos ha subido Coca-Cola su dividendo?",
+        "language": "es",
+        "found": "ko-streak",
+        "score": 0.6348238528448367,
+        "hit": true
+      },
+      {
+        "query": "Which of this month's ex-dividend companies have the safest dividends?",
+        "language": "en",
+        "found": "ten-days",
+        "score": 0.7453030512284753,
+        "hit": false
+      },
+      {
+        "query": "Compare the dividend growth of Verizon and Diageo.",
+        "language": "en",
+        "found": "safety-14-days",
+        "score": 0.7136658562668111,
+        "hit": true
+      },
+      {
+        "query": "¿Qué dividendos son más seguros entre las empresas que cotizan ex-dividendo pronto?",
+        "language": "es",
+        "found": "six-months",
+        "score": 0.5943988681250392,
+        "hit": false
+      }
+    ]
+  },
+  {
+    "model": "nomic-embed-text",
+    "usage": "documented",
+    "dims": 768,
+    "hits": 8,
+    "runs": 12,
+    "ms_per_text": 5.7267222222222225,
+    "outcomes": [
+      {
+        "query": "Which stocks have ex-dividend dates in the coming two weeks?",
+        "language": "en",
+        "found": "ten-days",
+        "score": 0.8367961577272083,
+        "hit": true
+      },
+      {
+        "query": "List the upcoming ex-dividend dates for next month.",
+        "language": "en",
+        "found": "six-months",
+        "score": 0.872911366670309,
+        "hit": true
+      },
+      {
+        "query": "¿Qué empresas tienen fecha ex-dividendo esta semana?",
+        "language": "es",
+        "found": "six-months",
+        "score": 0.6420645619694906,
+        "hit": true
+      },
+      {
+        "query": "Does Apple go ex-dividend before the end of October?",
+        "language": "en",
+        "found": "ten-days",
+        "score": 0.8237718524820016,
+        "hit": false
+      },
+      {
+        "query": "When is Johnson & Johnson's next ex-dividend date?",
+        "language": "en",
+        "found": "ten-days",
+        "score": 0.8315153482889541,
+        "hit": false
+      },
+      {
+        "query": "¿Cuándo es la próxima fecha ex-dividendo de Microsoft?",
+        "language": "es",
+        "found": "msft-month",
+        "score": 0.6740816898975143,
+        "hit": true
+      },
+      {
+        "query": "How long has PepsiCo been increasing its dividend?",
+        "language": "en",
+        "found": "ko-streak",
+        "score": 0.808896630059113,
+        "hit": true
+      },
+      {
+        "query": "Has Procter & Gamble raised its payout every year?",
+        "language": "en",
+        "found": "ko-streak",
+        "score": 0.6950923799874197,
+        "hit": true
+      },
+      {
+        "query": "¿Cuántos años seguidos ha subido Coca-Cola su dividendo?",
+        "language": "es",
+        "found": "ko-streak",
+        "score": 0.6648022059488107,
+        "hit": true
+      },
+      {
+        "query": "Which of this month's ex-dividend companies have the safest dividends?",
+        "language": "en",
+        "found": "ten-days",
+        "score": 0.7900134712753047,
+        "hit": false
+      },
+      {
+        "query": "Compare the dividend growth of Verizon and Diageo.",
+        "language": "en",
+        "found": "safety-14-days",
+        "score": 0.751261866291059,
+        "hit": true
+      },
+      {
+        "query": "¿Qué dividendos son más seguros entre las empresas que cotizan ex-dividendo pronto?",
+        "language": "es",
+        "found": "six-months",
+        "score": 0.6426584901403792,
+        "hit": false
+      }
+    ]
+  },
+  {
+    "model": "qwen3-embedding:0.6b",
+    "usage": "plain",
+    "dims": 1024,
+    "hits": 9,
+    "runs": 12,
+    "ms_per_text": 194.93977777777778,
+    "outcomes": [
+      {
+        "query": "Which stocks have ex-dividend dates in the coming two weeks?",
+        "language": "en",
+        "found": "six-months",
+        "score": 0.681900413827015,
+        "hit": true
+      },
+      {
+        "query": "List the upcoming ex-dividend dates for next month.",
+        "language": "en",
+        "found": "msft-month",
+        "score": 0.6268476121139094,
+        "hit": false
+      },
+      {
+        "query": "¿Qué empresas tienen fecha ex-dividendo esta semana?",
+        "language": "es",
+        "found": "six-months",
+        "score": 0.6140683802436162,
+        "hit": true
+      },
+      {
+        "query": "Does Apple go ex-dividend before the end of October?",
+        "language": "en",
+        "found": "msft-month",
+        "score": 0.6701182053118803,
+        "hit": true
+      },
+      {
+        "query": "When is Johnson & Johnson's next ex-dividend date?",
+        "language": "en",
+        "found": "this-week",
+        "score": 0.6234664885059092,
+        "hit": false
+      },
+      {
+        "query": "¿Cuándo es la próxima fecha ex-dividendo de Microsoft?",
+        "language": "es",
+        "found": "msft-month",
+        "score": 0.787232425427292,
+        "hit": true
+      },
+      {
+        "query": "How long has PepsiCo been increasing its dividend?",
+        "language": "en",
+        "found": "ko-streak",
+        "score": 0.606575231587477,
+        "hit": true
+      },
+      {
+        "query": "Has Procter & Gamble raised its payout every year?",
+        "language": "en",
+        "found": "ko-streak",
+        "score": 0.48180248055057084,
+        "hit": true
+      },
+      {
+        "query": "¿Cuántos años seguidos ha subido Coca-Cola su dividendo?",
+        "language": "es",
+        "found": "ko-streak",
+        "score": 0.7133347955646108,
+        "hit": true
+      },
+      {
+        "query": "Which of this month's ex-dividend companies have the safest dividends?",
+        "language": "en",
+        "found": "safety-14-days",
+        "score": 0.6309099856481819,
+        "hit": true
+      },
+      {
+        "query": "Compare the dividend growth of Verizon and Diageo.",
+        "language": "en",
+        "found": "safety-14-days",
+        "score": 0.5465872779366676,
+        "hit": true
+      },
+      {
+        "query": "¿Qué dividendos son más seguros entre las empresas que cotizan ex-dividendo pronto?",
+        "language": "es",
+        "found": "six-months",
+        "score": 0.48900555950640845,
+        "hit": false
+      }
+    ]
+  },
+  {
+    "model": "qwen3-embedding:0.6b",
+    "usage": "documented",
+    "dims": 1024,
+    "hits": 10,
+    "runs": 12,
+    "ms_per_text": 10.213444444444445,
+    "outcomes": [
+      {
+        "query": "Which stocks have ex-dividend dates in the coming two weeks?",
+        "language": "en",
+        "found": "this-week",
+        "score": 0.685430046130528,
+        "hit": true
+      },
+      {
+        "query": "List the upcoming ex-dividend dates for next month.",
+        "language": "en",
+        "found": "six-months",
+        "score": 0.7004004866625928,
+        "hit": true
+      },
+      {
+        "query": "¿Qué empresas tienen fecha ex-dividendo esta semana?",
+        "language": "es",
+        "found": "msft-month",
+        "score": 0.6279690524477887,
+        "hit": false
+      },
+      {
+        "query": "Does Apple go ex-dividend before the end of October?",
+        "language": "en",
+        "found": "msft-month",
+        "score": 0.6768627206116513,
+        "hit": true
+      },
+      {
+        "query": "When is Johnson & Johnson's next ex-dividend date?",
+        "language": "en",
+        "found": "this-week",
+        "score": 0.6366244404589413,
+        "hit": false
+      },
+      {
+        "query": "¿Cuándo es la próxima fecha ex-dividendo de Microsoft?",
+        "language": "es",
+        "found": "msft-month",
+        "score": 0.8363736324600766,
+        "hit": true
+      },
+      {
+        "query": "How long has PepsiCo been increasing its dividend?",
+        "language": "en",
+        "found": "ko-streak",
+        "score": 0.611086983785225,
+        "hit": true
+      },
+      {
+        "query": "Has Procter & Gamble raised its payout every year?",
+        "language": "en",
+        "found": "ko-streak",
+        "score": 0.5104456550662407,
+        "hit": true
+      },
+      {
+        "query": "¿Cuántos años seguidos ha subido Coca-Cola su dividendo?",
+        "language": "es",
+        "found": "ko-streak",
+        "score": 0.6818408369630566,
+        "hit": true
+      },
+      {
+        "query": "Which of this month's ex-dividend companies have the safest dividends?",
+        "language": "en",
+        "found": "safety-14-days",
+        "score": 0.6471775993923398,
+        "hit": true
+      },
+      {
+        "query": "Compare the dividend growth of Verizon and Diageo.",
+        "language": "en",
+        "found": "safety-14-days",
+        "score": 0.5394636524578762,
+        "hit": true
+      },
+      {
+        "query": "¿Qué dividendos son más seguros entre las empresas que cotizan ex-dividendo pronto?",
+        "language": "es",
+        "found": "safety-14-days",
+        "score": 0.5151107340713548,
+        "hit": true
+      }
+    ]
+  }
+]

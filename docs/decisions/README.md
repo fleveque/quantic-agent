@@ -15,6 +15,7 @@ Why the design is what it is, one decision per file. New decisions are numbered 
 | [0009](0009-official-mcp-sdk.md) | Talk to Quantic through the official MCP SDK | 2026-10-07 |
 | [0010](0010-alembic-for-migrations.md) | Migrations with Alembic | 2026-10-08 |
 | [0011](0011-worker-pool.md) | The worker pool: one GPU queue, bounded fan-out, a shared pace | 2026-10-08 |
+| [0012](0012-style-memory.md) | Style memory: approved answers, qwen3-embedding, brute force in plain Python | 2026-10-08 |
 
 **0001–0007 were written for the Go version**, [quantic-agent-go](https://github.com/fleveque/quantic-agent-go),
 and are carried over unchanged, links aside: they are records of what was decided and why, at the

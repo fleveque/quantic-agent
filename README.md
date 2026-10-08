@@ -87,8 +87,8 @@ Python with Go. Milestones 0–8 are ports of the Go version; the lessons say wh
 | 6 | Provenance | `re` with named groups, structural `match`, recursive type aliases |
 | 7 | SQLite: runs, drafts, audit log | `sqlite3`, migrations, transactions, file locks |
 | 8 | The research loop: budgets, retries, phases, resume | Alembic, mutable arguments, backoff with jitter, an HTTP transport |
-| 9 | Worker pool: serialised GPU, parallel I/O *(you are here)* | `TaskGroup`, semaphores, a rate limiter, measuring a bottleneck |
-| 10 | Retrieval: embeddings, brute-force cosine, style memory | vectors, BLOBs, benchmarks |
+| 9 | Worker pool: serialised GPU, parallel I/O | `TaskGroup`, semaphores, a rate limiter, measuring a bottleneck |
+| 10 | Retrieval: embeddings, brute-force cosine, style memory *(you are here)* | `array`, `math.sumprod`, `heapq`, vectors as BLOBs, measuring retrieval |
 | 11 | Week Ahead end to end, 7 locales, translation validator | dates, YAML, package data |
 | 12 | GitHub PR flow | a GitHub client, auth |
 | 13 | Ship it: logging, a systemd unit | structured logging, packaging an application |
@@ -112,8 +112,10 @@ uv run quantic-agent --ask "say hello"       # one prompt, one reply
 uv run quantic-agent --research "What goes ex-dividend this week?"   # model + Quantic's tools
 uv run quantic-agent --research "..." --research "..."   # several questions at once
 uv run quantic-agent --runs                  # past runs; --run N shows one, --resume N carries it on
+uv run quantic-agent --approve N             # a reviewed answer becomes style memory
 uv run quantic-bench                         # tokens/second and GPU residency per model
 uv run quantic-evaltools                     # how reliably each model calls tools
+uv run quantic-evalrecall                    # how well each embedding model finds an example
 ```
 
 `--ollama` / `OLLAMA_HOST` and `--model` / `QUANTIC_MODEL` choose the server and the model; nothing

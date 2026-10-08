@@ -190,6 +190,27 @@ class _ChatBody(BaseModel):
     options: Options | None = None
 
 
+class _EmbedBody(BaseModel):
+    """The wire format of POST /api/embed."""
+
+    model: str
+    input: Sequence[str]
+    # Sent as false: Ollama's default cuts an input longer than the embedding
+    # model's context to fit, silently, and the vector then stands for text
+    # it never saw. Refused, the input has to be made to fit on purpose.
+    truncate: bool = False
+
+
+class EmbedResponse(BaseModel):
+    """The vectors for each input, in the order given."""
+
+    model: str
+    embeddings: list[list[float]]
+    prompt_eval_count: int = 0
+    total_duration: Nanoseconds = timedelta()
+    load_duration: Nanoseconds = timedelta()
+
+
 class ChatResponse(BaseModel):
     """One non-streamed reply from /api/chat: the model's next message, which
     is either an answer or a request to call tools."""
@@ -342,6 +363,14 @@ class Client:
         )
         async with self._gpu:
             return await self._call("POST", "/api/chat", ChatResponse, body)
+
+    async def embed(self, texts: Sequence[str], *, model: str) -> EmbedResponse:
+        """One vector per text, from an embedding model. model is named per
+        call: the client's own model generates, a separate one embeds, and
+        both run on the same GPU, so embedding takes its turn with the rest."""
+        body = _EmbedBody(model=model, input=texts)
+        async with self._gpu:
+            return await self._call("POST", "/api/embed", EmbedResponse, body)
 
     async def version(self) -> str:
         """The server's version. Doubles as a reachability check that costs

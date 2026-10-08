@@ -1,0 +1,28 @@
+A real run with style memory, qwen3.5:9b and qwen3-embedding:0.6b, live quantic.finance data,
+2026-10-08. Runs 2 and 4 are real answers from the batch measurement of milestone 9
+(../2026-10-08-worker-pool/batch.txt). Run 4's answer, approved:
+
+  According to the data provided, Coca-Cola has raised its dividend for 28 consecutive years. This
+  information is indicated by the "streak_years" field ...
+
+$ quantic-agent --approve 4 --note "clear, cites the field"
+quantic-agent: run 4 approved: style memory now
+$ quantic-agent --approve 2 --note "a good list"
+quantic-agent: run 2 approved: style memory now
+$ quantic-agent --recall "How many years has Johnson & Johnson raised its dividend?" | grep ^run
+run 4 · 0.560
+run 2 · 0.374
+$ quantic-agent --research "How many years has Johnson & Johnson raised its dividend?"
+tool get_stock {"symbol": "JNJ"} → 1514 bytes (312ms)
+quantic-agent: run 14 answered
+According to the data provided, Johnson & Johnson has raised its dividend for 28 consecutive years. This information is indicated by the "streak_years" field within the "dividend_profile" section of the dataset. The annual total dividends paid from 2014 through 2025 are listed as follows: $2.8 (2014), $3.0 (2015), $3.2 (2016), $3.36 (2017), $3.6 (2018), $3.8 (2019), $4.04 (2020), $4.24 (2021), $4.52 (2022), $4.76 (2023), $4.96 (2024), and $5.2 (2025). The dataset also notes a dividend payment history with specific quarterly payment months listed as [3, 6, 9, 12].
+$ ollama ps
+NAME                       ID              SIZE      PROCESSOR    CONTEXT    UNTIL
+qwen3.5:9b                 6488c96fa5fa    6.6 GB    100% GPU     32768      4 minutes from now
+qwen3-embedding:0.6b       ac6da0dfba84    2.4 GB    100% GPU     4096       4 minutes from now
+nomic-embed-text:latest    0a109f422b47    323 MB    100% GPU     2048       2 minutes from now
+$ quantic-agent --run 14 | head -4
+run 14 · answered · qwen3.5:9b · 2026-10-08 10:01:39
+question: How many years has Johnson & Johnson raised its dividend?
+phase: done · 3475 tokens
+examples shown to its writer: run 4 (0.558), run 2 (0.375)

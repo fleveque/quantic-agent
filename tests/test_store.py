@@ -12,10 +12,18 @@ import sqlalchemy
 from alembic import command
 from sqlalchemy.exc import OperationalError
 
-from quantic_agent import store
+from quantic_agent import memory, store
 from quantic_agent.agent import Call, Limit
 from quantic_agent.provenance import Kind, Manifest, check_prose
-from quantic_agent.store import Draft, NotFoundError, NotResumableError, Phase, State, Store
+from quantic_agent.store import (
+    Draft,
+    NotFoundError,
+    NotResumableError,
+    NotReviewableError,
+    Phase,
+    State,
+    Store,
+)
 
 CALENDAR = (
     '{"from":"2026-10-06","days":10,"stocks":[{"symbol":"MSFT","ex_dividend_date":"2026-10-08"}]}'
@@ -90,8 +98,20 @@ def test_migrations_apply_once(tmp_path: Path) -> None:
     # Opening the same file again finds the schema current and changes nothing.
     with open_store(tmp_path) as db:
         db.start_run("research", "q", "m")
-    assert tables(tmp_path / "agent.db") == ["alembic_version", "drafts", "runs", "tool_calls"]
-    assert version(tmp_path / "agent.db") == "0003"
+    assert tables(tmp_path / "agent.db") == [
+        "alembic_version",
+        "drafts",
+        "embeddings",
+        "examples",
+        "reviews",
+        "runs",
+        "tool_calls",
+    ]
+    assert version(tmp_path / "agent.db") == HEAD
+
+
+# The latest migration.
+HEAD = "0004"
 
 
 def tables(path: Path) -> list[str]:
@@ -126,20 +146,20 @@ def test_every_migration_goes_down_and_up_again(tmp_path: Path) -> None:
     assert tables(path) == ["alembic_version"]
 
     alembic(path, "upgrade", "head")
-    assert version(path) == "0003"
+    assert version(path) == HEAD
 
 
 def test_a_failed_migration_leaves_nothing_behind(tmp_path: Path) -> None:
     # The package's migrations, and a fourth that creates a table and then
     # fails. Measured: in sqlite3's default mode, the table stayed, with
-    # alembic_version still at 0003, so every later open would fail on it.
+    # alembic_version unchanged, so every later open would fail on it.
     location = tmp_path / "migrations"
     with as_file(files("quantic_agent").joinpath("migrations")) as source:
         shutil.copytree(source, location, ignore=shutil.ignore_patterns("__pycache__"))
-    (location / "versions" / "0004_broken.py").write_text(
+    (location / "versions" / "9999_broken.py").write_text(
         "from alembic import op\n"
-        "revision = '0004'\n"
-        "down_revision = '0003'\n"
+        "revision = 'broken'\n"
+        f"down_revision = {HEAD!r}\n"
         "def upgrade():\n"
         "    op.execute('CREATE TABLE half (x INTEGER)')\n"
         "    op.execute('this is not SQL')\n"
@@ -150,7 +170,7 @@ def test_a_failed_migration_leaves_nothing_behind(tmp_path: Path) -> None:
         store.migrate(path, str(location))
 
     assert "half" not in tables(path)
-    assert version(path) == "0003"
+    assert version(path) == HEAD
 
 
 def milestone_7_database(path: Path) -> None:
@@ -190,7 +210,7 @@ def test_a_milestone_7_database_is_handed_over(tmp_path: Path) -> None:
             db.record_call(999, 0, calls()[0])
 
     assert "schema_migrations" not in tables(path)
-    assert version(path) == "0003"
+    assert version(path) == HEAD
     # An answered run is done; an interrupted one can be resumed from research.
     assert (runs["answered"].phase, runs["stopped"].phase) == (Phase.DONE, Phase.RESEARCH)
     with sqlite3.connect(path) as raw:
@@ -372,3 +392,76 @@ def test_only_one_resume_gets_the_run(tmp_path: Path) -> None:
         t.join()
 
     assert (len(won), len(lost)) == (1, 9)
+
+
+# ---- reviews and style memory ------------------------------------------------
+
+
+def answered(db: Store, text: str = "MSFT goes ex-dividend on Oct 8.") -> int:
+    run_id = db.start_run("research", "q", "m")
+    db.finish(run_id, State.ANSWERED, draft=Draft(text, False, []))
+    return run_id
+
+
+def test_an_approved_answer_is_style_memory(tmp_path: Path) -> None:
+    with open_store(tmp_path) as db:
+        run_id = answered(db)
+        db.approve(run_id, "good tone", "embedder", [3.0, 4.0], "MSFT goes ex-dividend on Oct 8.")
+
+        [stored] = db.memories("embedder")
+        run = db.run(run_id)
+
+    assert (stored.run_id, stored.text) == (run_id, "MSFT goes ex-dividend on Oct 8.")
+    # Stored at unit length, as nearest() expects.
+    assert list(stored.vector) == pytest.approx([0.6, 0.8])
+    assert run.review is not None
+    assert (run.review.verdict, run.review.note) == ("approved", "good tone")
+
+
+def test_vectors_belong_to_their_model(tmp_path: Path) -> None:
+    with open_store(tmp_path) as db:
+        db.approve(answered(db), "", "embedder", [1.0, 0.0], "text")
+        assert db.memories("another-embedder") == []
+
+
+def test_an_answer_with_unsourced_figures_cant_be_approved(tmp_path: Path) -> None:
+    with open_store(tmp_path) as db:
+        run_id = db.start_run("research", "q", "m")
+        db.finish(run_id, State.UNVERIFIED, draft=Draft("in 180 days", False, []))
+        with pytest.raises(NotReviewableError, match="unverified"):
+            db.approve(run_id, "", "embedder", [1.0], "in 180 days")
+        # Nothing was half-recorded.
+        assert db.run(run_id).review is None
+
+
+def test_a_run_without_an_answer_cant_be_reviewed(tmp_path: Path) -> None:
+    with open_store(tmp_path) as db:
+        run_id = db.start_run("research", "q", "m")
+        db.finish(run_id, State.FAILED, "gone")
+        with pytest.raises(NotReviewableError, match="no answer"):
+            db.reject(run_id, "")
+
+
+def test_rejecting_takes_an_answer_out_of_memory(tmp_path: Path) -> None:
+    with open_store(tmp_path) as db:
+        run_id = answered(db)
+        db.approve(run_id, "", "embedder", [1.0, 0.0], "text")
+        db.reject(run_id, "on reflection, no")
+
+        assert db.memories("embedder") == []
+        review = db.run(run_id).review
+        assert review is not None
+        assert review.verdict == "rejected"
+
+
+def test_the_examples_a_writer_saw_are_recorded(tmp_path: Path) -> None:
+    with open_store(tmp_path) as db:
+        example = answered(db)
+        db.approve(example, "", "embedder", [1.0, 0.0], "text")
+        run_id = db.start_run("research", "q", "m")
+        [match] = memory.nearest([1.0, 0.1], db.memories("embedder"), k=2)
+
+        db.record_examples(run_id, [match])
+        db.record_examples(run_id, [match])  # a resumed run writes again
+
+        assert db.run(run_id).examples == [(example, pytest.approx(match.score))]

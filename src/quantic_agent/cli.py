@@ -10,6 +10,9 @@ GPU, and their tool calls share one pace under Quantic's rate limit. Every resea
 is stored with its tool calls in a SQLite database: --runs lists them, --run N
 shows one and re-checks its answer against the data it was given, and
 --resume N carries on with a run that stopped, from the phase it had reached.
+--approve N and --reject N record a reviewer's verdict on a run's answer.
+Approved answers are style memory: a writer is shown the most similar ones as
+examples of the house voice, and --recall shows which those would be.
 
 Exit status: 0 success, 1 failure (including --timeout running out), 2 wrong
 usage, 3 the model server or the MCP server wasn't there to answer (or
@@ -32,7 +35,7 @@ from importlib.metadata import version
 from pathlib import Path
 from typing import TextIO
 
-from quantic_agent import agent, llm, provenance, quantic, store
+from quantic_agent import agent, llm, memory, provenance, quantic, store
 from quantic_agent.tools import DIVIDEND_CALENDAR, GET_STOCK
 
 # The safe choice for the target hardware (design §4): it fits any 16GB card
@@ -60,6 +63,11 @@ DEFAULT_TIMEOUT = 300.0
 # Ollama then drops the start of the conversation. 32K kept the default model
 # wholly on a 16GB GPU (docs/benchmarks); see lesson 09 for the measurement.
 DEFAULT_NUM_CTX = 32768
+
+# The model that turns text into vectors for style memory, chosen by
+# measurement (lesson 10), and how many approved answers a writer is shown.
+DEFAULT_EMBED_MODEL = "qwen3-embedding:0.6b"
+EXAMPLES = 2
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -96,6 +104,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         metavar="N",
         help="carry on with run N, stopped or failed before answering, with its own model",
     )
+    action.add_argument(
+        "--approve", type=int, metavar="N", help="approve run N's answer: it becomes style memory"
+    )
+    action.add_argument(
+        "--reject", type=int, metavar="N", help="reject run N's answer; it stops being style memory"
+    )
+    action.add_argument(
+        "--recall",
+        metavar="QUESTION",
+        help="show the approved answers a writer would be shown for QUESTION",
+    )
     action.add_argument("--runs", action="store_true", help="list recent research runs")
     action.add_argument(
         "--run",
@@ -124,6 +143,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=os.environ.get("QUANTIC_AGENT_DB") or default_db_path(),
         help="the database of runs and tool calls (default: $QUANTIC_AGENT_DB, else %(default)s)",
     )
+    parser.add_argument("--note", default="", help="a reviewer's note, with --approve or --reject")
+    parser.add_argument(
+        "--embed-model",
+        default=os.environ.get("QUANTIC_EMBED_MODEL") or DEFAULT_EMBED_MODEL,
+        help="the model that embeds text for style memory "
+        "(default: $QUANTIC_EMBED_MODEL, else %(default)s)",
+    )
     parser.add_argument(
         "--num-ctx",
         type=int,
@@ -148,7 +174,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.run is not None:
         with store.Store(args.db) as db:
             return _show_run(db, args.run)
-    if not args.check and args.ask is None and args.research is None and args.resume is None:
+    if args.reject is not None:
+        with store.Store(args.db) as db:
+            try:
+                db.reject(args.reject, args.note)
+            except store.NotReviewableError as err:
+                _error(str(err))
+                return EXIT_FAILED
+        _error(f"run {args.reject} rejected")
+        return EXIT_OK
+    wanted = (args.check, args.ask, args.research, args.resume, args.approve, args.recall)
+    if not any(w not in (None, False) for w in wanted):
         print("quantic-agent: no tasks defined yet")
         return EXIT_OK
 
@@ -183,6 +219,18 @@ async def _run(args: argparse.Namespace) -> int:
         with store.Store(args.db) as db:
             async with llm.Client(args.ollama, args.model) as client:
                 return await _research_all(client, db, args)
+    if args.approve is not None or args.recall is not None:
+        with store.Store(args.db) as db:
+            async with llm.Client(args.ollama, args.model) as client:
+                try:
+                    async with asyncio.timeout(args.timeout or None):
+                        if args.approve is not None:
+                            return await _approve(client, db, args)
+                        return await _show_recall(client, db, args)
+                except TimeoutError:
+                    return _gave_up(args.timeout)
+                except llm.LLMError as err:
+                    return _fail(err, args)
     async with llm.Client(args.ollama, args.model) as client:
         try:
             # One deadline for the whole run, whatever it does inside; None
@@ -288,6 +336,51 @@ async def _check(client: llm.Client, base_url: str) -> int:
     return EXIT_OK
 
 
+async def _approve(client: llm.Client, db: store.Store, args: argparse.Namespace) -> int:
+    """Approves a run's answer: embeds it, then records the verdict and the
+    vector together."""
+    try:
+        run = db.run(args.approve)
+    except store.NotFoundError:
+        _error(f"there is no run {args.approve}")
+        return EXIT_FAILED
+    if run.draft is None:
+        _error(f"run {run.id} has no answer to review")
+        return EXIT_FAILED
+    usage = memory.documented(args.embed_model) or memory.PLAIN
+    embedded = await client.embed([usage.document + run.draft.content], model=args.embed_model)
+    try:
+        db.approve(run.id, args.note, args.embed_model, embedded.embeddings[0], run.draft.content)
+    except store.NotReviewableError as err:
+        _error(str(err))
+        return EXIT_FAILED
+    _error(f"run {run.id} approved: style memory now")
+    return EXIT_OK
+
+
+async def _recall(
+    client: llm.Client, db: store.Store, question: str, model: str, exclude: int = 0
+) -> list[memory.Match]:
+    """The approved answers most similar to question. With none approved, it
+    asks nothing of the GPU. The question is embedded as the model's
+    documentation asks for a query, and as it was measured."""
+    memories = [m for m in db.memories(model) if m.run_id != exclude]
+    if not memories:
+        return []
+    usage = memory.documented(model) or memory.PLAIN
+    embedded = await client.embed([usage.query + question], model=model)
+    return memory.nearest(embedded.embeddings[0], memories, EXAMPLES)
+
+
+async def _show_recall(client: llm.Client, db: store.Store, args: argparse.Namespace) -> int:
+    matches = await _recall(client, db, args.recall, args.embed_model)
+    if not matches:
+        print(f"no approved answers embedded with {args.embed_model}")
+    for m in matches:
+        print(f"run {m.memory.run_id} · {m.score:.3f}\n{m.memory.text}\n")
+    return EXIT_OK
+
+
 def _pace() -> quantic.Pace:
     """The pace every MCP session in this process shares."""
 
@@ -378,7 +471,13 @@ async def _research(
                         "writing from what it gathered"
                     )
                 db.checkpoint(run.id, store.Phase.WRITE, gathered.tokens, gathered.exhausted)
-            writer = agent.Writer(client, today=today, options=options)
+            # Style memory: approved answers like this question, as examples.
+            # Recorded before the writer sees them (N3).
+            matches = await _recall(client, db, run.input, args.embed_model, exclude=run.id)
+            if matches:
+                db.record_examples(run.id, matches)
+            examples = [m.memory.text for m in matches]
+            writer = agent.Writer(client, today=today, options=options, examples=examples)
             draft = await writer.write(run.input, gathered)
             written = draft.tokens
     except asyncio.CancelledError:
@@ -504,6 +603,12 @@ def _show_run(db: store.Store, run_id: int) -> int:
     print(f"run {run.id} · {run.state} · {run.model} · {started}")
     print(f"question: {run.input}")
     print(f"phase: {run.phase} · {run.tokens} tokens")
+    if run.review is not None:
+        note = f": {run.review.note}" if run.review.note else ""
+        print(f"review: {run.review.verdict}{note}")
+    if run.examples:
+        shown = ", ".join(f"run {r} ({score:.3f})" for r, score in run.examples)
+        print(f"examples shown to its writer: {shown}")
     if run.exhausted is not None:
         print(f"research stopped early: its {run.exhausted} budget ran out")
     if run.error:
