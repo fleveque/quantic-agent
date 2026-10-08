@@ -209,6 +209,72 @@ Three consequences for content, all of them simplifications:
 - **Links inside a post need no locale handling.** A ticker chip pointing at `/stocks/MSFT` resolves
   on whatever host the reader is on, so the agent emits plain paths and never thinks about locale.
 
+## As built (milestone 11)
+
+[`weekahead.py`](../src/quantic_agent/weekahead.py), [decision 0013](decisions/0013-week-ahead.md).
+A real file, one company of two shown (the whole post, in all seven locales, is in
+[the benchmarks](benchmarks/2026-10-08-week-ahead/post/)):
+
+```yaml
+---
+kind: "week_ahead"
+period: "2026-W42"
+locale: "en"
+week_start: "2026-10-12"
+week_end: "2026-10-18"
+run_id: 4
+fold_after: "summary"
+sections:
+- "summary"
+- "watch"
+data:
+  ex_dividends:
+  - symbol: "PG"
+    name: "Procter & Gamble"
+    sector: "Consumer Defensive"
+    ex_dividend_date: "2026-10-16"
+    payment_frequency: "quarterly"
+    safety: "watch"
+    safety_reasons:
+    - code: "growing_dividend"
+      severity: "good"
+    - code: "long_growth_streak"
+      severity: "good"
+    - code: "tight_liquidity"
+      severity: "warning"
+    streak_years: 28
+    growth_ttm: 0.039728682170542484
+    cagr_5y: 0.05969210995022167
+---
+
+## The week ahead
+
+This week features companies that have both sustained a very long history of increases, ...
+
+## What to watch
+
+Procter & Gamble continues its impressive run of consecutive dividend raises with recent ...
+```
+
+Where it differs from the sketch above:
+
+- **The data is what the public tools return** ([content plan](content.md#the-dividend-week-ahead-as-built)),
+  under the tools' own field names. Ratios are ratios (`0.0397`, not `3.97`) at full precision; the
+  template formats them, and words the safety reasons from their codes.
+- **No counts in the data.** `summary.ex_dividend_count` would be a figure no tool returned (the
+  calendar's list is longer than the week); the template counts `ex_dividends`.
+- **`run_id`, not `manifest_id`.** The run is where the provenance is: `quantic-agent --run 4` shows
+  the tool results and re-checks the data against them.
+- **No `published_at`.** A draft doesn't know when it will be published; the merge does. The week is
+  `period` (the ISO week, which names the post: `/insights/week-ahead-2026-W42`), `week_start` and
+  `week_end`.
+- **Prose sections are listed and headed per locale.** `sections` names them in order; in the body,
+  each is a `##` heading in the file's language, from the agent's locale table, not from the model.
+  The template can take them by position. `fold_after` is always `summary`.
+- **Every string is double-quoted.** Unquoted, `ON` is a boolean to a YAML 1.1 parser and `1E3` a
+  number to a YAML 1.2 one. Quoted, a ticker is a string to any parser. Each file is read back before
+  it's written, and must say exactly what was checked.
+
 ## What this needs from the Quantic repo
 
 Prerequisite work, none of it agent work:

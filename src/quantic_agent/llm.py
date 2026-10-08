@@ -187,6 +187,7 @@ class _ChatBody(BaseModel):
     tools: Sequence[ToolDef] | None = None
     stream: bool = False  # sent, as for /api/generate
     think: bool | None = None
+    format: dict[str, Any] | None = None
     options: Options | None = None
 
 
@@ -352,14 +353,24 @@ class Client:
         *,
         tools: Sequence[ToolDef] | None = None,
         think: bool | None = None,
+        format: dict[str, Any] | None = None,
         options: Options | None = None,
     ) -> ChatResponse:
         """One conversation turn through /api/chat: the messages so far go in,
         the model's next message comes out. Unlike generate it can offer the
         model tools, and the reply may then ask to call one instead of
-        answering."""
+        answering.
+
+        format is a JSON Schema the reply's content must match. Ollama
+        constrains the generation itself to it, token by token, so the
+        content parses; whether what it says is right is another matter."""
         body = _ChatBody(
-            model=self._model, messages=messages, tools=tools, think=think, options=options
+            model=self._model,
+            messages=messages,
+            tools=tools,
+            think=think,
+            format=format,
+            options=options,
         )
         async with self._gpu:
             return await self._call("POST", "/api/chat", ChatResponse, body)

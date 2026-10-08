@@ -2,14 +2,17 @@ import json
 import os
 import re
 import signal
+import sqlite3
 import threading
-from datetime import UTC, datetime
+from collections.abc import Mapping
+from datetime import UTC, date, datetime
 from pathlib import Path
+from typing import Any
 
 import pytest
 from conftest import DEAD_URL, FakeMCP, FakeOllama, Reply, fixture
 
-from quantic_agent import quantic, store
+from quantic_agent import cli, quantic, store, weekahead
 from quantic_agent.agent import Call
 from quantic_agent.cli import main
 
@@ -685,3 +688,340 @@ def test_recall_and_reject(
     assert main(["--reject", "1", "--note", "too long"]) == 0
     assert main(["--ollama", ollama.url, "--recall", "what goes ex-dividend?"]) == 0
     assert "no approved answers embedded with qwen3-embedding:0.6b" in capsys.readouterr().out
+
+
+# ---- the Week Ahead ------------------------------------------------------------
+
+
+def asks_for(*calls: tuple[str, Mapping[str, object]]) -> Reply:
+    """A model reply asking for tools, each by name with its arguments."""
+    requests = [{"function": {"name": name, "arguments": args}} for name, args in calls]
+    message = {"role": "assistant", "content": "", "tool_calls": requests}
+    reply = {"model": "qwen3.5:9b", "message": message, "done": True, "prompt_eval_count": 100}
+    return Reply(json.dumps(reply).encode())
+
+
+ENGLISH = {
+    "summary": "Procter & Gamble and Coca-Cola go ex-dividend late in the week.",
+    "watch": "Coca-Cola is rated safe, while Procter & Gamble is on watch for tight liquidity.",
+}
+
+
+def prose(sections: dict[str, str]) -> Reply:
+    return Reply(says(json.dumps(sections)))
+
+
+def translated(locale: str) -> Reply:
+    """A translation that passes its checks: the English, marked with its locale."""
+    return prose({key: f"[{locale}] {text}" for key, text in ENGLISH.items()})
+
+
+LOOKUPS = (("get_stock", {"symbol": "PG"}), ("get_stock", {"symbol": "KO"}))
+
+
+def week_ahead_servers(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    research: list[Reply] | None = None,
+    writer: list[Reply] | None = None,
+    translations: dict[str, Reply] | None = None,
+) -> None:
+    """Thursday 2026-10-08, when the fixtures were captured from Quantic:
+    the week after has Procter & Gamble and Coca-Cola in it. The model asks
+    for the calendar, then both companies at once, then stops; the writer
+    and the six translators answer in turn."""
+    monkeypatch.setattr(cli, "today", lambda: date(2026, 10, 8))
+    quantic_mcp.tools.update(
+        {
+            "dividend_calendar": "call-calendar-45.sse",
+            "get_stock:PG": "call-get-stock-pg.sse",
+            "get_stock:KO": "call-get-stock-ko.sse",
+        }
+    )
+    if research is None:
+        research = [
+            asks_for(("dividend_calendar", {"days": 45})),
+            asks_for(*LOOKUPS),
+            Reply(says("Done.")),
+        ]
+    locales = {loc: translated(loc) for loc in weekahead.TRANSLATED} | (translations or {})
+    ollama.replies["/api/chat"] = [
+        *research,
+        *(writer or [prose(ENGLISH)]),
+        *(locales[loc] for loc in weekahead.TRANSLATED),
+    ]
+
+
+def week_ahead(ollama: FakeOllama, quantic_mcp: FakeMCP, out: Path) -> int:
+    return main(
+        ["--ollama", ollama.url, "--mcp", quantic_mcp.url, "--week-ahead", "--out", str(out)]
+    )
+
+
+def data_block(text: str) -> str:
+    return text.split("\ndata:\n", 1)[1].split("\n---\n", 1)[0]
+
+
+def test_week_ahead_writes_every_locale(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    isolated_state: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    week_ahead_servers(ollama, quantic_mcp, monkeypatch)
+
+    assert week_ahead(ollama, quantic_mcp, tmp_path / "out") == 0
+
+    folder = tmp_path / "out" / "week-ahead-2026-W42"
+    files = {p.stem: p.read_text() for p in folder.iterdir()}
+    assert sorted(files) == sorted(weekahead.LOCALES)
+    # One data block, the same in every file; only the prose differs.
+    assert len({data_block(text) for text in files.values()}) == 1
+    assert "## Die kommende Woche\n\n[de] Procter & Gamble" in files["de"]
+    out, err = capsys.readouterr()
+    assert out == files["en"] + "\n"
+    assert f"es: {folder / 'es.md'}" in err
+
+    [run] = stored_runs(isolated_state)
+    assert (run.kind, run.state, run.input) == (
+        "week_ahead",
+        store.State.ANSWERED,
+        "Today is Thursday 2026-10-08. "
+        "Gather the data for the Dividend Week Ahead, for the week from Monday 2026-10-12 "
+        "to Sunday 2026-10-18: find every company that goes ex-dividend in that week, and "
+        "look up each one.",
+    )
+    # The two lookups ran at once, recorded in the order they finished.
+    calendar, *lookups = [(c.tool, c.arguments) for c in run.calls]
+    assert calendar == ("dividend_calendar", {"days": 45})
+    assert sorted(lookups, key=str) == [
+        ("get_stock", {"symbol": "KO"}),
+        ("get_stock", {"symbol": "PG"}),
+    ]
+    assert run.draft is not None
+    assert run.draft.content == files["en"]
+    assert [(p.locale, p.ready, p.content) for p in run.posts] == [
+        (locale, True, files[locale]) for locale in weekahead.LOCALES
+    ]
+
+
+def test_the_writer_and_translators_are_asked_for_the_prose_format(
+    ollama: FakeOllama, quantic_mcp: FakeMCP, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    week_ahead_servers(ollama, quantic_mcp, monkeypatch)
+    assert week_ahead(ollama, quantic_mcp, tmp_path) == 0
+
+    writer, *translators = ollama.bodies[3:]
+    assert len(translators) == 6
+    for body in [writer, *translators]:
+        assert (body["format"], body["think"], body["options"]) == (
+            weekahead.PROSE_FORMAT,
+            False,
+            {"num_ctx": 32768},
+        )
+        assert "tools" not in body
+    languages = [
+        t["messages"][0]["content"].split(" into ", 1)[1].split(",")[0] for t in translators
+    ]
+    assert languages == [
+        "Spanish (Spain)",
+        "Catalan",
+        "French",
+        "German",
+        "Italian",
+        "Brazilian Portuguese",
+    ]
+
+
+def test_a_held_translation_is_not_written(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    isolated_state: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    figure = prose({"summary": "[fr] 3 " + ENGLISH["summary"], "watch": "[fr] " + ENGLISH["watch"]})
+    week_ahead_servers(ollama, quantic_mcp, monkeypatch, translations={"fr": figure})
+    # An earlier run's French file, which this run's mustn't be mistaken for.
+    folder = tmp_path / "week-ahead-2026-W42"
+    folder.mkdir()
+    (folder / "fr.md").write_text("an older post")
+
+    assert week_ahead(ollama, quantic_mcp, tmp_path) == 6
+
+    assert sorted(p.stem for p in folder.iterdir()) == sorted(
+        loc for loc in weekahead.LOCALES if loc != "fr"
+    )
+    assert "fr: held: summary: figure '3'" in capsys.readouterr().err
+    [run] = stored_runs(isolated_state)
+    assert run.state is store.State.ANSWERED
+    held = [p for p in run.posts if not p.ready]
+    assert [(p.locale, p.problems) for p in held] == [("fr", ["summary: figure '3'"])]
+    assert "[fr] 3 Procter" in held[0].content  # what was refused, kept for review
+
+
+def test_prose_with_figures_publishes_nothing(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    isolated_state: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    counted = prose({"summary": "Two names go ex-dividend.", "watch": ENGLISH["watch"]})
+    week_ahead_servers(ollama, quantic_mcp, monkeypatch, writer=[counted] * 3)
+
+    assert week_ahead(ollama, quantic_mcp, tmp_path) == 4
+
+    assert not (tmp_path / "week-ahead-2026-W42").exists()
+    assert len(ollama.bodies) == 3 + 3  # research, then three writers; no translators
+    assert "after 3 attempts the prose still has figures" in capsys.readouterr().err
+    [run] = stored_runs(isolated_state)
+    assert (run.state, run.posts) == (store.State.UNVERIFIED, [])
+    assert run.draft is not None
+    assert [str(f) for f in run.draft.findings] == ["'Two' (number 2)"]
+
+
+def test_the_published_data_is_checked_against_the_tools(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    week_ahead_servers(ollama, quantic_mcp, monkeypatch)
+    # Code that rounds a ratio on its way into the post.
+    build = weekahead._row  # pyright: ignore[reportPrivateUsage]
+
+    def rounding(*args: Any) -> weekahead.ExDividend:
+        row = build(*args)
+        return row.model_copy(update={"growth_ttm": round(row.growth_ttm or 0, 4)})
+
+    monkeypatch.setattr(weekahead, "_row", rounding)
+
+    assert week_ahead(ollama, quantic_mcp, tmp_path) == 1
+
+    assert "data no tool returned: ex_dividends[0].growth_ttm = 0.0397" in capsys.readouterr().err
+    assert not (tmp_path / "week-ahead-2026-W42").exists()
+
+
+def test_a_week_not_fully_researched_fails_and_resumes(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    isolated_state: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # The model reads the calendar and stops, without looking anyone up.
+    research = [asks_for(("dividend_calendar", {"days": 45})), Reply(says("Done."))]
+    week_ahead_servers(ollama, quantic_mcp, monkeypatch, research=research)
+
+    assert week_ahead(ollama, quantic_mcp, tmp_path) == 1
+
+    err = capsys.readouterr().err
+    assert "research didn't gather the whole week: not looked up with get_stock: PG, KO" in err
+    [run] = stored_runs(isolated_state)
+    assert (run.state, run.phase) == (store.State.FAILED, store.Phase.RESEARCH)
+
+    # Resumed, the calendar is replayed rather than called, and the model
+    # looks the companies up. The week is the one after the day the run
+    # started, which the store took from the real clock: set it to Thursday.
+    with sqlite3.connect(isolated_state) as db:
+        db.execute("UPDATE runs SET started_at = '2026-10-08T12:00:00+00:00'")
+    week_ahead_servers(
+        ollama, quantic_mcp, monkeypatch, research=[asks_for(*LOOKUPS), Reply(says("Done."))]
+    )
+    assert (
+        main(
+            [
+                "--ollama",
+                ollama.url,
+                "--mcp",
+                quantic_mcp.url,
+                "--resume",
+                "1",
+                "--out",
+                str(tmp_path),
+            ]
+        )
+        == 0
+    )
+
+    assert [c["name"] for c in quantic_mcp.calls()] == [
+        "dividend_calendar",
+        "get_stock",
+        "get_stock",
+    ]
+    [run] = stored_runs(isolated_state)
+    assert (run.state, len(run.posts)) == (store.State.ANSWERED, 7)
+
+
+def test_a_week_with_no_companies_writes_nothing(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    week_ahead_servers(ollama, quantic_mcp, monkeypatch)
+    # Ten days later: the calendar captured on the 8th still covers the week
+    # after, and nothing in it goes ex-dividend then.
+    monkeypatch.setattr(cli, "today", lambda: date(2026, 10, 19))
+
+    assert week_ahead(ollama, quantic_mcp, tmp_path / "out") == 5
+
+    assert "no company goes ex-dividend from 2026-10-26 to 2026-11-01" in capsys.readouterr().err
+    assert not (tmp_path / "out").exists()
+
+
+def test_a_week_ahead_run_is_shown_and_rechecked(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    week_ahead_servers(ollama, quantic_mcp, monkeypatch)
+    assert week_ahead(ollama, quantic_mcp, tmp_path) == 0
+    capsys.readouterr()
+
+    assert main(["--run", "1"]) == 0
+    shown = capsys.readouterr().out
+    assert "post es: ready\n" in shown
+    assert "streak_years: 28" in shown
+    assert (
+        "provenance, re-checked now: every value in the data traces to a stored tool "
+        "result, and the prose has no figures"
+    ) in shown
+
+    # Its review is its pull request, not style memory for answering questions.
+    assert main(["--ollama", ollama.url, "--approve", "1"]) == 1
+    assert "run 1 is a week_ahead: only research answers can be approved" in (
+        capsys.readouterr().err
+    )
+
+
+def test_a_post_is_recorded_before_its_files_are_written(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    isolated_state: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    week_ahead_servers(ollama, quantic_mcp, monkeypatch)
+    blocked = tmp_path / "out"
+    blocked.write_text("a file where the folder should be")
+
+    assert week_ahead(ollama, quantic_mcp, blocked) == 1
+
+    assert f"writing {blocked / 'week-ahead-2026-W42'}:" in capsys.readouterr().err
+    # The files couldn't be written, but the run and its posts are on record.
+    [run] = stored_runs(isolated_state)
+    assert (run.state, len(run.posts)) == (store.State.ANSWERED, 7)

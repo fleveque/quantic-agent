@@ -1,0 +1,121 @@
+# quantic-agent --week-ahead, qwen3.5:9b, live quantic.finance, 2026-10-08
+
+## 1. The question without today's date, first prompt (5 runs)
+
+run  1  unverified  10467 tokens
+         dividend_calendar {"days": 7} → 544 bytes
+         dividend_calendar {"days": 120} → 1233 bytes
+         get_stock {"symbol": "PG"} → 1583 bytes
+         get_stock {"symbol": "KO"} → 1515 bytes
+         still in the prose: 'two' (number 2)
+run  2  answered    12256 tokens
+         dividend_calendar {"days": 45} → 1232 bytes
+         get_stock {"symbol": "PG"} → 1583 bytes
+         get_stock {"symbol": "KO"} → 1515 bytes
+run  3  failed       6397 tokens
+         dividend_calendar {"days": 7} → 544 bytes
+         get_stock {"symbol": "MSFT"} → 1538 bytes
+         get_stock {"symbol": "JNJ"} → 1514 bytes
+         get_stock {"symbol": "AAPL"} → 1505 bytes
+         get_stock {"symbol": "IBE.MC"} → 1495 bytes
+         error: no dividend_calendar call covers the week 2026-10-12 to 2026-10-18
+run  4  failed       1686 tokens
+         dividend_calendar {"days": 7} → 544 bytes
+         error: no dividend_calendar call covers the week 2026-10-12 to 2026-10-18
+run  5  answered    10701 tokens
+         dividend_calendar {"days": 14} → 1232 bytes
+         get_stock {"symbol": "KO"} → 1515 bytes
+         get_stock {"symbol": "PG"} → 1583 bytes
+
+## 2. With today's date, first prompt (10 runs)
+
+run  1  answered    10627 tokens  prose in 3 attempt(s)
+         dividend_calendar {"days": 120} → 1233 bytes
+         get_stock {"symbol": "PG"} → 1583 bytes
+         get_stock {"symbol": "KO"} → 1515 bytes
+run  2  answered    11623 tokens  prose in 3 attempt(s)
+         dividend_calendar {"days": 12} → 951 bytes
+         get_stock {"symbol": "PG"} → 1583 bytes
+         get_stock {"symbol": "KO"} → 1515 bytes
+run  3  unverified   8642 tokens  prose in 3 attempt(s)
+         dividend_calendar {"days": 45} → 1232 bytes
+         get_stock {"symbol": "KO"} → 1515 bytes
+         get_stock {"symbol": "PG"} → 1583 bytes
+         still in the prose: 'two' (number 2)
+run  4  unverified  11018 tokens  prose in 3 attempt(s)
+         dividend_calendar {"days": 7} → 544 bytes
+         dividend_calendar {"days": 30} → 1232 bytes
+         get_stock {"symbol": "PG"} → 1583 bytes
+         get_stock {"symbol": "KO"} → 1515 bytes
+         still in the prose: 'Two' (number 2)
+         still in the prose: 'five' (number 5)
+run  5  answered     8504 tokens  prose in 1 attempt(s)
+         dividend_calendar {"days": 120} → 1233 bytes
+         get_stock {"symbol": "KO"} → 1515 bytes
+         get_stock {"symbol": "PG"} → 1583 bytes
+run  6  answered    12649 tokens  prose in 3 attempt(s)
+         dividend_calendar {"days": 45} → 1232 bytes
+         get_stock {"symbol": "PG"} → 1583 bytes
+         get_stock {"symbol": "KO"} → 1515 bytes
+run  7  answered     9689 tokens  prose in 3 attempt(s)
+         dividend_calendar {"days": 45} → 1232 bytes
+         get_stock {"symbol": "KO"} → 1515 bytes
+         get_stock {"symbol": "PG"} → 1583 bytes
+run  8  unverified   8189 tokens  prose in 3 attempt(s)
+         dividend_calendar {"days": 120} → 1233 bytes
+         get_stock {"symbol": "PG"} → 1583 bytes
+         get_stock {"symbol": "KO"} → 1515 bytes
+         still in the prose: 'two' (number 2)
+run  9  answered    11430 tokens  prose in 3 attempt(s)
+         dividend_calendar {"days": 45} → 1232 bytes
+         get_stock {"symbol": "PG"} → 1583 bytes
+         get_stock {"symbol": "KO"} → 1515 bytes
+run 10  answered    13685 tokens  prose in 3 attempt(s)
+         dividend_calendar {"days": 10} → 810 bytes
+         get_stock {"symbol": "PG"} → 1583 bytes
+         get_stock {"symbol": "KO"} → 1515 bytes
+
+## 3. With today's date, the prompt as merged (10 runs)
+
+run  1  answered    12974 tokens  prose in 3 attempt(s)
+         dividend_calendar {"days": 45} → 1232 bytes
+         get_stock {"symbol": "PG"} → 1583 bytes
+         get_stock {"symbol": "KO"} → 1515 bytes
+run  2  answered    11530 tokens  prose in 3 attempt(s)
+         dividend_calendar {"days": 12} → 951 bytes
+         get_stock {"symbol": "KO"} → 1515 bytes
+         get_stock {"symbol": "PG"} → 1583 bytes
+run  3  answered    10854 tokens  prose in 3 attempt(s)
+         dividend_calendar {"days": 45} → 1232 bytes
+         get_stock {"symbol": "PG"} → 1583 bytes
+         get_stock {"symbol": "KO"} → 1515 bytes
+run  4  answered     9464 tokens  prose in 2 attempt(s)
+         dividend_calendar {"days": 45} → 1232 bytes
+         get_stock {"symbol": "KO"} → 1515 bytes
+         get_stock {"symbol": "PG"} → 1583 bytes
+run  5  answered    10197 tokens  prose in 2 attempt(s)
+         dividend_calendar {"days": 45} → 1232 bytes
+         get_stock {"symbol": "KO"} → 1515 bytes
+         get_stock {"symbol": "PG"} → 1583 bytes
+run  6  answered    10703 tokens  prose in 3 attempt(s)
+         dividend_calendar {"days": 45} → 1232 bytes
+         get_stock {"symbol": "PG"} → 1583 bytes
+         get_stock {"symbol": "KO"} → 1515 bytes
+run  7  answered    11104 tokens  prose in 3 attempt(s)
+         dividend_calendar {"days": 120} → 1233 bytes
+         get_stock {"symbol": "IBE.MC"} → 1495 bytes
+         get_stock {"symbol": "KO"} → 1515 bytes
+         get_stock {"symbol": "PG"} → 1583 bytes
+run  8  answered    10549 tokens  prose in 2 attempt(s)
+         dividend_calendar {"days": 120} → 1233 bytes
+         get_stock {"symbol": "KO"} → 1515 bytes
+         get_stock {"symbol": "PG"} → 1583 bytes
+run  9  answered    11418 tokens  prose in 3 attempt(s)
+         dividend_calendar {"days": 120} → 1233 bytes
+         get_stock {"symbol": "KO"} → 1515 bytes
+         get_stock {"symbol": "PG"} → 1583 bytes
+run 10  answered     9169 tokens  prose in 2 attempt(s)
+         dividend_calendar {"days": 12} → 951 bytes
+         get_stock {"symbol": "PG"} → 1583 bytes
+         get_stock {"symbol": "KO"} → 1515 bytes
+

@@ -45,6 +45,28 @@ Shape:
 Every number comes from a tool call. The "what to watch" paragraph is where the model earns its
 keep, and it's deliberately the only place it's allowed to be interesting.
 
+### The Dividend Week Ahead, as built
+
+Milestone 11 ([decision 0013](decisions/0013-week-ahead.md)) builds it from Quantic's public tools
+only: `dividend_calendar` for who goes ex-dividend in the week, then `get_stock` for each company.
+`get_dividends` is the signed-in user's own dividends, and the radar a user's own watchlist: neither
+is the agent's to read (N4, [decision 0006](decisions/0006-anonymous-mcp-for-public-tools.md)), and
+radar movers are out of this post for good.
+
+Per company it shows: symbol, name, sector, ex-dividend date, payment frequency, safety status and
+its reasons, raise streak, growth over the last twelve months and the five-year growth rate. Two
+prose sections, *The week ahead* (before the registration gate) and *What to watch*, neither with a
+figure in it. A real one is in [the benchmarks](benchmarks/2026-10-08-week-ahead/post/en.md).
+
+What the plan has that the public tools don't, and what would add it, as Quantic work:
+
+| In the plan | Missing from the public tools |
+|---|---|
+| Amount of the coming dividend | `dividend_calendar` (or `get_stock`) returning the declared amount and currency |
+| Yield | a current yield: `get_stock`'s `yield_band.current` is null for an anonymous caller |
+| Raises declared | the previous and the new amount of a declaration, or a tool listing recent raises |
+| Cuts | the same, for cuts; at-risk flags are there already (the safety status) |
+
 ### 2. Raise & Cut Notes — event-driven
 
 A dividend raise is news on the day it's declared, not the following Sunday. Short (~250 words), one

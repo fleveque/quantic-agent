@@ -158,4 +158,5 @@ stayed; the join went; now the test fails when the delete is removed.
 
 ---
 
-**Previous:** [Lesson 09 — One GPU, many calls](09-one-gpu-many-calls.md)
+**Previous:** [Lesson 09 — One GPU, many calls](09-one-gpu-many-calls.md) ·
+**Next:** [Lesson 11 — Seven files, one set of figures](11-seven-files-one-set-of-figures.md)

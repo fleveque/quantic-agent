@@ -312,6 +312,22 @@ Quantic resolves locale from the **request host**, not a path prefix, so a post'
 keyed by locale and served on the host that carries that language — see
 [rendering](rendering.md#locales-are-hosts-not-paths).
 
+**As built (milestone 11, [`weekahead.py`](../src/quantic_agent/weekahead.py),
+[decision 0013](decisions/0013-week-ahead.md)).** The Dividend Week Ahead, end to end into a folder
+(`--week-ahead --out DIR`); the pull request is milestone 12. Research is the agentic loop, told
+today's date and the week. Code builds the data block from the recorded results and checks it with
+`provenance.check_data`; a week the research didn't cover, or a company it didn't look up, fails the
+run in its research phase. The model writes two prose sections as JSON (Ollama's `format`), sent
+back up to three times while they have figures. Each of the six translations is checked for figures
+and for a length 0.75–1.75 times the English; one that fails is held (exit 6), the rest are written.
+The data block's YAML is serialised once and is the same bytes in all seven files, and every file
+is read back before it's written. The "same structure" check needs no code of its own: a reply is
+parsed into the prose's model, which has exactly its sections. Spanish isn't treated differently by
+the agent: the spot-check is the reviewer's, in the pull request. Measured
+([benchmarks](benchmarks/2026-10-08-week-ahead/README.md)): 10 of 10 runs published, none of 114
+translations held, and the Catalan had errors any reader sees. The checks are structural; whether
+`ca`, `fr`, `de`, `it` and `pt` can publish on them is open (open question 12).
+
 ### 3.6 Concurrency model
 
 The interesting shape: **one GPU, many network calls.**
@@ -537,8 +553,10 @@ refused Qwen3.5 outright with a `412: requires a newer version of Ollama`.
    layout, markdown rendering, per-locale routing consistent with the existing language subdomains,
    sitemap and hreflang, plus the free-registration gate and its `schema.org` flexible-sampling
    markup. The agent has nowhere to open PRs against until it exists. *Prerequisite for
-   milestone 11.* The only agent-side obligation is emitting the `fold_after` marker in draft
-   frontmatter — see the [content plan](content.md#registration-gate).
+   milestone 12.* The only agent-side obligation is emitting the `fold_after` marker in draft
+   frontmatter — see the [content plan](content.md#registration-gate). *(Milestone 11 writes the
+   files into a folder, in the format [as built](rendering.md#as-built-milestone-11), so `/insights`
+   can be built against real posts.)*
 3. **How do we know a draft is any good?** Provenance proves it isn't *wrong*; it doesn't prove it's
    worth publishing. Track human accept/reject rate per task kind and treat it as the metric that
    matters. A task kind below some accept rate is broken — the task, not the reviewer.
@@ -556,6 +574,12 @@ refused Qwen3.5 outright with a `412: requires a newer version of Ollama`.
    numbers in prose entirely. Small models will violate this. The validator catches it and retries,
    but if the violation rate is high the writing prompt needs restructuring — possibly generating
    prose and data in separate calls. This is the likeliest place the accept-rate metric first bites.
+   *(Measured, milestone 11, `qwen3.5:9b`: with retries, yes. Prose and data are already separate
+   calls. The first attempt had figures in 15 to 20 of 20 writings, depending on the prompt, and
+   the retry that names them removed them; 10 of 10 real runs published. Two causes, one fixable:
+   the data's field names (`cagr_5y` became "five-year", gone once the writer was shown
+   `long_term_growth`), and counting the companies ("two"), which no prompt stopped.
+   [Benchmarks](benchmarks/2026-10-08-week-ahead/README.md).)*
 
 9. **Which primary model, measured on the target box.** Qwen3.8-27B at `UD-IQ3_S` or `UD-Q3_K_XL`
    (best model that fits, reduced precision) against Qwen3.5-9B Q4_K_M (fits easily, most context).
@@ -593,6 +617,13 @@ refused Qwen3.5 outright with a `412: requires a newer version of Ollama`.
     untrusted input: stored and embedded as language, never followed as instructions, never a source
     for a number. Open: which sources, whether the text comes from Quantic's MCP server rather than
     the agent fetching it, and how non-US issuers are covered. *Needed by milestone 10.*
+12. **Can translations publish on machine verification?** §3.5 publishes `ca`, `fr`, `de`, `it`
+    and `pt` when the translation checks pass, and those checks are structural: no figures, a length
+    near the English. Milestone 11's real Catalan passed them with errors any reader sees (a word cut
+    short, Spanish words, a misspelling). The options include a larger model for translation only,
+    the reviewer reading Catalan as well as Spanish, or publishing fewer locales until a model
+    translates well enough, which needs a way to measure translation quality. *Needed before
+    milestone 12 publishes anything.*
 
 ## 6. Explicit non-goals
 

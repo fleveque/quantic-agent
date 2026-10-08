@@ -13,13 +13,18 @@ shows one and re-checks its answer against the data it was given, and
 --approve N and --reject N record a reviewer's verdict on a run's answer.
 Approved answers are style memory: a writer is shown the most similar ones as
 examples of the house voice, and --recall shows which those would be.
+--week-ahead researches next week's ex-dividend dates the same way, then
+writes the Dividend Week Ahead in every locale into --out, one folder per
+week: the data from the tool results, the prose by the model, with no
+figures in it, translated and checked locale by locale.
 
 Exit status: 0 success, 1 failure (including --timeout running out), 2 wrong
 usage, 3 the model server or the MCP server wasn't there to answer (or
 Quantic's rate limit didn't clear), 4 a --research answer contains figures no
 tool returned (design N1), 5 research gathered no data, so nothing was
-written, 130 stopped by Ctrl-C or SIGTERM. For several questions, the status
-is the first one that isn't 0, in the order the questions were given. After 3, 5 or 130, --resume
+written, 6 a Week Ahead was written but some locales were held, 130 stopped
+by Ctrl-C or SIGTERM. For several questions, the status is the first one that
+isn't 0, in the order the questions were given. After 3, 5 or 130, --resume
 continues the run (design §3.6). On 130 the request in flight was cancelled,
 and Ollama stops working on it too.
 """
@@ -31,11 +36,12 @@ import os
 import signal
 import sys
 from collections.abc import Sequence
+from datetime import date, datetime
 from importlib.metadata import version
 from pathlib import Path
 from typing import TextIO
 
-from quantic_agent import agent, llm, memory, provenance, quantic, store
+from quantic_agent import agent, llm, memory, provenance, quantic, store, weekahead
 from quantic_agent.tools import DIVIDEND_CALENDAR, GET_STOCK
 
 # The safe choice for the target hardware (design §4): it fits any 16GB card
@@ -49,6 +55,7 @@ EXIT_FAILED = 1
 EXIT_UNAVAILABLE = 3
 EXIT_UNVERIFIED = 4
 EXIT_NO_DATA = 5
+EXIT_HELD = 6
 EXIT_INTERRUPTED = 130  # 128 + SIGINT, the shell's convention for Ctrl-C
 
 # Bounds one run, in seconds. The slowest request measured on the target
@@ -115,6 +122,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         metavar="QUESTION",
         help="show the approved answers a writer would be shown for QUESTION",
     )
+    action.add_argument(
+        "--week-ahead",
+        action="store_true",
+        help="write the Dividend Week Ahead for next week, in every locale, into --out",
+    )
     action.add_argument("--runs", action="store_true", help="list recent research runs")
     action.add_argument(
         "--run",
@@ -142,6 +154,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         type=Path,
         default=os.environ.get("QUANTIC_AGENT_DB") or default_db_path(),
         help="the database of runs and tool calls (default: $QUANTIC_AGENT_DB, else %(default)s)",
+    )
+    parser.add_argument(
+        "--out",
+        type=Path,
+        default=os.environ.get("QUANTIC_AGENT_OUT") or "insights",
+        metavar="DIR",
+        help="where --week-ahead writes its files (default: $QUANTIC_AGENT_OUT, else %(default)s)",
     )
     parser.add_argument("--note", default="", help="a reviewer's note, with --approve or --reject")
     parser.add_argument(
@@ -183,7 +202,15 @@ def main(argv: Sequence[str] | None = None) -> int:
                 return EXIT_FAILED
         _error(f"run {args.reject} rejected")
         return EXIT_OK
-    wanted = (args.check, args.ask, args.research, args.resume, args.approve, args.recall)
+    wanted = (
+        args.check,
+        args.ask,
+        args.research,
+        args.week_ahead,
+        args.resume,
+        args.approve,
+        args.recall,
+    )
     if not any(w not in (None, False) for w in wanted):
         print("quantic-agent: no tasks defined yet")
         return EXIT_OK
@@ -214,7 +241,13 @@ async def _run(args: argparse.Namespace) -> int:
             # A resumed run goes on with the model it started with, which is
             # the one its record names.
             async with llm.Client(args.ollama, run.model) as client:
+                if run.kind == weekahead.KIND:
+                    return await _week_ahead(client, db, args, _pace(), run=run)
                 return await _research(client, db, args, _pace(), run=run)
+    if args.week_ahead:
+        with store.Store(args.db) as db:
+            async with llm.Client(args.ollama, args.model) as client:
+                return await _week_ahead(client, db, args, _pace())
     if args.research is not None:
         with store.Store(args.db) as db:
             async with llm.Client(args.ollama, args.model) as client:
@@ -251,6 +284,11 @@ def _gave_up(timeout: float) -> int:
         "half a minute to load, and a long generation longer."
     )
     return EXIT_FAILED
+
+
+def today() -> date:
+    """The local date: what "next week" counts from. Tests replace it."""
+    return datetime.now().astimezone().date()
 
 
 def default_db_path() -> Path:
@@ -346,6 +384,11 @@ async def _approve(client: llm.Client, db: store.Store, args: argparse.Namespace
         return EXIT_FAILED
     if run.draft is None:
         _error(f"run {run.id} has no answer to review")
+        return EXIT_FAILED
+    if run.kind != "research":
+        # A post's review is its pull request (milestone 12), and a post is
+        # not an example for answering questions.
+        _error(f"run {run.id} is a {run.kind}: only research answers can be approved")
         return EXIT_FAILED
     usage = memory.documented(args.embed_model) or memory.PLAIN
     embedded = await client.embed([usage.document + run.draft.content], model=args.embed_model)
@@ -544,6 +587,160 @@ async def _research_phase(
         await researcher.research(run.input, gathered, on_call=on_call)
 
 
+async def _week_ahead(
+    client: llm.Client,
+    db: store.Store,
+    args: argparse.Namespace,
+    pace: quantic.Pace,
+    *,
+    run: store.Run | None = None,
+) -> int:
+    """The Dividend Week Ahead for the week after today: research as for any
+    question, then the post in every locale (weekahead), recorded with the
+    run. A run stopped after research resumes without calling a tool: its
+    data is rebuilt from the calls it recorded, and the prose written again.
+
+    Research must have gathered the whole week (weekahead.gather), or the
+    run fails in its research phase, to be resumed. The English prose must
+    have no figures, or nothing is published. A translation that fails its
+    check is held, and the rest are written."""
+    # The week after the day the run started, even for a run resumed later.
+    if run is None:
+        started = today()
+        run = db.run(db.start_run(weekahead.KIND, weekahead.question(started), client.model))
+    else:
+        started = run.started_at.astimezone().date()
+    week = weekahead.week_after(started)
+    options = llm.Options(num_ctx=args.num_ctx)
+    gathered = agent.Research(calls=run.calls, tokens=run.tokens, exhausted=run.exhausted)
+    spent = 0  # tokens the writer and the translators used
+
+    def finish(
+        state: store.State,
+        error: str | None = None,
+        draft: store.Draft | None = None,
+        posts: Sequence[store.Post] = (),
+    ) -> None:
+        db.finish(run.id, state, error, draft, tokens=gathered.tokens + spent, posts=posts)
+        _error(f"run {run.id} {state}")
+        if draft is None:
+            _error(f"to carry on from where it stopped: quantic-agent --resume {run.id}")
+
+    try:
+        async with asyncio.timeout(args.timeout or None):
+            if run.phase is store.Phase.RESEARCH:
+                await _research_phase(client, db, run, gathered, args, pace, options, "")
+                if not gathered.has_data:
+                    _error("research gathered no data (no tool call succeeded); nothing to write")
+                    finish(store.State.NO_DATA, "research gathered no data")
+                    return EXIT_NO_DATA
+            rows = weekahead.gather(week, gathered.calls)
+            if not rows:
+                _error(f"no company goes ex-dividend from {week.start} to {week.end}")
+                finish(store.State.NO_DATA, "no company goes ex-dividend that week")
+                return EXIT_NO_DATA
+            if run.phase is store.Phase.RESEARCH:
+                db.checkpoint(run.id, store.Phase.WRITE, gathered.tokens, gathered.exhausted)
+            # Built by code from the tool results, so this finds nothing
+            # unless that code is wrong. It is the check the format exists
+            # for (docs/rendering.md), and it runs on what is published.
+            unsourced = provenance.check_data(weekahead.data_block(rows), _manifest(gathered.calls))
+            if unsourced:
+                raise provenance.ProvenanceError(
+                    f"data no tool returned: {', '.join(map(str, unsourced))}"
+                )
+            written = await weekahead.write(client, week, rows, options=options)
+            spent += written.tokens
+            _error(f"prose written in {written.attempts} attempt(s)")
+            translations: list[weekahead.Translation] = []
+            if not written.findings:
+                for locale in weekahead.TRANSLATED:
+                    translations.append(
+                        await weekahead.translate(client, written.prose, locale, options=options)
+                    )
+                    spent += translations[-1].tokens
+    except asyncio.CancelledError:
+        finish(store.State.INTERRUPTED)
+        raise
+    except TimeoutError:
+        finish(store.State.FAILED, f"gave up after {args.timeout:g}s")
+        return _gave_up(args.timeout)
+    except weekahead.NotProseError as err:
+        spent += err.tokens
+        finish(store.State.FAILED, str(err))
+        _error(str(err))
+        return EXIT_FAILED
+    except weekahead.IncompleteError as err:
+        finish(store.State.FAILED, str(err))
+        _error(f"research didn't gather the whole week: {err}")
+        return EXIT_FAILED
+    except provenance.ProvenanceError as err:
+        finish(store.State.FAILED, str(err))
+        _error(str(err))
+        return EXIT_FAILED
+    except (llm.LLMError, quantic.ToolServerError) as err:
+        finish(store.State.FAILED, str(err))
+        return _fail(err, args)
+
+    data = weekahead.data_yaml(rows)
+    english = weekahead.render(week, run.id, weekahead.SOURCE, data, written.prose)
+    print(english)
+    if written.findings:
+        _error(f"after {written.attempts} attempts the prose still has figures: nothing written")
+        for finding in written.findings:
+            print(f"  {finding}", file=sys.stderr)
+        draft = store.Draft(content=english, truncated=False, findings=written.findings)
+        finish(store.State.UNVERIFIED, draft=draft)
+        return EXIT_UNVERIFIED
+    problems = weekahead.check_file(english, weekahead.SOURCE, rows, written.prose)
+    if problems:
+        finish(store.State.FAILED, "; ".join(problems))
+        _error(f"the English file: {'; '.join(problems)}")
+        return EXIT_FAILED
+
+    posts = [store.Post(weekahead.SOURCE, True, english)]
+    for t in translations:
+        if t.prose is None:
+            posts.append(store.Post(t.locale, False, t.raw, t.problems))
+            continue
+        content = weekahead.render(week, run.id, t.locale, data, t.prose)
+        problems = t.problems + weekahead.check_file(content, t.locale, rows, t.prose)
+        posts.append(store.Post(t.locale, not problems, content, problems))
+    draft = store.Draft(content=english, truncated=False, findings=[])
+    finish(store.State.ANSWERED, draft=draft, posts=posts)
+
+    # Recorded first, then written: a file on disk always has its run.
+    folder = args.out / week.slug
+    try:
+        _save_post(folder, posts)
+    except OSError as err:
+        _error(f"writing {folder}: {err}")
+        return EXIT_FAILED
+    for post in posts:
+        if post.ready:
+            _error(f"{post.locale}: {folder / (post.locale + '.md')}")
+        else:
+            _error(f"{post.locale}: held: {'; '.join(post.problems)}")
+    return EXIT_OK if all(p.ready for p in posts) else EXIT_HELD
+
+
+def _save_post(folder: Path, posts: Sequence[store.Post]) -> None:
+    """Writes each ready locale's file into folder. A held locale's file is
+    removed, if an earlier run left one: it would be another run's post."""
+    folder.mkdir(parents=True, exist_ok=True)
+    for post in posts:
+        path = folder / f"{post.locale}.md"
+        if post.ready:
+            path.write_text(post.content, encoding="utf-8")
+        else:
+            path.unlink(missing_ok=True)
+
+
+def _manifest(calls: Sequence[agent.Call]) -> provenance.Manifest:
+    """The successful calls' results, indexed: failed calls aren't data."""
+    return provenance.Manifest(provenance.Record(c.tool, c.result) for c in calls if not c.failed)
+
+
 def _check_figures(
     run: store.Run, text: str, calls: Sequence[agent.Call]
 ) -> list[provenance.Finding]:
@@ -552,8 +749,7 @@ def _check_figures(
     source. The run's question and the date it started count as sources:
     repeating the question's "six months", or the date the writer was told is
     today, invents nothing."""
-    records = [provenance.Record(c.tool, c.result) for c in calls if not c.failed]
-    manifest = provenance.Manifest(records)
+    manifest = _manifest(calls)
     manifest.add_text("question", run.input)
     manifest.add_text("today", run.started_at.astimezone().date().isoformat())
     return provenance.check_prose(text, manifest)
@@ -616,6 +812,8 @@ def _show_run(db: store.Store, run_id: int) -> int:
     for i, call in enumerate(run.calls):
         outcome = call.result if call.failed else f"{len(call.result)} bytes"
         print(f"call {i}: {call.tool} {json.dumps(call.arguments)} → {outcome}")
+    if run.kind == weekahead.KIND:
+        return _show_post(run)
     if run.draft is None:
         return EXIT_OK
     print(f"\n{run.draft.content}\n")
@@ -624,6 +822,36 @@ def _show_run(db: store.Store, run_id: int) -> int:
         print("provenance, re-checked now: every figure traces to a stored tool result")
         return EXIT_OK
     _report_findings(findings, sys.stdout)
+    return EXIT_UNVERIFIED
+
+
+def _show_post(run: store.Run) -> int:
+    """A Week Ahead run's post: each locale's status, the English file, and
+    its provenance re-checked: the data against the stored tool results, and
+    the prose for figures, which it must not have."""
+    for post in run.posts:
+        print(f"post {post.locale}: {'ready' if post.ready else 'held'}", end="")
+        print(f": {'; '.join(post.problems)}" if post.problems else "")
+    if run.draft is None:
+        return EXIT_OK
+    print(f"\n{run.draft.content}")
+    try:
+        front, sections = weekahead.read_back(run.draft.content, weekahead.SOURCE)
+    except ValueError as err:
+        print(f"the file doesn't read back: {err}")
+        return EXIT_UNVERIFIED
+    unsourced = provenance.check_data(front.get("data"), _manifest(run.calls))
+    figures = provenance.no_figures("\n\n".join(sections.values()))
+    if not unsourced and not figures:
+        print(
+            "provenance, re-checked now: every value in the data traces to a stored tool "
+            "result, and the prose has no figures"
+        )
+        return EXIT_OK
+    for finding in unsourced:
+        print(f"no tool returned: {finding}")
+    for figure in figures:
+        print(f"a figure in the prose: {figure}")
     return EXIT_UNVERIFIED
 
 
