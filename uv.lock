@@ -658,6 +658,7 @@ dependencies = [
     { name = "httpx2" },
     { name = "mcp" },
     { name = "pydantic" },
+    { name = "pyjwt", extra = ["crypto"] },
     { name = "pyyaml" },
 ]
 
@@ -677,6 +678,7 @@ requires-dist = [
     { name = "httpx2", specifier = ">=2.13.1" },
     { name = "mcp", specifier = ">=2.3.0" },
     { name = "pydantic", specifier = ">=2.13.5" },
+    { name = "pyjwt", extras = ["crypto"], specifier = ">=2.15.1" },
     { name = "pyyaml", specifier = ">=6.0.3" },
 ]
 

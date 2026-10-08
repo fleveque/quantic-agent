@@ -7,10 +7,10 @@ The agent is developed on a laptop and runs on the desktop: Ryzen, 64GB RAM, RTX
 Nothing in the code is machine-specific (see [design §4](design.md#4-stack)), so the same checkout
 works on both machines; only the models pulled and the numbers measured differ.
 
-**The Python version is at milestone 11**, past where the Go version
+**The Python version is at milestone 12**, past where the Go version
 ([quantic-agent-go](https://github.com/fleveque/quantic-agent-go), archived) stopped. The check, the
 benchmark (sections 4–6), the tool-call evaluation (section 7), the run history and resuming a run
-(section 8) and the Week Ahead (section 8a) are all this repository's commands.
+(section 8), the Week Ahead (section 8a) and its pull requests (section 8b) are all this repository's commands.
 
 ---
 
@@ -206,6 +206,52 @@ A translation that fails its checks (a figure in it, or a length far from the En
 file isn't written, a held locale's file from an earlier run is removed, and the run exits 6. Nothing
 is published by the agent; the files are for review (and, from milestone 12, a pull request).
 
+## 8b. Pull requests
+
+`--pr N` opens a pull request on Quantic's repository with Week Ahead run N's files; `--sync` records
+what became of them (merged: approved, closed: rejected). The agent never merges
+([decision 0014](decisions/0014-pull-requests-as-a-github-app.md)). It acts as a GitHub App, created
+once by hand:
+
+1. GitHub → Settings → Developer settings → GitHub Apps → **New GitHub App**.
+   - Name: anything not taken, such as `quantic-agent-<you>`. Homepage: this repository's URL.
+   - Webhook: untick **Active**.
+   - Repository permissions: **Contents: Read and write**, **Pull requests: Read and write**
+     (Metadata: read-only is added by itself). Nothing else.
+   - Where can this GitHub App be installed: **Only on this account**.
+2. Create it, and note its **App ID**.
+3. **Generate a private key**. It downloads a `.pem` file. Move it and make it yours alone:
+
+   ```sh
+   mkdir -p ~/.config/quantic-agent
+   mv ~/Downloads/*.private-key.pem ~/.config/quantic-agent/github-app.pem
+   chmod 600 ~/.config/quantic-agent/github-app.pem
+   ```
+
+4. **Install App** → Only select repositories → the Quantic repository.
+5. Tell the agent, in its environment:
+
+   ```sh
+   export QUANTIC_AGENT_GITHUB_APP_ID=123456       # the App ID
+   export QUANTIC_AGENT_REPO=owner/quantic         # where pull requests go
+   # QUANTIC_AGENT_GITHUB_KEY, if the key is somewhere else
+   ```
+
+```sh
+uv run quantic-agent --pr 4      # prints the pull request's URL
+uv run quantic-agent --sync      # after merging or closing it
+```
+
+The files go under `priv/insights/week-ahead-2026-W42/` (`--repo-path`), on a branch
+`agent/week-ahead-2026-W42-run-4`, one commit. A held locale stays out, and the description says why.
+One pull request per run, and one open per week: a second run for the same week waits until the
+first is merged or closed and `--sync` has seen it. If a pull request fails halfway, its branch may
+already exist; delete the branch on GitHub before trying that run again.
+
+Quantic's `main` can't be protected on its plan, and the App's permission to push branches covers
+it. The agent's client can only create new `agent/` branches, and Quantic's deploy refuses a push to
+`main` made by a bot.
+
 The database's schema is brought up to date when the agent opens it, by Alembic (decision
 [0010](decisions/0010-alembic-for-migrations.md)). A database from milestone 7 is converted once,
 automatically.
@@ -278,6 +324,12 @@ this on a trusted LAN, ideally with a firewall rule limiting port 11434 to the l
 | `research didn't gather the whole week`, exit status 1 | The model asked for too short a calendar, or didn't look up every company in the week | `quantic-agent --resume N` to let it carry on; the message names what was missing |
 | `after 3 attempts the prose still has figures: nothing written`, exit status 4 | The Week Ahead's writer kept putting a figure in the prose, usually the number of companies | Run it again; `--run N` shows the last attempt |
 | `xx: held: …`, exit status 6 | A Week Ahead translation failed its checks | The other locales were written; `--run N` lists each locale and why one was held |
+| `no GitHub App: set QUANTIC_AGENT_GITHUB_APP_ID` or `no repository` | `--pr`/`--sync` settings missing | Section 8b |
+| `github-app.pem is readable by others` | The App's private key isn't `600` | `chmod 600` the file, as the message says |
+| `401 A JSON web token could not be decoded` | The key isn't the App's, or the App ID is another App's | Generate a new key on the App's page (section 8b, step 3) |
+| `404 Not Found` on `/installation` | The App isn't installed on that repository | Install it there (section 8b, step 4) |
+| `422 Reference already exists` | That run's branch exists from an earlier attempt | Delete the branch on GitHub, then `--pr N` again |
+| `already has an open pull request` | Another run's pull request for the same week is open | Merge or close it, then `quantic-agent --sync` |
 | `only research answers can be approved` | `--approve` on a Week Ahead run | Its review is the pull request (milestone 12) |
 | `gave up after 300s (--timeout)` | The run took longer than `--timeout`: a slow model at a long context, or a stuck server | Raise `--timeout` (seconds; 0 for no limit), or check `ollama ps` for a model that spilled into system RAM. Too short a timeout during a cold load aborts the load |
 | `ON GPU 0% (CPU)` on the desktop | Ollama not using the GPU | `nvidia-smi`; `journalctl -u ollama -b \| grep -iE 'cuda\|gpu'` |

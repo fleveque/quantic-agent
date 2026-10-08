@@ -17,7 +17,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
+import jwt
 import pytest
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -304,5 +307,176 @@ def quantic_mcp() -> Iterator[FakeMCP]:
     thread.start()
     yield fake
     fake.released.set()
+    server.shutdown()
+    server.server_close()
+
+
+@dataclass
+class FakeGitHub:
+    """A fake GitHub REST API, enough for one App installation on one
+    repository, answering with payloads captured from api.github.com
+    (tests/fixtures/github). It checks the App's JWT against public_key and
+    the installation token on every repository request, keeps the
+    repository's refs, and records every request as (method, path, body,
+    authorization). pulls maps a pull request's number to the state GET
+    answers with: "open", "merged" or "closed"."""
+
+    url: str
+    public_key: str
+    repo: str = "fleveque/quantic"
+    refs: dict[str, str] = field(default_factory=lambda: dict[str, str]())
+    pulls: dict[int, str] = field(default_factory=lambda: dict[int, str]())
+    requests: list[tuple[str, str, Any, str]] = field(
+        default_factory=lambda: list[tuple[str, str, Any, str]]()
+    )
+    token: str = "ghs_installationtoken"
+    token_lifetime: float = 3600.0
+    tokens_issued: int = 0
+
+
+def github_fixture(name: str) -> dict[str, Any]:
+    return json.loads((FIXTURES / "github" / name).read_text())
+
+
+@pytest.fixture(scope="session")
+def app_key() -> tuple[str, str]:
+    """An RSA key pair for a test GitHub App, as PEM: (private, public)."""
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    private = key.private_bytes(
+        serialization.Encoding.PEM,
+        serialization.PrivateFormat.PKCS8,
+        serialization.NoEncryption(),
+    ).decode()
+    public = (
+        key.public_key()
+        .public_bytes(serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo)
+        .decode()
+    )
+    return private, public
+
+
+@pytest.fixture
+def github_api(app_key: tuple[str, str]) -> Iterator[FakeGitHub]:
+    """A fake GitHub on a free port for the length of one test."""
+    fake: FakeGitHub
+    created = {"n": 0}
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self) -> None:
+            self._answer("GET")
+
+        def do_POST(self) -> None:
+            self._answer("POST")
+
+        def do_PATCH(self) -> None:
+            self._answer("PATCH")
+
+        def do_PUT(self) -> None:
+            self._answer("PUT")
+
+        def do_DELETE(self) -> None:
+            self._answer("DELETE")
+
+        def _answer(self, method: str) -> None:
+            length = int(self.headers.get("Content-Length", 0))
+            body = json.loads(self.rfile.read(length)) if length else None
+            auth = self.headers.get("Authorization", "")
+            fake.requests.append((method, self.path, body, auth))
+            status, reply = self._route(method, self.path, body, auth)
+            data = json.dumps(reply).encode()
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+
+        def _route(self, method: str, path: str, body: Any, auth: str) -> tuple[int, Any]:
+            bearer = auth.removeprefix("Bearer ")
+            repo = f"/repos/{fake.repo}"
+            if path in (f"{repo}/installation", "/app/installations/42/access_tokens"):
+                try:
+                    jwt.decode(bearer, fake.public_key, algorithms=["RS256"])
+                except jwt.PyJWTError as err:
+                    return 401, {"message": f"A JSON web token could not be decoded: {err}"}
+                if method == "GET":
+                    return 200, {"id": 42, "app_id": 1, "account": {"login": "fleveque"}}
+                fake.tokens_issued += 1
+                expires = time.strftime(
+                    "%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() + fake.token_lifetime)
+                )
+                return 201, {"token": fake.token, "expires_at": expires}
+            if not path.startswith(f"{repo}/"):
+                return 404, github_fixture("not-found.json")
+            if bearer != fake.token:
+                return 401, {"message": "Bad credentials"}
+            rest = path.removeprefix(f"{repo}/")
+            return self._repo(method, rest, body)
+
+        def _repo(self, method: str, rest: str, body: Any) -> tuple[int, Any]:
+            if method == "GET" and rest.startswith("git/ref/heads/"):
+                ref = "refs/heads/" + rest.removeprefix("git/ref/heads/")
+                if ref not in fake.refs:
+                    return 404, github_fixture("not-found.json")
+                reply = github_fixture("ref.json")
+                reply["ref"], reply["object"]["sha"] = ref, fake.refs[ref]
+                return 200, reply
+            if method == "GET" and rest.startswith("git/commits/"):
+                reply = github_fixture("commit.json")
+                reply["sha"] = rest.removeprefix("git/commits/")
+                return 200, reply
+            if method == "POST" and rest == "git/trees":
+                created["n"] += 1
+                reply = github_fixture("tree.json")
+                reply["sha"] = f"tree{created['n']:036d}"
+                return 201, reply
+            if method == "POST" and rest == "git/commits":
+                created["n"] += 1
+                reply = github_fixture("commit.json")
+                reply["sha"] = f"commit{created['n']:034d}"
+                reply["tree"]["sha"] = body["tree"]
+                return 201, reply
+            if method == "POST" and rest == "git/refs":
+                if body["ref"] in fake.refs:
+                    return 422, {
+                        "message": "Reference already exists",
+                        "documentation_url": "https://docs.github.com/rest/git/refs#create-a-reference",
+                        "status": "422",
+                    }
+                fake.refs[body["ref"]] = body["sha"]
+                reply = github_fixture("ref.json")
+                reply["ref"], reply["object"]["sha"] = body["ref"], body["sha"]
+                return 201, reply
+            if method == "POST" and rest == "pulls":
+                number = 100 + len(fake.pulls)
+                fake.pulls[number] = "open"
+                return 201, self._pull(number, body["head"])
+            if method == "GET" and rest.startswith("pulls/"):
+                number = int(rest.removeprefix("pulls/"))
+                if number not in fake.pulls:
+                    return 404, github_fixture("not-found.json")
+                return 200, self._pull(number, "agent/x")
+            return 404, github_fixture("not-found.json")
+
+        def _pull(self, number: int, head: str) -> dict[str, Any]:
+            reply = github_fixture("pull-merged.json")
+            state = fake.pulls[number]
+            reply["number"] = number
+            reply["html_url"] = f"https://github.com/{fake.repo}/pull/{number}"
+            reply["head"]["ref"] = head
+            reply["state"] = "open" if state == "open" else "closed"
+            if state != "merged":
+                reply["merged_at"] = None
+            return reply
+
+        def log_message(self, format: str, *args: Any) -> None:
+            pass
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    host, port = server.server_address[:2]
+    fake = FakeGitHub(url=f"http://{host!s}:{port}", public_key=app_key[1])
+    fake.refs["refs/heads/main"] = github_fixture("ref.json")["object"]["sha"]
+    thread = threading.Thread(target=server.serve_forever, args=(0.01,), daemon=True)
+    thread.start()
+    yield fake
     server.shutdown()
     server.server_close()
