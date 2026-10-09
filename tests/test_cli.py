@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from conftest import DEAD_URL, FakeMCP, FakeOllama, Reply, fixture
+from conftest import DEAD_URL, FakeGitHub, FakeMCP, FakeOllama, Reply, fixture
 
 from quantic_agent import cli, quantic, store, weekahead
 from quantic_agent.agent import Call
@@ -793,7 +793,7 @@ def test_week_ahead_writes_every_locale(
         "Today is Thursday 2026-10-08. "
         "Gather the data for the Dividend Week Ahead, for the week from Monday 2026-10-12 "
         "to Sunday 2026-10-18: find every company that goes ex-dividend in that week, and "
-        "look up each one.",
+        "look up each one. Sunday 2026-10-18 is 10 days from today.",
     )
     # The two lookups ran at once, recorded in the order they finished.
     calendar, *lookups = [(c.tool, c.arguments) for c in run.calls]
@@ -1025,3 +1025,258 @@ def test_a_post_is_recorded_before_its_files_are_written(
     # The files couldn't be written, but the run and its posts are on record.
     [run] = stored_runs(isolated_state)
     assert (run.state, len(run.posts)) == (store.State.ANSWERED, 7)
+
+
+# ---- pull requests -------------------------------------------------------------
+
+
+def as_the_app(
+    monkeypatch: pytest.MonkeyPatch, github_api: FakeGitHub, key: str, tmp_path: Path
+) -> Path:
+    """The App's settings, as the environment gives them; returns its key file."""
+    path = tmp_path / "github-app.pem"
+    path.write_text(key)
+    path.chmod(0o600)
+    monkeypatch.setenv("QUANTIC_AGENT_GITHUB_APP_ID", "1")
+    monkeypatch.setenv("QUANTIC_AGENT_GITHUB_KEY", str(path))
+    monkeypatch.setenv("QUANTIC_AGENT_GITHUB_API", github_api.url)
+    monkeypatch.setenv("QUANTIC_AGENT_REPO", github_api.repo)
+    return path
+
+
+def written_week(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    monkeypatch: pytest.MonkeyPatch,
+    out: Path,
+    translations: dict[str, Reply] | None = None,
+) -> None:
+    """A Week Ahead run, answered: run 1, unless runs came before it."""
+    week_ahead_servers(ollama, quantic_mcp, monkeypatch, translations=translations)
+    assert week_ahead(ollama, quantic_mcp, out) in (0, 6)
+
+
+def test_a_week_ahead_run_becomes_a_pull_request(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    github_api: FakeGitHub,
+    app_key: tuple[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    isolated_state: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    written_week(ollama, quantic_mcp, monkeypatch, tmp_path / "out")
+    as_the_app(monkeypatch, github_api, app_key[0], tmp_path)
+    capsys.readouterr()
+
+    assert main(["--pr", "1"]) == 0
+
+    out, err = capsys.readouterr()
+    assert out == "https://github.com/fleveque/quantic/pull/100\n"
+    assert "run 1: pull request #100, 7 file(s), for review" in err
+    bodies = {p.rsplit("/", 1)[1]: b for m, p, b, _ in github_api.requests if m == "POST"}
+    [run] = stored_runs(isolated_state)
+    # The files are the run's posts as recorded, under the repository path.
+    assert {e["path"]: e["content"] for e in bodies["trees"]["tree"]} == {
+        f"priv/insights/week-ahead-2026-W42/{p.locale}.md": p.content for p in run.posts
+    }
+    assert bodies["refs"]["ref"] == "refs/heads/agent/week-ahead-2026-W42-run-1"
+    assert bodies["pulls"]["title"] == "Dividend Week Ahead, 2026-W42"
+    body = bodies["pulls"]["body"]
+    assert "**Merging publishes it.**" in body
+    assert "These checks don't read the language" in body
+    assert "- Procter & Gamble (PG), ex-dividend 2026-10-16" in body
+    assert "Held back" not in body
+    assert run.pull_request is not None
+    assert (run.pull_request.number, run.pull_request.state, run.pull_request.period) == (
+        100,
+        "open",
+        "2026-W42",
+    )
+
+    assert main(["--run", "1"]) == 0
+    assert "pull request: https://github.com/fleveque/quantic/pull/100 (open)" in (
+        capsys.readouterr().out
+    )
+
+
+def test_a_held_locale_stays_out_of_the_pull_request(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    github_api: FakeGitHub,
+    app_key: tuple[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    figure = prose({"summary": "[fr] 3 " + ENGLISH["summary"], "watch": "[fr] " + ENGLISH["watch"]})
+    written_week(ollama, quantic_mcp, monkeypatch, tmp_path / "out", {"fr": figure})
+    as_the_app(monkeypatch, github_api, app_key[0], tmp_path)
+
+    assert main(["--pr", "1"]) == 0
+
+    bodies = {p.rsplit("/", 1)[1]: b for m, p, b, _ in github_api.requests if m == "POST"}
+    paths = [e["path"] for e in bodies["trees"]["tree"]]
+    assert "priv/insights/week-ahead-2026-W42/fr.md" not in paths
+    assert len(paths) == 6
+    assert "- **fr**: summary: figure '3'" in bodies["pulls"]["body"]
+
+
+def test_only_an_answered_week_ahead_is_published(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    github_api: FakeGitHub,
+    app_key: tuple[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    research_servers(ollama, quantic_mcp)
+    assert main(["--ollama", ollama.url, "--mcp", quantic_mcp.url, "--research", "q"]) == 0
+    counted = prose({"summary": "Two names go ex-dividend.", "watch": ENGLISH["watch"]})
+    week_ahead_servers(ollama, quantic_mcp, monkeypatch, writer=[counted] * 3)
+    assert week_ahead(ollama, quantic_mcp, tmp_path / "out") == 4
+    as_the_app(monkeypatch, github_api, app_key[0], tmp_path)
+    capsys.readouterr()
+
+    assert main(["--pr", "1"]) == 1
+    assert "run 1 is a research: only a Week Ahead is published" in capsys.readouterr().err
+    assert main(["--pr", "2"]) == 1
+    assert "run 2 is unverified: only a post that passed its checks" in capsys.readouterr().err
+    assert github_api.requests == []
+
+
+def test_one_pull_request_per_run_and_one_open_per_week(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    github_api: FakeGitHub,
+    app_key: tuple[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    written_week(ollama, quantic_mcp, monkeypatch, tmp_path / "out")
+    written_week(ollama, quantic_mcp, monkeypatch, tmp_path / "out")
+    as_the_app(monkeypatch, github_api, app_key[0], tmp_path)
+    assert main(["--pr", "1"]) == 0
+    capsys.readouterr()
+
+    assert main(["--pr", "1"]) == 1
+    assert "run 1 already has a pull request" in capsys.readouterr().err
+    # Run 2 is the same week: it waits until #100 is merged or closed.
+    assert main(["--pr", "2"]) == 1
+    assert "2026-W42 already has an open pull request" in capsys.readouterr().err
+    github_api.pulls[100] = "closed"
+    assert main(["--sync"]) == 0
+    assert main(["--pr", "2"]) == 0
+
+
+@pytest.mark.parametrize(
+    ("unset", "message"),
+    [
+        ("QUANTIC_AGENT_REPO", "no repository: give --repo OWNER/NAME"),
+        ("QUANTIC_AGENT_GITHUB_APP_ID", "no GitHub App: set QUANTIC_AGENT_GITHUB_APP_ID"),
+    ],
+)
+def test_a_missing_setting_is_named(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    github_api: FakeGitHub,
+    app_key: tuple[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    unset: str,
+    message: str,
+) -> None:
+    written_week(ollama, quantic_mcp, monkeypatch, tmp_path / "out")
+    as_the_app(monkeypatch, github_api, app_key[0], tmp_path)
+    monkeypatch.delenv(unset)
+
+    assert main(["--pr", "1"]) == 1
+    assert message in capsys.readouterr().err
+    assert github_api.requests == []
+
+
+def test_a_key_others_can_read_is_refused(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    github_api: FakeGitHub,
+    app_key: tuple[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    written_week(ollama, quantic_mcp, monkeypatch, tmp_path / "out")
+    key = as_the_app(monkeypatch, github_api, app_key[0], tmp_path)
+    key.chmod(0o644)
+
+    assert main(["--pr", "1"]) == 1
+    assert f"{key} is readable by others: chmod 600 {key}" in capsys.readouterr().err
+    assert github_api.requests == []
+
+
+def test_sync_records_merges_as_approvals_and_closes_as_rejections(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    github_api: FakeGitHub,
+    app_key: tuple[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    isolated_state: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    as_the_app(monkeypatch, github_api, app_key[0], tmp_path)
+    for thursday in (date(2026, 10, 8), date(2026, 10, 1), date(2026, 9, 24)):
+        written_week(ollama, quantic_mcp, monkeypatch, tmp_path / "out")
+        # Each run its own week, so each can have a pull request open.
+        with sqlite3.connect(isolated_state) as db:
+            db.execute(
+                "UPDATE runs SET started_at = ? WHERE id = (SELECT max(id) FROM runs)",
+                (f"{thursday.isoformat()}T12:00:00+00:00",),
+            )
+    for run in ("1", "2", "3"):
+        assert main(["--pr", run]) == 0
+    github_api.pulls.update({100: "merged", 101: "closed", 102: "open"})
+    capsys.readouterr()
+
+    assert main(["--sync"]) == 0
+
+    assert capsys.readouterr().out == (
+        "run 1: https://github.com/fleveque/quantic/pull/100 merged: approved\n"
+        "run 2: https://github.com/fleveque/quantic/pull/101 closed: rejected\n"
+        "run 3: https://github.com/fleveque/quantic/pull/102 still open\n"
+    )
+    runs = {r.id: r for r in stored_runs(isolated_state)}
+    assert runs[1].review is not None
+    assert (runs[1].review.verdict, runs[1].review.note) == (
+        "approved",
+        "fleveque/quantic#100 merged",
+    )
+    assert runs[2].review is not None
+    assert runs[2].review.verdict == "rejected"
+    assert runs[3].review is None
+    # Synced, a decided pull request isn't asked about again.
+    asked = len(github_api.requests)
+    assert main(["--sync"]) == 0
+    assert [p for _, p, _, _ in github_api.requests[asked:] if "/pulls/" in p] == [
+        "/repos/fleveque/quantic/pulls/102"
+    ]
+
+
+def test_github_not_answering_exits_3(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    github_api: FakeGitHub,
+    app_key: tuple[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    isolated_state: Path,
+) -> None:
+    written_week(ollama, quantic_mcp, monkeypatch, tmp_path / "out")
+    as_the_app(monkeypatch, github_api, app_key[0], tmp_path)
+    monkeypatch.setenv("QUANTIC_AGENT_GITHUB_API", DEAD_URL)
+
+    assert main(["--pr", "1"]) == 3
+    [run] = stored_runs(isolated_state)
+    assert run.pull_request is None

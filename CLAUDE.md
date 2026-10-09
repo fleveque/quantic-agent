@@ -53,7 +53,7 @@ starting point here.
   approved answers, recorded per run, never in the manifest; `qwen3-embedding:0.6b` with its query
   instruction, measured by `quantic-evalrecall` (`recall_cases.json`): 10/12 vs nomic's 8/12.
   Plain Python, no numpy (500 vectors ~10ms). Only answered (traced) runs can be approved; lesson 10.
-- **Milestone 11 in review** (branch `m11-week-ahead`, ADR 0013): the Dividend Week Ahead into a
+- **Milestone 11 merged** (#12, ADR 0013): the Dividend Week Ahead into a
   folder, `--week-ahead --out DIR`. The author chose: public data only (no amounts, raises, radar;
   content.md lists the gaps), and the agentic loop for research. `quantic_agent/weekahead.py`:
   `week_after` (ISO week names the post), `question` (tells today's date: without it the 9B asked
@@ -65,6 +65,18 @@ starting point here.
   Migration 0005 (`posts`); exit 6 when a locale is held; a run is recorded before its files are
   written; week-ahead runs can't be `--approve`d. Real runs: 10/10 published, 0 of 114 translations
   held, Catalan visibly wrong (design open question 12); lesson 11.
+- **Milestone 12 in review** (branch `m12-pull-requests`, ADR 0014): `--pr N` and `--sync`. The
+  author chose: a GitHub App; PRs on the Quantic repo now (path `priv/insights/`, `--repo-path`);
+  every ready locale in the PR, reviewed by the author; `--sync` (merged = approved, closed =
+  rejected). Quantic's `main` can't be protected (private repo, free plan), so the author chose the
+  agent's guard plus a deploy check (quantic#486). `quantic_agent/github.py`: App JWT (PyJWT, RS256)
+  → installation token, cached; the only ref write is creating `refs/heads/agent/...`; no PATCH,
+  PUT or DELETE. `quantic_agent/publish.py` builds branch, files and description from the run as
+  stored. Migration 0006 (`pull_requests`, one per run, one open per week). Settings:
+  `QUANTIC_AGENT_GITHUB_APP_ID`, key file `~/.config/quantic-agent/github-app.pem` (refused unless
+  600), `QUANTIC_AGENT_REPO`; runbook §8b. First real PR: quantic#487, closed, synced as rejected
+  (`docs/benchmarks/2026-10-09-pull-request/`). From a Friday the 9B, told the date, still asked for 7
+  days: the question now says how many days away Sunday is (5/5 then); lesson 12.
 - design.md keeps Go's "As built in Go" notes next to this repository's "As built" notes.
 - PRs are squash-merged, so a walkthrough built from a branch commit cites a SHA `main` won't have.
   After merge, rebuild the walkthrough page from the merge commit and republish the artifact. That
@@ -80,10 +92,9 @@ starting point here.
 
 ## Next, in order
 
-1. **Milestone 12 — the GitHub PR flow** (README roadmap). Needs Quantic's `/insights` section
-   (design open question 2), built against milestone 11's files, and an answer to open question 12
-   (the Catalan, and machine-verified locales generally) before anything is published. How a merged
-   PR becomes an approval is undecided.
+1. **Milestone 13 — ship it**: logging, a systemd unit (README roadmap). The timer would run
+   `--week-ahead`, `--pr` and `--sync`. Quantic's `/insights` section (design open question 2) is
+   still unbuilt: merged posts land in `priv/insights/` with nothing rendering them.
 2. Ollama's truncation is invisible in its replies (only its log says `truncating input prompt`);
    detecting it from the agent is open.
 3. Seen in real runs, not caught: counts of a filtered subset ("four companies") are flagged though
@@ -93,7 +104,10 @@ starting point here.
    acceleration" for a slowing dividend; "safety remains strong" for one on watch), and phrasing
    that leans towards advice ("a stable alternative"). Numbers in words are recognised in English
    only, so a translation's "dues" passes.
-5. Ratios in get_stock (`cagr_5y` 0.1023) written as percentages ("10.23%") are flagged as
+5. Milestone 12's runs, 2026-10-09: 3 of 5 wrote "two" (the companies) in the prose after 3
+   attempts, nothing written, where milestone 11 had 19/20 on identical data. Unexplained; the prompt
+   itself says "two" twice. How to fix it is the author's decision.
+6. Ratios in get_stock (`cagr_5y` 0.1023) written as percentages ("10.23%") are flagged as
    converted figures, correctly by N1; a percentage calculator tool would let them through.
 
 ## Conventions
@@ -157,6 +171,18 @@ starting point here.
   JSON-RPC error instead. The SDK sends `tools/list` once per session, before the first `tools/call`.
 - The server's code is in `../quantic` on `main` (`lib/quantic_web/mcp/`). Fetch first: the local
   checkout lagged `origin/main` by three months.
+
+## GitHub, learned the hard way
+
+- Branch protection and rulesets are refused (403, "Upgrade to GitHub Pro") for a private repo on
+  the free plan. Quantic is one; quantic-agent, public, has its `main` protected.
+- An App's Contents write covers every branch, `main` included. Creating a ref that exists is a
+  422 ("Reference already exists"): creating, never updating, is what keeps `main` out of reach.
+- An App authenticates with a JWT (RS256, `iss` = App ID, at most 10 minutes) only to get an
+  installation token (1 hour) from `/repos/{repo}/installation` then
+  `/app/installations/{id}/access_tokens`; everything else uses the token.
+- `workflow_run.actor` is who pushed; `triggering_actor` who started the run, which a re-run
+  changes. A person's merge shows `type: User` in both.
 
 ## Ollama, learned the hard way
 

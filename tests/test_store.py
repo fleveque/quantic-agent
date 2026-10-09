@@ -104,6 +104,7 @@ def test_migrations_apply_once(tmp_path: Path) -> None:
         "embeddings",
         "examples",
         "posts",
+        "pull_requests",
         "reviews",
         "runs",
         "tool_calls",
@@ -112,7 +113,7 @@ def test_migrations_apply_once(tmp_path: Path) -> None:
 
 
 # The latest migration.
-HEAD = "0005"
+HEAD = "0006"
 
 
 def tables(path: Path) -> list[str]:

@@ -16,6 +16,7 @@ in the [runbook](../target-machine.md#5-run-the-benchmark).
 | [`2026-10-08-worker-pool/`](2026-10-08-worker-pool/README.md) | Milestone 9: the context window at 4096 and 32K; three questions one by one and as a batch | `qwen3.5:9b`, live quantic.finance data |
 | [`2026-10-08-retrieval/`](2026-10-08-retrieval/README.md) | Milestone 10: two embedding models on 12 labelled questions; brute-force search, plain Python against numpy; style memory in a real run | `qwen3-embedding:0.6b`, `nomic-embed-text`, `qwen3.5:9b` |
 | [`2026-10-08-week-ahead/`](2026-10-08-week-ahead/README.md) | Milestone 11: `quantic-agent --week-ahead` end to end, 25 runs; three writing prompts, 20 writings each; translations' lengths; one real post in seven locales | `qwen3.5:9b`, live quantic.finance data |
+| [`2026-10-09-pull-request/`](2026-10-09-pull-request/README.md) | Milestone 12: the first real `--pr` (quantic#487); research from a Friday, before and after the question says how far away Sunday is; 5 runs end to end; GitHub's replies to the App, live | `qwen3.5:9b`, live quantic.finance data, api.github.com |
 
 Common to both: RTX 4070 Ti Super 16GB (driver 610.57.04), Ryzen 7 7800X3D, 64GB RAM, Ollama 0.34.4,
 flash attention on, one parallel slot. The desktop was in normal use, holding about 1.2GB of VRAM

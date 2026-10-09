@@ -1,0 +1,10 @@
+{
+  "token": "ghs_installationtoken",
+  "expires_at": "2026-10-09T09:21:04Z",
+  "permissions": {
+    "contents": "write",
+    "metadata": "read",
+    "pull_requests": "write"
+  },
+  "repository_selection": "selected"
+}

@@ -97,6 +97,19 @@ class Post:
 
 
 @dataclass(frozen=True)
+class PullRequest:
+    """Where a run's post went for review, and its state when last looked at."""
+
+    repo: str
+    number: int
+    url: str
+    branch: str
+    period: str
+    state: str  # "open", "merged" or "closed"
+    run_id: int = 0
+
+
+@dataclass(frozen=True)
 class Review:
     """A reviewer's verdict on a run's answer."""
 
@@ -127,6 +140,7 @@ class Run:
     # The approved answers its writer was shown: (their run, similarity).
     examples: list[tuple[int, float]] = field(default_factory=lambda: list[tuple[int, float]]())
     posts: list[Post] = field(default_factory=lambda: list[Post]())  # a Week Ahead's files
+    pull_request: PullRequest | None = None
 
     def records(self) -> list[Record]:
         """The run's successful calls as provenance records: exactly what its
@@ -379,6 +393,44 @@ class Store:
             (run_id, verdict, note or None, self._stamp()),
         )
 
+    def record_pull_request(self, run_id: int, pr: PullRequest) -> None:
+        """Records the pull request a run's post was opened as. A run has at
+        most one: a second is refused by the table."""
+        self._db.execute(
+            "INSERT INTO pull_requests "
+            "(run_id, repo, number, url, branch, period, state, opened_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, 'open', ?)",
+            (run_id, pr.repo, pr.number, pr.url, pr.branch, pr.period, self._stamp()),
+        )
+
+    def open_pull_requests(self, period: str | None = None) -> list[PullRequest]:
+        """The pull requests last seen open, oldest first; only period's, if
+        given."""
+        rows = self._db.execute(
+            "SELECT repo, number, url, branch, period, state, run_id FROM pull_requests "
+            "WHERE state = 'open' AND (? IS NULL OR period = ?) ORDER BY id",
+            (period, period),
+        )
+        return [PullRequest(*row) for row in rows]
+
+    def decide_pull_request(self, run_id: int, merged: bool) -> None:
+        """Records that a run's pull request was merged or closed, and with
+        it the reviewer's verdict on the run: a merge approves it, a close
+        rejects it. One transaction, so the two never disagree."""
+        with self._transaction():
+            cursor = self._db.execute(
+                "UPDATE pull_requests SET state = ?, decided_at = ? "
+                "WHERE run_id = ? AND state = 'open'",
+                ("merged" if merged else "closed", self._stamp(), run_id),
+            )
+            if cursor.rowcount != 1:
+                raise NotFoundError(f"run {run_id} has no open pull request")
+            row = self._db.execute(
+                "SELECT repo, number FROM pull_requests WHERE run_id = ?", (run_id,)
+            ).fetchone()
+            how = "merged" if merged else "closed without merging"
+            self._verdict(run_id, "approved" if merged else "rejected", f"{row[0]}#{row[1]} {how}")
+
     def memories(self, model: str) -> list[memory.Memory]:
         """Every approved answer embedded with model: the style memory a
         writer can be shown. Only approved answers have vectors: approve
@@ -443,6 +495,12 @@ class Store:
                 (run_id,),
             )
         )
+        found = self._db.execute(
+            "SELECT repo, number, url, branch, period, state, run_id FROM pull_requests "
+            "WHERE run_id = ?",
+            (run_id,),
+        ).fetchone()
+        run.pull_request = PullRequest(*found) if found is not None else None
         run.posts = [
             Post(locale, status == "ready", content, json.loads(problems))
             for locale, status, content, problems in self._db.execute(

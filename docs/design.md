@@ -475,6 +475,17 @@ the rebuild needs no `PRAGMA` dance, and it ends with `PRAGMA foreign_key_check`
   fails CI rather than a request.
 - **Issues** — for data-QA findings with no mechanical fix.
 
+**As built (milestone 12, [`github.py`](../src/quantic_agent/github.py),
+[`publish.py`](../src/quantic_agent/publish.py), [decision 0014](decisions/0014-pull-requests-as-a-github-app.md)).**
+"`main` is protected independently" turned out false for Quantic: a private repository on a plan
+that can't protect branches. The agent acts as a GitHub App (Contents and Pull requests write,
+installed on that repository only), and its client can only *create* a ref, under `agent/`: GitHub
+refuses to create one that exists, so `main` can't be written through it. Quantic's deploy refuses a
+push to `main` by a bot. `--pr N` commits a Week Ahead run's ready posts, as stored, in one commit
+under `priv/insights/<slug>/` and opens the pull request; `--sync` records a merge as the run's
+approval and a close as its rejection. The review queue is the pull requests themselves: no HTTP
+view was needed.
+
 ## 4. Stack
 
 | Concern | Choice | Reasoning |

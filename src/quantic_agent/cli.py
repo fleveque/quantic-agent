@@ -16,7 +16,10 @@ examples of the house voice, and --recall shows which those would be.
 --week-ahead researches next week's ex-dividend dates the same way, then
 writes the Dividend Week Ahead in every locale into --out, one folder per
 week: the data from the tool results, the prose by the model, with no
-figures in it, translated and checked locale by locale.
+figures in it, translated and checked locale by locale. --pr N opens a pull
+request with a Week Ahead run's files on Quantic's repository, as a GitHub
+App; the agent never merges. --sync reads back what became of its pull
+requests: a merge records the run as approved, a close as rejected.
 
 Exit status: 0 success, 1 failure (including --timeout running out), 2 wrong
 usage, 3 the model server or the MCP server wasn't there to answer (or
@@ -41,7 +44,17 @@ from importlib.metadata import version
 from pathlib import Path
 from typing import TextIO
 
-from quantic_agent import agent, llm, memory, provenance, quantic, store, weekahead
+from quantic_agent import (
+    agent,
+    github,
+    llm,
+    memory,
+    provenance,
+    publish,
+    quantic,
+    store,
+    weekahead,
+)
 from quantic_agent.tools import DIVIDEND_CALENDAR, GET_STOCK
 
 # The safe choice for the target hardware (design §4): it fits any 16GB card
@@ -127,6 +140,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         action="store_true",
         help="write the Dividend Week Ahead for next week, in every locale, into --out",
     )
+    action.add_argument(
+        "--pr",
+        type=int,
+        metavar="N",
+        help="open a pull request with Week Ahead run N's files, for review (see --repo)",
+    )
+    action.add_argument(
+        "--sync",
+        action="store_true",
+        help="record what became of the agent's pull requests: merged approves, closed rejects",
+    )
     action.add_argument("--runs", action="store_true", help="list recent research runs")
     action.add_argument(
         "--run",
@@ -161,6 +185,19 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=os.environ.get("QUANTIC_AGENT_OUT") or "insights",
         metavar="DIR",
         help="where --week-ahead writes its files (default: $QUANTIC_AGENT_OUT, else %(default)s)",
+    )
+    parser.add_argument(
+        "--repo",
+        default=os.environ.get("QUANTIC_AGENT_REPO") or "",
+        metavar="OWNER/NAME",
+        help="the repository --pr opens pull requests on (default: $QUANTIC_AGENT_REPO)",
+    )
+    parser.add_argument(
+        "--repo-path",
+        default=os.environ.get("QUANTIC_AGENT_REPO_PATH") or "priv/insights",
+        metavar="PATH",
+        help="where in the repository a post's folder goes "
+        "(default: $QUANTIC_AGENT_REPO_PATH, else %(default)s)",
     )
     parser.add_argument("--note", default="", help="a reviewer's note, with --approve or --reject")
     parser.add_argument(
@@ -202,6 +239,12 @@ def main(argv: Sequence[str] | None = None) -> int:
                 return EXIT_FAILED
         _error(f"run {args.reject} rejected")
         return EXIT_OK
+    if args.pr is not None or args.sync:
+        try:
+            return asyncio.run(_github_task(args))
+        except KeyboardInterrupt, asyncio.CancelledError:
+            _error("stopped; the request in flight was cancelled")
+            return EXIT_INTERRUPTED
     wanted = (
         args.check,
         args.ask,
@@ -736,6 +779,129 @@ def _save_post(folder: Path, posts: Sequence[store.Post]) -> None:
             path.unlink(missing_ok=True)
 
 
+def default_key_path() -> Path:
+    """Where the GitHub App's private key lives by default: configuration,
+    by the XDG convention, readable by its owner alone."""
+    config = os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config"
+    return Path(config) / "quantic-agent" / "github-app.pem"
+
+
+class SettingsError(Exception):
+    """A setting --pr or --sync needs is missing or unsafe."""
+
+
+def github_client(repo: str) -> github.Client:
+    """A client for repo, as the App. Its ID comes from
+    $QUANTIC_AGENT_GITHUB_APP_ID, its private key from the file named by
+    $QUANTIC_AGENT_GITHUB_KEY (default: default_key_path()). A key anyone but
+    its owner can read is refused, as ssh refuses one."""
+    if not repo:
+        raise SettingsError("no repository: give --repo OWNER/NAME or set QUANTIC_AGENT_REPO")
+    app_id = os.environ.get("QUANTIC_AGENT_GITHUB_APP_ID", "")
+    if not app_id:
+        raise SettingsError("no GitHub App: set QUANTIC_AGENT_GITHUB_APP_ID (runbook §8b)")
+    path = Path(os.environ.get("QUANTIC_AGENT_GITHUB_KEY") or default_key_path())
+    try:
+        if path.stat().st_mode & 0o077:
+            raise SettingsError(f"{path} is readable by others: chmod 600 {path}")
+        key = path.read_text()
+    except OSError as err:
+        raise SettingsError(f"the GitHub App's private key: {err}") from err
+    return github.Client(
+        repo, app_id, key, base_url=os.environ.get("QUANTIC_AGENT_GITHUB_API") or github.API_URL
+    )
+
+
+async def _github_task(args: argparse.Namespace) -> int:
+    """--pr or --sync: the store and GitHub, no model."""
+    cancel_on_sigterm()
+    with store.Store(args.db) as db:
+        try:
+            async with asyncio.timeout(args.timeout or None):
+                if args.pr is not None:
+                    return await _open_pr(db, args)
+                return await _sync(db, args)
+        except SettingsError as err:
+            _error(str(err))
+            return EXIT_FAILED
+        except TimeoutError:
+            return _gave_up(args.timeout)
+        except github.UnavailableError as err:
+            _error(f"GitHub didn't answer: {err}")
+            return EXIT_UNAVAILABLE
+        except github.GitHubError as err:
+            _error(str(err))
+            return EXIT_FAILED
+
+
+async def _open_pr(db: store.Store, args: argparse.Namespace) -> int:
+    """Opens a pull request with a Week Ahead run's ready files. One per run,
+    and one open at a time per week: a second for the same week waits until
+    the first is merged or closed, and --sync has seen it."""
+    try:
+        run = db.run(args.pr)
+    except store.NotFoundError:
+        _error(f"there is no run {args.pr}")
+        return EXIT_FAILED
+    if run.pull_request is not None:
+        _error(f"run {run.id} already has a pull request: {run.pull_request.url}")
+        return EXIT_FAILED
+    try:
+        proposal = publish.proposal(run, args.repo_path)
+    except publish.NotPublishableError as err:
+        _error(str(err))
+        return EXIT_FAILED
+    for other in db.open_pull_requests(proposal.period):
+        _error(
+            f"{proposal.period} already has an open pull request, {other.url} (run "
+            f"{other.run_id}). Merge or close it, then: quantic-agent --sync"
+        )
+        return EXIT_FAILED
+    async with github_client(args.repo) as gh:
+        pr = await gh.open_pull_request(
+            proposal.branch,
+            proposal.files,
+            message=proposal.message,
+            title=proposal.title,
+            body=proposal.body,
+        )
+    db.record_pull_request(
+        run.id,
+        store.PullRequest(
+            args.repo, pr.number, pr.html_url, proposal.branch, proposal.period, "open"
+        ),
+    )
+    print(pr.html_url)
+    _error(f"run {run.id}: pull request #{pr.number}, {len(proposal.files)} file(s), for review")
+    return EXIT_OK
+
+
+async def _sync(db: store.Store, args: argparse.Namespace) -> int:
+    """Looks at every pull request last seen open and records what became of
+    it. A merge approves its run and a close rejects it, which is the accept
+    rate of design open question 3."""
+    waiting = db.open_pull_requests()
+    if not waiting:
+        print("no open pull requests")
+        return EXIT_OK
+    clients: dict[str, github.Client] = {}
+    try:
+        for pr in waiting:
+            if pr.repo not in clients:
+                clients[pr.repo] = github_client(pr.repo)
+            now = await clients[pr.repo].pull_request(pr.number)
+            if now.state == "open":
+                print(f"run {pr.run_id}: {pr.url} still open")
+                continue
+            db.decide_pull_request(pr.run_id, now.merged)
+            outcome = "merged: approved" if now.merged else "closed: rejected"
+            print(f"run {pr.run_id}: {pr.url} {outcome}")
+    finally:
+        for client in clients.values():
+            await client.aclose()
+    return EXIT_OK
+
+
 def _manifest(calls: Sequence[agent.Call]) -> provenance.Manifest:
     """The successful calls' results, indexed: failed calls aren't data."""
     return provenance.Manifest(provenance.Record(c.tool, c.result) for c in calls if not c.failed)
@@ -829,6 +995,8 @@ def _show_post(run: store.Run) -> int:
     """A Week Ahead run's post: each locale's status, the English file, and
     its provenance re-checked: the data against the stored tool results, and
     the prose for figures, which it must not have."""
+    if run.pull_request is not None:
+        print(f"pull request: {run.pull_request.url} ({run.pull_request.state})")
     for post in run.posts:
         print(f"post {post.locale}: {'ready' if post.ready else 'held'}", end="")
         print(f": {'; '.join(post.problems)}" if post.problems else "")
