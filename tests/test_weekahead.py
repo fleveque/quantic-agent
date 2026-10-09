@@ -295,3 +295,17 @@ def test_the_question_says_what_today_is() -> None:
         "Today is Thursday 2026-10-08. Gather the data for the Dividend Week Ahead, "
         "for the week from Monday 2026-10-12 to Sunday 2026-10-18:"
     )
+
+
+@pytest.mark.parametrize(
+    ("today", "days"),
+    [
+        (date(2026, 10, 5), 13),
+        (date(2026, 10, 8), 10),
+        (date(2026, 10, 9), 9),
+        (date(2026, 10, 11), 7),
+    ],
+)
+def test_the_question_says_how_far_away_sunday_is(today: date, days: int) -> None:
+    # Told only the date, the model asked for 7 days from a Friday: 2 short.
+    assert weekahead.question(today).endswith(f"Sunday 2026-10-18 is {days} days from today.")

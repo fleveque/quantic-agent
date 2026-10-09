@@ -793,7 +793,7 @@ def test_week_ahead_writes_every_locale(
         "Today is Thursday 2026-10-08. "
         "Gather the data for the Dividend Week Ahead, for the week from Monday 2026-10-12 "
         "to Sunday 2026-10-18: find every company that goes ex-dividend in that week, and "
-        "look up each one.",
+        "look up each one. Sunday 2026-10-18 is 10 days from today.",
     )
     # The two lookups ran at once, recorded in the order they finished.
     calendar, *lookups = [(c.tool, c.arguments) for c in run.calls]

@@ -393,18 +393,24 @@ def github_api(app_key: tuple[str, str]) -> Iterator[FakeGitHub]:
         def _route(self, method: str, path: str, body: Any, auth: str) -> tuple[int, Any]:
             bearer = auth.removeprefix("Bearer ")
             repo = f"/repos/{fake.repo}"
-            if path in (f"{repo}/installation", "/app/installations/42/access_tokens"):
+            installation = github_fixture("installation.json")
+            if path in (
+                f"{repo}/installation",
+                f"/app/installations/{installation['id']}/access_tokens",
+            ):
                 try:
                     jwt.decode(bearer, fake.public_key, algorithms=["RS256"])
-                except jwt.PyJWTError as err:
-                    return 401, {"message": f"A JSON web token could not be decoded: {err}"}
+                except jwt.PyJWTError:
+                    return 401, github_fixture("wrong-key.json")
                 if method == "GET":
-                    return 200, {"id": 42, "app_id": 1, "account": {"login": "fleveque"}}
+                    return 200, installation
                 fake.tokens_issued += 1
-                expires = time.strftime(
+                reply = github_fixture("access-token.json")
+                reply["token"] = fake.token
+                reply["expires_at"] = time.strftime(
                     "%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() + fake.token_lifetime)
                 )
-                return 201, {"token": fake.token, "expires_at": expires}
+                return 201, reply
             if not path.startswith(f"{repo}/"):
                 return 404, github_fixture("not-found.json")
             if bearer != fake.token:
@@ -437,11 +443,7 @@ def github_api(app_key: tuple[str, str]) -> Iterator[FakeGitHub]:
                 return 201, reply
             if method == "POST" and rest == "git/refs":
                 if body["ref"] in fake.refs:
-                    return 422, {
-                        "message": "Reference already exists",
-                        "documentation_url": "https://docs.github.com/rest/git/refs#create-a-reference",
-                        "status": "422",
-                    }
+                    return 422, github_fixture("ref-exists.json")
                 fake.refs[body["ref"]] = body["sha"]
                 reply = github_fixture("ref.json")
                 reply["ref"], reply["object"]["sha"] = body["ref"], body["sha"]

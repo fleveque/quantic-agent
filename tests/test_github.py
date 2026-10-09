@@ -71,10 +71,11 @@ async def test_a_pull_request_is_one_new_branch_and_one_commit(
     assert pr.html_url == "https://github.com/fleveque/quantic/pull/100"
     repo = "/repos/fleveque/quantic"
     main = github_fixture("ref.json")["object"]["sha"]
+    installation = github_fixture("installation.json")["id"]
     calls = [(method, path) for method, path, _, _ in github_api.requests]
     assert calls == [
         ("GET", f"{repo}/installation"),
-        ("POST", "/app/installations/42/access_tokens"),
+        ("POST", f"/app/installations/{installation}/access_tokens"),
         ("GET", f"{repo}/git/ref/heads/main"),
         ("GET", f"{repo}/git/commits/{main}"),
         ("POST", f"{repo}/git/trees"),

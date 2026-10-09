@@ -103,13 +103,17 @@ def question(today: date) -> str:
     """What the research loop is asked, for the week after today. It says
     what today is: the calendar counts its days from today, and a model not
     told the date asked for seven of them, which from a Thursday stops short
-    of the week's Sunday (docs/benchmarks/2026-10-08-week-ahead/)."""
+    of the week's Sunday (docs/benchmarks/2026-10-08-week-ahead/). It also
+    says how many days away that Sunday is: told the date but left to count,
+    the model still asked for seven from a Friday (docs/benchmarks/
+    2026-10-09-pull-request/)."""
     week = week_after(today)
+    days = (week.end - today).days
     return (
         f"Today is {today:%A} {today.isoformat()}. Gather the data for the Dividend Week "
         f"Ahead, for the week from Monday {week.start.isoformat()} to Sunday "
         f"{week.end.isoformat()}: find every company that goes ex-dividend in that week, "
-        "and look up each one."
+        f"and look up each one. Sunday {week.end.isoformat()} is {days} days from today."
     )
 
 
