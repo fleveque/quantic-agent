@@ -74,7 +74,9 @@ starting point here.
   PUT or DELETE. `quantic_agent/publish.py` builds branch, files and description from the run as
   stored. Migration 0006 (`pull_requests`, one per run, one open per week). Settings:
   `QUANTIC_AGENT_GITHUB_APP_ID`, key file `~/.config/quantic-agent/github-app.pem` (refused unless
-  600), `QUANTIC_AGENT_REPO`; runbook §8b; lesson 12.
+  600), `QUANTIC_AGENT_REPO`; runbook §8b. First real PR: quantic#487, closed, synced as rejected
+  (`docs/benchmarks/2026-10-09-pull-request/`). From a Friday the 9B, told the date, still asked for 7
+  days: the question now says how many days away Sunday is (5/5 then); lesson 12.
 - design.md keeps Go's "As built in Go" notes next to this repository's "As built" notes.
 - PRs are squash-merged, so a walkthrough built from a branch commit cites a SHA `main` won't have.
   After merge, rebuild the walkthrough page from the merge commit and republish the artifact. That
@@ -102,7 +104,10 @@ starting point here.
    acceleration" for a slowing dividend; "safety remains strong" for one on watch), and phrasing
    that leans towards advice ("a stable alternative"). Numbers in words are recognised in English
    only, so a translation's "dues" passes.
-5. Ratios in get_stock (`cagr_5y` 0.1023) written as percentages ("10.23%") are flagged as
+5. Milestone 12's runs, 2026-10-09: 3 of 5 wrote "two" (the companies) in the prose after 3
+   attempts, nothing written, where milestone 11 had 19/20 on identical data. Unexplained; the prompt
+   itself says "two" twice. How to fix it is the author's decision.
+6. Ratios in get_stock (`cagr_5y` 0.1023) written as percentages ("10.23%") are flagged as
    converted figures, correctly by N1; a percentage calculator tool would let them through.
 
 ## Conventions

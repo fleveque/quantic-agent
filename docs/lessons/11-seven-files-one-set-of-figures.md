@@ -177,4 +177,5 @@ has to do the rest.
 
 ---
 
-**Previous:** [Lesson 10 — A memory for the house voice](10-a-memory-for-the-house-voice.md)
+**Previous:** [Lesson 10 — A memory for the house voice](10-a-memory-for-the-house-voice.md) ·
+**Next:** [Lesson 12 — A merge is a verdict](12-a-merge-is-a-verdict.md)
