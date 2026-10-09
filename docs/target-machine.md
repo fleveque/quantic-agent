@@ -55,8 +55,8 @@ The agent never downloads models itself. That's deliberate: these are 6–14GB e
 explicit configuration, so pulling is an explicit step.
 
 ```sh
-ollama pull qwen3.5:9b                                   # 6.6 GB  — the safe default
-ollama pull hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S      # 13.0 GB — primary candidate, ~3.45 bits/weight
+ollama pull hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S      # 13.0 GB — the default, ~3.45 bits/weight
+ollama pull qwen3.5:9b                                   # 6.6 GB  — the previous default, fast
 ollama pull hf.co/unsloth/Qwen3.8-27B-GGUF:UD-Q3_K_XL    # 14.1 GB — quality step, less room for context
 ollama pull qwen3-embedding:0.6b                         # 0.6 GB  — style memory's embeddings
 ollama pull nomic-embed-text                             # 0.3 GB  — only to compare (quantic-evalrecall)
@@ -135,7 +135,9 @@ Keep both files as evidence — `docs/benchmarks/YYYY-MM-DD-bench.json` — and 
 1. **Answer open question 9**: Qwen3.8-27B at `UD-IQ3_S` or `UD-Q3_K_XL`, or stay on the 9B. The 27B
    wins only if it stays at 100% on GPU at the context sizes the research loop needs, at a usable
    speed.
-2. **Record the choice in design §4**, and change the agent's default model if the 27B wins.
+2. **Record the choice in design §4**, and change the agent's default model if the 27B wins. *(It
+   did, on the agent's work, though it doesn't fit entirely on the GPU: decision 0005's update of
+   2026-10-09.)*
 3. **Set milestone 8's budgets** (design §3.2) from measured tokens/second rather than guesses.
 
 Speed and fit are only half the answer for a sub-4-bit model: tool-call accuracy is the other half,
@@ -331,6 +333,6 @@ this on a trusted LAN, ideally with a firewall rule limiting port 11434 to the l
 | `422 Reference already exists` | That run's branch exists from an earlier attempt | Delete the branch on GitHub, then `--pr N` again |
 | `already has an open pull request` | Another run's pull request for the same week is open | Merge or close it, then `quantic-agent --sync` |
 | `only research answers can be approved` | `--approve` on a Week Ahead run | Its review is the pull request (milestone 12) |
-| `gave up after 300s (--timeout)` | The run took longer than `--timeout`: a slow model at a long context, or a stuck server | Raise `--timeout` (seconds; 0 for no limit), or check `ollama ps` for a model that spilled into system RAM. Too short a timeout during a cold load aborts the load |
+| `gave up after 600s (--timeout)` | The run took longer than `--timeout`: a slow model at a long context, or a stuck server | Raise `--timeout` (seconds; 0 for no limit), or check `ollama ps` for a model that spilled into system RAM. Too short a timeout during a cold load aborts the load |
 | `ON GPU 0% (CPU)` on the desktop | Ollama not using the GPU | `nvidia-smi`; `journalctl -u ollama -b \| grep -iE 'cuda\|gpu'` |
 | 64K row much slower than 32K, `ON GPU` below 100% | Cache no longer fits beside the weights | Expected at the limit — that's the measurement. Try section 6. |

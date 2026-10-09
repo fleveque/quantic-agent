@@ -1,0 +1,44 @@
+# Full --week-ahead runs, qwen3.5:9b, 2026-10-09 (a Friday), the week 2026-W42. One line per run.
+# Morning, 5 runs (docs/benchmarks/2026-10-09-pull-request/):
+morning run 1: tool dividend_calendar {"days": 9} tool get_stock {"symbol": "AAPL"} tool get_stock {"symbol": "PG"} tool get_stock {"symbol": "KO"} tool get_stock {"symbol": "IBE.MC"} quantic-agent: prose written in 3 attempt(s) quantic-agent: it: held: summary: 4.08 times as long as the English, outside 0.75-1.75 
+morning run 2: tool dividend_calendar {"days": 9} tool get_stock {"symbol": "KO"} tool get_stock {"symbol": "PG"} quantic-agent: prose written in 3 attempt(s) quantic-agent: after 3 attempts the prose still has figures: nothing written 
+morning run 3: tool dividend_calendar {"days": 9} tool get_stock {"symbol": "PG"} tool get_stock {"symbol": "KO"} quantic-agent: prose written in 3 attempt(s) 
+morning run 4: tool dividend_calendar {"days": 9} tool get_stock {"symbol": "PG"} tool get_stock {"symbol": "KO"} quantic-agent: prose written in 3 attempt(s) quantic-agent: after 3 attempts the prose still has figures: nothing written 
+morning run 5: tool dividend_calendar {"days": 9} tool get_stock {"symbol": "AAPL"} tool get_stock {"symbol": "PG"} tool get_stock {"symbol": "IBE.MC"} tool get_stock {"symbol": "KO"} quantic-agent: prose written in 3 attempt(s) quantic-agent: after 3 attempts the prose still has figures: nothing written 
+# Second batch, 15 runs, the merged question:
+batch2 run 1 exit 0 quantic-agent: prose written in 2 attempt(s) 
+batch2 run 2 exit 1 quantic-agent: research didn't gather the whole week: not looked up with get_stock: PG, KO 
+batch2 run 3 exit 0 quantic-agent: prose written in 3 attempt(s) 
+batch2 run 4 exit 0 quantic-agent: prose written in 3 attempt(s) 
+batch2 run 5 exit 1 quantic-agent: research didn't gather the whole week: not looked up with get_stock: PG, KO 
+batch2 run 6 exit 0 quantic-agent: prose written in 3 attempt(s) 
+batch2 run 7 exit 1 quantic-agent: research didn't gather the whole week: not looked up with get_stock: PG, KO 
+batch2 run 8 exit 0 quantic-agent: prose written in 1 attempt(s) 
+batch2 run 9 exit 0 quantic-agent: prose written in 2 attempt(s) 
+batch2 run 10 exit 0 quantic-agent: prose written in 2 attempt(s) 
+batch2 run 11 exit 0 quantic-agent: prose written in 3 attempt(s) 
+batch2 run 12 exit 0 quantic-agent: prose written in 3 attempt(s) 
+batch2 run 13 exit 0 quantic-agent: prose written in 3 attempt(s) 
+batch2 run 14 exit 0 quantic-agent: prose written in 1 attempt(s) 
+batch2 run 15 exit 0 quantic-agent: prose written in 3 attempt(s) 
+# Third batch, 20 runs, the day count moved inside the week's description (not merged):
+batch3 run 1 exit 0 tool dividend_calendar {"days": 9} tool get_stock {"symbol": "KO"} tool get_stock {"symbol": "PG"} tool get_stock {"symbol": "IBE.MC"} tool get_stock {"symbol": "AAPL"} quantic-agent: prose written in 3 attempt(s) 
+batch3 run 2 exit 4 tool dividend_calendar {"days": 9} tool get_stock {"symbol": "PG"} tool get_stock {"symbol": "KO"} quantic-agent: prose written in 3 attempt(s) quantic-agent: after 3 attempts the prose still has figures: nothing written 
+batch3 run 3 exit 0 tool dividend_calendar {"days": 9} tool get_stock {"symbol": "AAPL"} tool get_stock {"symbol": "PG"} tool get_stock {"symbol": "KO"} tool get_stock {"symbol": "IBE.MC"} quantic-agent: prose written in 1 attempt(s) 
+batch3 run 4 exit 0 tool dividend_calendar {"days": 9} tool get_stock {"symbol": "KO"} tool get_stock {"symbol": "PG"} quantic-agent: prose written in 2 attempt(s) 
+batch3 run 5 exit 4 tool dividend_calendar {"days": 9} tool get_stock {"symbol": "KO"} tool get_stock {"symbol": "PG"} quantic-agent: prose written in 3 attempt(s) quantic-agent: after 3 attempts the prose still has figures: nothing written 
+batch3 run 6 exit 0 tool dividend_calendar {"days": 9} tool get_stock {"symbol": "KO"} tool get_stock {"symbol": "PG"} quantic-agent: prose written in 3 attempt(s) 
+batch3 run 7 exit 0 tool dividend_calendar {"days": 9} tool get_stock {"symbol": "PG"} tool get_stock {"symbol": "KO"} quantic-agent: prose written in 3 attempt(s) 
+batch3 run 8 exit 0 tool dividend_calendar {"days": 9} tool get_stock {"symbol": "IBE.MC"} tool get_stock {"symbol": "KO"} tool get_stock {"symbol": "PG"} quantic-agent: prose written in 2 attempt(s) 
+batch3 run 9 exit 0 tool dividend_calendar {"days": 9} tool get_stock {"symbol": "PG"} tool get_stock {"symbol": "IBE.MC"} tool get_stock {"symbol": "AAPL"} tool get_stock {"symbol": "KO"} quantic-agent: prose written in 3 attempt(s) 
+batch3 run 10 exit 0 tool dividend_calendar {"days": 9} tool get_stock {"symbol": "PG"} tool get_stock {"symbol": "KO"} quantic-agent: prose written in 1 attempt(s) 
+batch3 run 11 exit 0 tool dividend_calendar {"days": 9} tool get_stock {"symbol": "KO"} tool get_stock {"symbol": "PG"} quantic-agent: prose written in 3 attempt(s) 
+batch3 run 12 exit 0 tool dividend_calendar {"days": 9} tool get_stock {"symbol": "KO"} tool get_stock {"symbol": "PG"} quantic-agent: prose written in 3 attempt(s) 
+batch3 run 13 exit 0 tool dividend_calendar {"days": 9} tool get_stock {"symbol": "PG"} tool get_stock {"symbol": "KO"} quantic-agent: prose written in 2 attempt(s) 
+batch3 run 14 exit 0 tool dividend_calendar {"days": 9} tool get_stock {"symbol": "PG"} tool get_stock {"symbol": "KO"} tool get_stock {"symbol": "IBE.MC"} tool get_stock {"symbol": "AAPL"} quantic-agent: prose written in 1 attempt(s) 
+batch3 run 15 exit 4 tool dividend_calendar {"days": 9} tool get_stock {"symbol": "AAPL"} tool get_stock {"symbol": "IBE.MC"} tool get_stock {"symbol": "PG"} tool get_stock {"symbol": "KO"} quantic-agent: prose written in 3 attempt(s) quantic-agent: after 3 attempts the prose still has figures: nothing written 
+batch3 run 16 exit 1 tool dividend_calendar {"days": 9} quantic-agent: research didn't gather the whole week: not looked up with get_stock: PG, KO 
+batch3 run 17 exit 4 tool dividend_calendar {"days": 9} tool get_stock {"symbol": "KO"} tool get_stock {"symbol": "PG"} quantic-agent: prose written in 3 attempt(s) quantic-agent: after 3 attempts the prose still has figures: nothing written 
+batch3 run 18 exit 1 tool dividend_calendar {"days": 9} quantic-agent: research didn't gather the whole week: not looked up with get_stock: PG, KO 
+batch3 run 19 exit 0 tool dividend_calendar {"days": 9} tool get_stock {"symbol": "KO"} tool get_stock {"symbol": "PG"} quantic-agent: prose written in 3 attempt(s) 
+batch3 run 20 exit 0 tool dividend_calendar {"days": 9} tool get_stock {"symbol": "PG"} tool get_stock {"symbol": "KO"} quantic-agent: prose written in 1 attempt(s) 

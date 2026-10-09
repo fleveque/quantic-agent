@@ -1,0 +1,19 @@
+# The Week Ahead's prose alone (weekahead.write), 20 writings per version from fixed live data:
+# "this" = 2026-W42 (Procter & Gamble, Coca-Cola), "busy" = 2026-W43 (Banco Santander, Verizon,
+# Diageo), the busiest week within 45 days. qwen3.5:9b, think off, num_ctx 32768, up to 3 attempts.
+# "figures" counts every figure in every attempt, by word.
+
+merged prompt (milestone 11)
+this   2 companies  published 19/20  attempts {1: 1, 2: 9, 3: 10}  figures {'two': 33}
+busy   3 companies  published 20/20  attempts {1: 2, 2: 11, 3: 7}  figures {'three': 22, 'four': 10, 'two': 8, 'nineteen': 4}
+
+reworded prompt (no "two" in its own wording; "name each one instead of counting them") + retry ("Where you counted the companies, name them instead.")
+this   2 companies  published 18/20  attempts {1: 2, 2: 8, 3: 10}  figures {'two': 34, 'twenty-eight': 2}
+busy   3 companies  published 13/20  attempts {1: 1, 2: 7, 3: 12}  figures {'three': 34, 'two': 12, 'nineteen': 12, 'four': 11}
+
+merged prompt + the new retry only
+this   2 companies  published 18/20  attempts {2: 10, 3: 10}  figures {'two': 41, '2020': 1, 'three': 1}
+busy   3 companies  published 15/20  attempts {1: 1, 2: 4, 3: 15}  figures {'three': 26, 'four': 23, 'nineteen': 16, 'two': 13, 'twenty': 3}
+
+# "four" and "nineteen" are streak lengths in words (Banco Santander's 4, Verizon's 19), caught.
+# Neither change was merged.
