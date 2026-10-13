@@ -273,7 +273,7 @@ def test_research_records_the_run(
     [run] = stored_runs(isolated_state)
     assert (run.input, run.model, run.state, run.phase) == (
         "next 10 days?",
-        "qwen3.5:9b",
+        cli.DEFAULT_MODEL,
         store.State.ANSWERED,
         store.Phase.DONE,
     )

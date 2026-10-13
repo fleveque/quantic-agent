@@ -35,7 +35,8 @@ defensive giants", "two established consumer staples leaders"), though the promp
 Yesterday the same prompt on the same data published within 3 attempts 19 times of 20, and in 10
 full runs of 10. Nothing found yet explains the difference; the writer isn't shown the question, so
 today's change to it doesn't reach it. The prompt itself says "two" twice ("Write two fields", "two
-or three sentences").
+or three sentences"). Later the same day, 35 more runs and two reworded prompts: the
+[model comparison](../2026-10-09-models/README.md), which made Qwen3.8-27B the default.
 
 ## The pull request
 

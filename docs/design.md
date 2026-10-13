@@ -364,7 +364,7 @@ The interesting shape: **one GPU, many network calls.**
   cancels the request in flight and exits with 130; Ollama stops generating within about a second,
   so stopping the agent gives the GPU back straight away. *(As built, milestone 4: the agent is
   async ([decision 0008](decisions/0008-async-for-deadlines-and-cancellation.md)). The model client
-  has no timeout of its own; `--timeout` bounds a run with `asyncio.timeout`, default five minutes,
+  has no timeout of its own; `--timeout` bounds a run with `asyncio.timeout`, default ten minutes,
   and both signals cancel the main task. Measured: Ollama's log shows the cancelled generation
   stopped, and a cancelled cold load aborted.)* The runbook has the commands ([target machine §8](target-machine.md#9-freeing-the-gpu)).
 - **As built in Go (milestone 8).** A run is checkpointed in SQLite when research ends (`runs.phase`:
@@ -491,8 +491,8 @@ view was needed.
 | Concern | Choice | Reasoning |
 |---|---|---|
 | Inference server | Ollama | Three model tiers behind one endpoint with load/unload on demand, embeddings on the same server, and per-model capability metadata. `llama.cpp` stays the escape hatch ([llm-kit](https://github.com/fleveque/llm-kit)) with explicit triggers — [decision 0004](decisions/0004-ollama-now-llama-cpp-on-a-trigger.md). |
-| Default model | Qwen3.5-9B, Q4_K_M (6.6GB) | Measured on the target card: 100% on GPU up to 64K context (8.0GB), about 80 generated and 4,400–5,000 prompt tokens/second — [decision 0005](decisions/0005-default-model-by-measurement.md). |
-| Candidates | `qwen3.6:35b` (MoE); Qwen3.8-27B `UD-IQ3_S` | The MoE writes at ~70 tokens/second even with 44% of itself in system RAM; the dense 27B fits fully only at 8K. Decided on task quality from milestone 5, not on speed or size. |
+| Default model | Qwen3.8-27B `UD-IQ3_S` (14GB at 32K, 86% on GPU) | Chosen on the agent's own work ([decision 0005](decisions/0005-default-model-by-measurement.md), update of 2026-10-09): 20 of 20 Week Aheads against about 7 in 10 for the 9B, and better research. Slower, which background work can afford. Qwen3.5-9B Q4_K_M (6.6GB, about 80 generated tokens/second) stays one flag away. |
+| Candidates | `qwen3.6:35b` (MoE) | Writes at ~70 tokens/second even with 44% of itself in system RAM. Not measured on the agent's work yet. |
 | Fast model | Qwen3.5-4B (3.4GB) | Mechanical passes — data-QA triage, classification — where a 9B is overkill. |
 | Embeddings | `qwen3-embedding:0.6b` via Ollama | Chosen over `nomic-embed-text` by measurement at milestone 10 ([decision 0012](decisions/0012-style-memory.md)): 10 of 12 against 8, 2.4GB of VRAM. |
 | Model I/O | JSON-schema-constrained decoding | Local models are flakier at native tool-calling than frontier models; constrained output is the reliable floor, native tool-calling an optimisation. |
@@ -597,6 +597,8 @@ refused Qwen3.5 outright with a `412: requires a newer version of Ollama`.
    The deciding numbers are tokens/second and GPU residency at realistic research-context lengths —
    where the 27B's cache stops fitting — and, from milestone 5, tool-call validity at 3-point-something
    bits. Nothing in the code depends on the answer — it is one flag.
+   *(Answered 2026-10-09, on the agent's work rather than speed: the 27B `UD-IQ3_S`, at 32K with 86%
+   on the GPU. [Benchmarks](benchmarks/2026-10-09-models/README.md).)*
 
    The benchmark (`cmd/bench` in Go) measures it: prompt and generation rates per model and context size, plus the share of
    each model that stayed in VRAM (`/api/ps` reports `size` against `size_vram`, and anything below
@@ -634,7 +636,9 @@ refused Qwen3.5 outright with a `412: requires a newer version of Ollama`.
     short, Spanish words, a misspelling). The options include a larger model for translation only,
     the reviewer reading Catalan as well as Spanish, or publishing fewer locales until a model
     translates well enough, which needs a way to measure translation quality. *Needed before
-    milestone 12 publishes anything.*
+    milestone 12 publishes anything.* *(2026-10-09: the 27B's Catalan is better than the 9B's and
+    still has errors a reader sees ("augmentos", "segureta"). A larger local model alone doesn't
+    answer it. [Benchmarks](benchmarks/2026-10-09-models/README.md).)*
 
 ## 6. Explicit non-goals
 

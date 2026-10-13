@@ -82,6 +82,28 @@ schema is ignored about as often either way, so the agent enforces it in code an
 which then retries correctly. The answer can still overstate what the data covers, which is what the
 provenance validator (milestone 6) is for.
 
+## Update, 2026-10-09: the 27B becomes the default
+
+Milestones 11 and 12 gave the quality measurement this decision waited for: the agent's own work,
+end to end ([benchmarks](../benchmarks/2026-10-09-models/README.md)). On the same day and data,
+Qwen3.8-27B `UD-IQ3_S` published 20 Week Aheads of 20, where `qwen3.5:9b` published about 24 of 35:
+the 9B stopped researching after the calendar in 5 runs of 40 and kept a figure ("two") in its prose
+after three attempts in 7 of 35, and no prompt change tried fixed the latter. On research, the 27B
+scored 48 of 50 in `quantic-evaltools` against 45, passed provenance in 12 of 15 runs against 8, and
+was right more often when every answer was read; asked whether Microsoft goes ex-dividend this month,
+it looked Microsoft up every time, and the 9B never did.
+
+1. **`hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S` is the default** for every command. `--model` /
+   `QUANTIC_MODEL` still choose any other, `qwen3.5:9b` included.
+2. **Fitting entirely on the GPU is no longer required.** The runbook's criterion was written for a
+   model someone waits on. At 32K context the 27B is 14GB with 86% on the GPU, and takes 102–174s
+   for a Week Ahead and 11–58s for a research question; the agent works in the background, and the
+   author chose quality over speed. The cost is the card: the 27B takes most of it while it runs,
+   so a scheduled run belongs at a time the author isn't using it.
+3. **The run deadline is 600 seconds**, from 300: the slowest Week Ahead took 174s.
+4. A larger model doesn't fix what no check sees: both wrote false growth comparisons with no figure
+   in them, and the 27B's Catalan still has mistakes a reader sees (design open question 12).
+
 ## Consequences
 
 - Milestone 8's budgets (design §3.2) start from the 9B's numbers: about 4,400–5,000 prompt tokens and

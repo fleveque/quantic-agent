@@ -57,10 +57,13 @@ from quantic_agent import (
 )
 from quantic_agent.tools import DIVIDEND_CALENDAR, GET_STOCK
 
-# The safe choice for the target hardware (design §4): it fits any 16GB card
-# with room to spare. Development happens on a different machine, so both
-# options below read an environment variable first and nothing is baked in.
-DEFAULT_MODEL = "qwen3.5:9b"
+# Chosen by measurement on the agent's own tasks (decision 0005, update of
+# 2026-10-09): it finished 20 Week Aheads of 20 where qwen3.5:9b finished
+# about 7 in 10, and researched better. It is slower and fills most of a
+# 16GB card while it runs, which background work can afford. Development
+# happens on a different machine, so both options below read an environment
+# variable first and nothing is baked in.
+DEFAULT_MODEL = "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S"
 
 # Exit statuses, as documented at the top of this file. 2 is argparse's.
 EXIT_OK = 0
@@ -73,10 +76,11 @@ EXIT_INTERRUPTED = 130  # 128 + SIGINT, the shell's convention for Ctrl-C
 
 # Bounds one run, in seconds. The slowest request measured on the target
 # machine took 94s (a 27B partly in system RAM, 64K context) and the slowest
-# cold load 31s, so five minutes leaves more than double. It must never be
-# short enough to cut off a load: cancelling a load aborts it, and the next
-# attempt starts from zero.
-DEFAULT_TIMEOUT = 300.0
+# cold load 31s; with the 27B, a whole Week Ahead (research, prose and six
+# translations) took up to 174s. Ten minutes leaves more than triple. It must
+# never be short enough to cut off a load: cancelling a load aborts it, and
+# the next attempt starts from zero.
+DEFAULT_TIMEOUT = 600.0
 
 # The context window research and writing ask Ollama for. Its own default,
 # 4096 tokens, is silently exceeded by a handful of get_stock results, and

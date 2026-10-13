@@ -1,0 +1,360 @@
+# quantic-agent --research, 2026-10-09, three questions x 5 runs per model, --timeout 0.
+# 9b = qwen3.5:9b, 27b = hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S. stderr's tool calls and findings, then the answer.
+
+=== 9b, "Which companies go ex-dividend in the next 10 days?", run 1: exit 0 9s
+tool dividend_calendar {"days": 10} → 698 bytes (309ms)
+---
+Based on the provided data, no companies go ex-dividend between 2026-10-10 and 2026-10-19 within the specified "next 10 days" from today (2026-10-09).
+
+The data shows one ex-dividend date occurring on the current day, 2026-10-09:
+*   **Apple Inc. (AAPL)**: Sector – Technology; Frequency – Quarterly.
+
+All other listed companies have ex-dividend dates outside the forward-looking window relative to today's date or fall immediately after the 10-day period defined in the data snippet:
+*   **Iberdrola (IBE.MC)**: Ex-dividend date 2026-10-10; Sector – Utilities; Frequency – Semi-annual.
+*   **Procter & Gamble (PG)**: Ex-dividend date 2026-10-16; Sector – Consumer Defensive; Frequency – Quarterly.
+*   **Coca-Cola (KO)**: Ex-dividend date 2026-10-17; Sector – Consumer Defensive; Frequency – Quarterly.
+*   **Banco Santander (SAN.MC)**: Ex-dividend date 2026-10-19; Sector – Financial Services; Frequency – Semi-annual.
+
+=== 9b, "Which companies go ex-dividend in the next 10 days?", run 2: exit 0 6s
+tool dividend_calendar {"days": 10} → 698 bytes (305ms)
+---
+Based on the provided data for the period starting 2026-10-09, companies going ex-dividend within the next 10 days are:
+
+*   **Apple Inc. (AAPL)**: Ex-dividend date 2026-10-09, Sector Technology, Payment frequency quarterly.
+*   **Iberdrola (IBE.MC)**: Ex-dividend date 2026-10-10, Sector Utilities, Payment frequency semi_annual.
+
+The data also lists **Procter & Gamble (PG)** with an ex-dividend date of 2026-10-16 and **Coca-Cola (KO)** with an ex-dividend date of 2026-10-17, but these occur after the 10-day window.
+
+=== 9b, "Which companies go ex-dividend in the next 10 days?", run 3: exit 0 7s
+tool dividend_calendar {"days": 10} → 698 bytes (297ms)
+---
+Based on the provided data, the following companies have ex-dividend dates between 2026-10-09 and 2026-10-19:
+
+*   **Apple Inc.** (AAPL): Ex-dividend date is 2026-10-09 in the Technology sector with a quarterly payment frequency.
+*   **Iberdrola** (IBE.MC): Ex-dividend date is 2026-10-10 in the Utilities sector with a semi_annual payment frequency.
+*   **Procter & Gamble** (PG): Ex-dividend date is 2026-10-16 in the Consumer Defensive sector with a quarterly payment frequency.
+*   **Coca-Cola** (KO): Ex-dividend date is 2026-10-17 in the Consumer Defensive sector with a quarterly payment frequency.
+*   **Banco Santander** (SAN.MC): Ex-dividend date is 2026-10-19 in the Financial Services sector with a semi_annual payment frequency.
+
+The data does not specify which companies go ex-dividend specifically between 2026-10-10 and 2026-10-19 beyond the five listed above, as it includes all entries within the 10-day window starting from today's date.
+
+=== 9b, "Which companies go ex-dividend in the next 10 days?", run 4: exit 0 7s
+tool dividend_calendar {"days": 10} → 698 bytes (315ms)
+---
+Based on the provided data, the following companies go ex-dividend within 10 days from October 9, 2026:
+
+*   **Apple Inc. (AAPL)**: Ex-dividend date is 2026-10-09; Sector is Technology; Payment frequency is quarterly.
+*   **Iberdrola (IBE.MC)**: Ex-dividend date is 2026-10-10; Sector is Utilities; Payment frequency is semi_annual.
+*   **Procter & Gamble (PG)**: Ex-dividend date is 2026-10-16; Sector is Consumer Defensive; Payment frequency is quarterly.
+*   **Coca-Cola (KO)**: Ex-dividend date is 2026-10-17; Sector is Consumer Defensive; Payment frequency is quarterly.
+*   **Banco Santander (SAN.MC)**: Ex-dividend date is 2026-10-19; Sector is Financial Services; Payment frequency is semi_annual.
+
+=== 9b, "Which companies go ex-dividend in the next 10 days?", run 5: exit 0 7s
+tool dividend_calendar {"days": 10} → 698 bytes (305ms)
+---
+Based on the provided data, the following companies have ex-dividend dates within the next 10 days starting from 2026-10-09:
+
+*   **Apple Inc. (AAPL)** goes ex-dividend on **2026-10-09**. It is a Technology company with a quarterly payment frequency.
+*   **Iberdrola (IBE.MC)** goes ex-dividend on **2026-10-10**. It is a Utilities company with a semi_annual payment frequency.
+*   **Procter & Gamble (PG)** goes ex-dividend on **2026-10-16**. It is a Consumer Defensive company with a quarterly payment frequency.
+*   **Coca-Cola (KO)** goes ex-dividend on **2026-10-17**. It is a Consumer Defensive company with a quarterly payment frequency.
+*   **Banco Santander (SAN.MC)** goes ex-dividend on **2026-10-19**. It is a Financial Services company with a semi_annual payment frequency.
+
+The data provided does not include dividend amounts or other companies outside this specific list.
+
+=== 9b, "Is Microsoft going ex-dividend this month?", run 1: exit 4 4s
+tool dividend_calendar {"days": 30} → 979 bytes (305ms)
+quantic-agent: 1 figure(s) in the answer came from no tool result:
+  '2026-10-30' (date 2026-10-30)
+---
+Based on the provided data, Microsoft is not listed among the companies going ex-dividend between 2026-10-09 and 2026-10-30. The companies with ex-dividend dates in this period are Apple Inc., Iberdrola, Procter & Gamble, Coca-Cola, Banco Santander, Diageo plc, and Verizon Communications.
+
+=== 9b, "Is Microsoft going ex-dividend this month?", run 2: exit 0 3s
+tool dividend_calendar {"days": 30} → 979 bytes (298ms)
+---
+Based on the provided data, Microsoft is not listed as going ex-dividend in October 2026. The companies scheduled to go ex-dividend during this period are Apple Inc., Iberdrola, Procter & Gamble, Coca-Cola, Banco Santander, Diageo plc, and Verizon Communications.
+
+=== 9b, "Is Microsoft going ex-dividend this month?", run 3: exit 4 4s
+tool dividend_calendar {"days": 31} → 979 bytes (306ms)
+quantic-agent: 1 figure(s) in the answer came from no tool result:
+  '2026-10-31' (date 2026-10-31)
+---
+Yes, Microsoft is not listed in the provided data for ex-dividend dates this month. The companies listed with ex-dividend dates between 2026-10-09 and 2026-10-31 are Apple Inc., Iberdrola, Procter & Gamble, Coca-Cola, Banco Santander, Diageo plc, and Verizon Communications. None of these entries include Microsoft (MSFT).
+
+=== 9b, "Is Microsoft going ex-dividend this month?", run 4: exit 0 4s
+tool dividend_calendar {"days": 31} → 979 bytes (305ms)
+---
+Based on the provided data, Microsoft does not appear in the list of companies with ex-dividend dates for October 2026. The data shows that Apple Inc. has an ex-dividend date of 2026-10-09, while other listed companies like Iberdrola, Procter & Gamble, Coca-Cola, Banco Santander, Diageo plc, and Verizon Communications have ex-dividend dates on subsequent days in October 2026.
+
+=== 9b, "Is Microsoft going ex-dividend this month?", run 5: exit 4 5s
+tool dividend_calendar {"days": 30} → 979 bytes (316ms)
+quantic-agent: 1 figure(s) in the answer came from no tool result:
+  '2026-11-08' (date 2026-11-08)
+---
+Based on the data provided for the period from 2026-10-09 to 2026-11-08, Microsoft is not listed as a company paying an ex-dividend this month. The companies with ex-dividend dates in October are Apple Inc. (AAPL) on 2026-10-09, Iberdrola (IBE.MC) on 2026-10-10, Procter & Gamble (PG) on 2026-10-16, Coca-Cola (KO) on 2026-10-17, Banco Santander (SAN.MC) on 2026-10-19, Diageo plc (DGE.L) on 2026-10-21, and Verizon Communications (VZ) on 2026-10-21. Microsoft is not included in this list.
+
+=== 9b, "Which stocks go ex-dividend in the next six months?", run 1: exit 5 5s
+tool dividend_calendar {"days": 180} → error: dividend_calendar arguments: days: Input should be less than or equal to 120 (0ms)
+quantic-agent: research gathered no data (no tool call succeeded); nothing to write
+---
+
+=== 9b, "Which stocks go ex-dividend in the next six months?", run 2: exit 0 10s
+tool dividend_calendar {"days": 180} → error: dividend_calendar arguments: days: Input should be less than or equal to 120 (0ms)
+tool dividend_calendar {"days": 120} → 980 bytes (296ms)
+---
+Based on the data provided, there are 7 stocks scheduled to go ex-dividend within 120 days starting from 2026-10-09 (which covers the next six months relative to today). The listed companies and their ex-dividend dates are:
+
+*   **Apple Inc. (AAPL)**: Technology sector, quarterly frequency, ex-dividend date 2026-10-09.
+*   **Iberdrola (IBE.MC)**: Utilities sector, semi_annual frequency, ex-dividend date 2026-10-10.
+*   **Procter & Gamble (PG)**: Consumer Defensive sector, quarterly frequency, ex-dividend date 2026-10-16.
+*   **Coca-Cola (KO)**: Consumer Defensive sector, quarterly frequency, ex-dividend date 2026-10-17.
+*   **Banco Santander (SAN.MC)**: Financial Services sector, semi_annual frequency, ex-dividend date 2026-10-19.
+*   **Diageo plc (DGE.L)**: Consumer Defensive sector, semi_annual frequency, ex-dividend date 2026-10-21.
+*   **Verizon Communications (VZ)**: Communication Services sector, quarterly frequency, ex-dividend date 2026-10-21.
+
+The data does not include any stocks with ex-dividend dates in November 2026 or later within the provided dataset.
+
+=== 9b, "Which stocks go ex-dividend in the next six months?", run 3: exit 4 11s
+tool dividend_calendar {"days": 180} → error: dividend_calendar arguments: days: Input should be less than or equal to 120 (0ms)
+tool dividend_calendar {"days": 120} → 980 bytes (299ms)
+quantic-agent: 1 figure(s) in the answer came from no tool result:
+  '2027-01-25' (date 2027-01-25)
+---
+The provided data lists dividend calendars valid for 120 days starting from 2026-10-09. This period extends to 2027-01-25. However, the data does not contain enough information to determine if stocks ex-dividend in this window are the *only* ones going ex-dividend in the next six months, nor does it provide dividend amounts or future dates beyond the specified 120-day window.
+
+Within the provided list, these stocks have an ex-dividend date within the next six months from 2026-10-09:
+*   **Apple Inc.** (AAPL): Ex-dividend on 2026-10-09; Technology sector; quarterly frequency.
+*   **Iberdrola** (IBE.MC): Ex-dividend on 2026-10-10; Utilities sector; semi_annual frequency.
+*   **Procter & Gamble** (PG): Ex-dividend on 2026-10-16; Consumer Defensive sector; quarterly frequency.
+*   **Coca-Cola** (KO): Ex-dividend on 2026-10-17; Consumer Defensive sector; quarterly frequency.
+*   **Banco Santander** (SAN.MC): Ex-dividend on 2026-10-19; Financial Services sector; semi_annual frequency.
+*   **Diageo plc** (DGE.L): Ex-dividend on 2026-10-21; Consumer Defensive sector; semi_annual frequency.
+*   **Verizon Communications** (VZ): Ex-dividend on 2026-10-21; Communication Services sector; quarterly frequency.
+
+No new figures, sums, averages, or counts are calculated beyond the explicit data provided.
+
+=== 9b, "Which stocks go ex-dividend in the next six months?", run 4: exit 4 11s
+tool dividend_calendar {"days": 180} → error: dividend_calendar arguments: days: Input should be less than or equal to 120 (0ms)
+tool dividend_calendar {"days": 120} → 980 bytes (306ms)
+quantic-agent: 1 figure(s) in the answer came from no tool result:
+  '2027-02-06' (date 2027-02-06)
+---
+Based on the provided data, only one stock listed in the calendar has an ex-dividend date within the next six months from today (2026-10-09), as all other dates occur immediately:
+
+*   **Apple Inc. (AAPL)**: Ex-dividend on 2026-10-09, sector Technology, quarterly frequency.
+*   **Iberdrola (IBE.MC)**: Ex-dividend on 2026-10-10, sector Utilities, semi-annual frequency.
+*   **Procter & Gamble (PG)**: Ex-dividend on 2026-10-16, sector Consumer Defensive, quarterly frequency.
+*   **Coca-Cola (KO)**: Ex-dividend on 2026-10-17, sector Consumer Defensive, quarterly frequency.
+*   **Banco Santander (SAN.MC)**: Ex-dividend on 2026-10-19, sector Financial Services, semi-annual frequency.
+*   **Diageo plc (DGE.L)**: Ex-dividend on 2026-10-21, sector Consumer Defensive, semi-annual frequency.
+*   **Verizon Communications (VZ)**: Ex-dividend on 2026-10-21, sector Communication Services, quarterly frequency.
+
+The data covers a period of 120 days starting from 2026-10-09, ending on 2027-02-06. All listed stocks have ex-dividend dates within this range (less than six months from today). No other stocks in the provided list fall outside this window or beyond the specified date range.
+
+=== 9b, "Which stocks go ex-dividend in the next six months?", run 5: exit 4 11s
+tool dividend_calendar {"days": 180} → error: dividend_calendar arguments: days: Input should be less than or equal to 120 (0ms)
+tool dividend_calendar {"days": 120} → 980 bytes (314ms)
+quantic-agent: 2 figure(s) in the answer came from no tool result:
+  '180' (number 180)
+  '2027-04-07' (date 2027-04-07)
+---
+The provided data lists ex-dividend dates for specific companies within a 120-day window starting from 2026-10-09. Since today's date is 2026-10-09, the next six months (approximately 180 days) extends to roughly 2027-04-07.
+
+The data includes the following stocks with their corresponding ex-dividend dates:
+*   **Apple Inc. (AAPL):** Technology sector, quarterly frequency, ex-dividend date 2026-10-09.
+*   **Iberdrola (IBE.MC):** Utilities sector, semi_annual frequency, ex-dividend date 2026-10-10.
+*   **Procter & Gamble (PG):** Consumer Defensive sector, quarterly frequency, ex-dividend date 2026-10-16.
+*   **Coca-Cola (KO):** Consumer Defensive sector, quarterly frequency, ex-dividend date 2026-10-17.
+*   **Banco Santander (SAN.MC):** Financial Services sector, semi_annual frequency, ex-dividend date 2026-10-19.
+*   **Diageo plc (DGE.L):** Consumer Defensive sector, semi_annual frequency, ex-dividend date 2026-10-21.
+*   **Verizon Communications (VZ):** Communication Services sector, quarterly frequency, ex-dividend date 2026-10-21.
+
+The data does not provide the specific number of stocks going ex-dividend in the next six months beyond the list provided for the initial period; it only shows dates occurring immediately following 2026-10-09. Any stock paying dividends on or after these listed dates but before the six-month mark would be included in a complete answer, though no further data is available to confirm if additional payments occur within that broader window.
+
+=== 27b, "Which companies go ex-dividend in the next 10 days?", run 1: exit 0 30s
+tool dividend_calendar {"days": 10} → 698 bytes (303ms)
+---
+Based on the data provided, the following companies go ex-dividend in the next 10 days (from October 9, 2026, to October 19, 2026):
+
+*   **Apple Inc. (AAPL):** Ex-dividend date is **2026-10-09**.
+*   **Iberdrola (IBE.MC):** Ex-dividend date is **2026-10-10**.
+*   **Procter & Gamble (PG):** Ex-dividend date is **2026-10-16**.
+*   **Coca-Cola (KO):** Ex-dividend date is **2026-10-17**.
+*   **Banco Santander (SAN.MC):** Ex-dividend date is **2026-10-19**.
+
+=== 27b, "Which companies go ex-dividend in the next 10 days?", run 2: exit 4 25s
+tool dividend_calendar {"days": 10} → 698 bytes (313ms)
+quantic-agent: 1 figure(s) in the answer came from no tool result:
+  'four' (number 4)
+---
+Based on the data provided, the following companies have ex-dividend dates within the next 10 days (starting from 2026-10-09):
+
+*   **Apple Inc. (AAPL):** 2026-10-09
+*   **Iberdrola (IBE.MC):** 2026-10-10
+*   **Procter & Gamble (PG):** 2026-10-16
+*   **Coca-Cola (KO):** 2026-10-17
+
+*Note: Banco Santander (SAN.MC) has an ex-dividend date of 2026-10-19, which is 10 days after the start date, typically falling just outside a strict "next 10 days" window depending on specific definition, but the first four companies listed above are definitively within the period.*
+
+=== 27b, "Which companies go ex-dividend in the next 10 days?", run 3: exit 0 19s
+tool dividend_calendar {"days": 10} → 698 bytes (314ms)
+---
+Based on the data provided, the following companies go ex-dividend within the next 10 days starting from 2026-10-09:
+
+*   **Apple Inc.** (AAPL)
+*   **Iberdrola** (IBE.MC)
+*   **Procter & Gamble** (PG)
+*   **Coca-Cola** (KO)
+*   **Banco Santander** (SAN.MC)
+
+=== 27b, "Which companies go ex-dividend in the next 10 days?", run 4: exit 0 21s
+tool dividend_calendar {"days": 10} → 698 bytes (304ms)
+---
+In the next 10 days (2026-10-09 to 2026-10-19), the following companies go ex-dividend:
+
+*   **Apple Inc.** (AAPL) on 2026-10-09
+*   **Iberdrola** (IBE.MC) on 2026-10-10
+*   **Procter & Gamble** (PG) on 2026-10-16
+*   **Coca-Cola** (KO) on 2026-10-17
+*   **Banco Santander** (SAN.MC) on 2026-10-19
+
+=== 27b, "Which companies go ex-dividend in the next 10 days?", run 5: exit 0 19s
+tool dividend_calendar {"days": 10} → 698 bytes (302ms)
+---
+The following companies have ex-dividend dates listed within the next 10 days:
+
+*   **Apple Inc.** (AAPL): 2026-10-09
+*   **Iberdrola** (IBE.MC): 2026-10-10
+*   **Procter & Gamble** (PG): 2026-10-16
+*   **Coca-Cola** (KO): 2026-10-17
+*   **Banco Santander** (SAN.MC): 2026-10-19
+
+=== 27b, "Is Microsoft going ex-dividend this month?", run 1: exit 0 13s
+tool dividend_calendar {"days": 45} → 979 bytes (304ms)
+tool get_stock {"symbol": "MSFT"} → 1538 bytes (127ms)
+---
+No, Microsoft went ex-dividend on 2026-10-08, which is before the current date of 2026-10-09. Therefore, it is not going ex-dividend this month (October 2026).
+
+=== 27b, "Is Microsoft going ex-dividend this month?", run 2: exit 0 17s
+tool dividend_calendar {"days": 45} → 979 bytes (300ms)
+tool get_stock {"symbol": "MSFT"} → 1538 bytes (301ms)
+---
+No, Microsoft's ex-dividend date was 2026-10-08, which is in the past relative to today's date (2026-10-09). Therefore, it is not going ex-dividend this month (October 2026) based on the provided data.
+
+=== 27b, "Is Microsoft going ex-dividend this month?", run 3: exit 0 16s
+tool get_stock {"symbol": "MSFT"} → 1538 bytes (301ms)
+---
+Yes, according to the data, Microsoft (MSFT) went ex-dividend on October 8, 2026, which was in the current month of October 2026.
+
+=== 27b, "Is Microsoft going ex-dividend this month?", run 4: exit 0 13s
+tool dividend_calendar {"days": 45} → 979 bytes (315ms)
+tool get_stock {"symbol": "MSFT"} → 1538 bytes (128ms)
+---
+No, according to the provided data, Microsoft’s ex-dividend date was 2026-10-08, which was one day before the start of the current month (October 2026) relative to today’s date of 2026-10-09. Therefore, it did not go ex-dividend this month.
+
+=== 27b, "Is Microsoft going ex-dividend this month?", run 5: exit 0 11s
+tool get_stock {"symbol": "MSFT"} → 1538 bytes (306ms)
+---
+No, Microsoft is not going ex-dividend this month according to the data provided. The record shows an ex-dividend date of 2026-10-08, which is a past date relative to today (2026-10-09).
+
+=== 27b, "Which stocks go ex-dividend in the next six months?", run 1: exit 0 32s
+tool dividend_calendar {"days": 180} → error: dividend_calendar arguments: days: Input should be less than or equal to 120 (0ms)
+tool dividend_calendar {"days": 120} → 980 bytes (302ms)
+---
+According to the provided dividend calendar data for the next 120 days starting from 2026-10-09, the following stocks have ex-dividend dates:
+
+*   **Apple Inc.** (AAPL) on 2026-10-09
+*   **Iberdrola** (IBE.MC) on 2026-10-10
+*   **Procter & Gamble** (PG) on 2026-10-16
+*   **Coca-Cola** (KO) on 2026-10-17
+*   **Banco Santander** (SAN.MC) on 2026-10-19
+*   **Diageo plc** (DGE.L) on 2026-10-21
+*   **Verizon Communications** (VZ) on 2026-10-21
+
+=== 27b, "Which stocks go ex-dividend in the next six months?", run 2: exit 0 32s
+tool dividend_calendar {"days": 183} → error: dividend_calendar arguments: days: Input should be less than or equal to 120 (0ms)
+tool dividend_calendar {"days": 120} → 980 bytes (305ms)
+---
+Based on the data provided, the following stocks have ex-dividend dates within the next 120 days from today (2026-10-09):
+
+*   **Apple Inc. (AAPL):** Ex-dividend date of 2026-10-09
+*   **Iberdrola (IBE.MC):** Ex-dividend date of 2026-10-10
+*   **Procter & Gamble (PG):** Ex-dividend date of 2026-10-16
+*   **Coca-Cola (KO):** Ex-dividend date of 2026-10-17
+*   **Banco Santander (SAN.MC):** Ex-dividend date of 2026-10-19
+*   **Diageo plc (DGE.L):** Ex-dividend date of 2026-10-21
+*   **Verizon Communications (VZ):** Ex-dividend date of 2026-10-21
+
+=== 27b, "Which stocks go ex-dividend in the next six months?", run 3: exit 4 31s
+tool dividend_calendar {"days": 183} → error: dividend_calendar arguments: days: Input should be less than or equal to 120 (0ms)
+tool dividend_calendar {"days": 120} → 980 bytes (316ms)
+quantic-agent: 1 figure(s) in the answer came from no tool result:
+  '4' (number 4)
+---
+Based on the data provided, which covers a 120-day period starting from 2026-10-09, the following stocks go ex-dividend within this timeframe:
+
+*   **Apple Inc. (AAPL):** 2026-10-09
+*   **Iberdrola (IBE.MC):** 2026-10-10
+*   **Procter & Gamble (PG):** 2026-10-16
+*   **Coca-Cola (KO):** 2026-10-17
+*   **Banco Santander (SAN.MC):** 2026-10-19
+*   **Diageo plc (DGE.L):** 2026-10-21
+*   **Verizon Communications (VZ):** 2026-10-21
+
+Note: The data provided covers 120 days (approximately 4 months), so it does not provide information for the entire six-month period requested.
+
+=== 27b, "Which stocks go ex-dividend in the next six months?", run 4: exit 4 58s
+tool dividend_calendar {"days": 180} → error: dividend_calendar arguments: days: Input should be less than or equal to 120 (0ms)
+tool dividend_calendar {"days": 120} → 980 bytes (306ms)
+quantic-agent: 9 figure(s) in the answer came from no tool result:
+  '2027-04-09' (date 2027-04-09)
+  '2027' (year 2027)
+  '22' (number 22)
+  '30' (number 30)
+  '31' (number 31)
+  '31' (number 31)
+  '2027-02-06' (date 2027-02-06)
+  '2027' (year 2027)
+  '2027' (year 2027)
+---
+The data provided is for a period starting on 2026-10-09. To answer the question, I will calculate the end of the "next six months" period and identify which stocks have ex-dividend dates within that timeframe.
+
+1.  **Determine the end date:** The current date is 2026-10-09. Six months from this date is approximately 2027-04-09. The data provided is for a window of 120 days from 2026-10-09.
+    *   120 days from 2026-10-09 falls in late February 2027 (Oct: 22 days left, Nov: 30, Dec: 31, Jan: 31, Feb: remaining ~6 days). Specifically, 120 days after 2026-10-09 is 2027-02-06.
+    *   The question asks for the *next six months* (approx. until April 2027). The provided data only covers the next 120 days (until approx. Feb 2027). Therefore, I can only list the stocks in the provided data, as I do not have data for the period after the 120-day window ends to cover the full six months. However, typically "data from dividend_calendar {"days": 120}" implies I should use the provided list. Let's look at the stocks provided. All stocks listed have ex-dividend dates in late October/early November 2026, which are within the next six months from 2026-10-09.
+
+2.  **List the stocks:**
+    *   Apple Inc. (AAPL): 2026-10-09
+    *   Iberdrola (IBE.MC): 2026-10-10
+    *   Procter & Gamble (PG): 2026-10-16
+    *   Coca-Cola (KO): 2026-10-17
+    *   Banco Santander (SAN.MC): 2026-10-19
+    *   Diageo plc (DGE.L): 2026-10-21
+    *   Verizon Communications (VZ): 2026-10-21
+
+All the stocks in the provided data have ex-dividend dates that fall within the next six months from today (2026-10-09).
+
+**Answer:**
+According to the data provided, the following stocks go ex-dividend in the next six months:
+
+*   **Apple Inc.** (AAPL) on 2026-10-09
+*   **Iberdrola** (IBE.MC) on 2026-10-10
+*   **Procter & Gamble** (PG) on 2026-10-16
+*   **Coca-Cola** (KO) on 2026-10-17
+*   **Banco Santander** (SAN.MC) on 2026-10-19
+*   **Diageo plc** (DGE.L) on 2026-10-21
+*   **Verizon Communications** (VZ) on 2026-10-21
+
+=== 27b, "Which stocks go ex-dividend in the next six months?", run 5: exit 0 31s
+tool dividend_calendar {"days": 180} → error: dividend_calendar arguments: days: Input should be less than or equal to 120 (0ms)
+tool dividend_calendar {"days": 120} → 980 bytes (304ms)
+---
+The data provided only covers the next 120 days, not the next six months. Therefore, the data does not fully answer which stocks go ex-dividend in the next six months. However, the following stocks go ex-dividend within the next 120 days:
+
+- Apple Inc. (AAPL) on 2026-10-09
+- Iberdrola (IBE.MC) on 2026-10-10
+- Procter & Gamble (PG) on 2026-10-16
+- Coca-Cola (KO) on 2026-10-17
+- Banco Santander (SAN.MC) on 2026-10-19
+- Diageo plc (DGE.L) on 2026-10-21
+- Verizon Communications (VZ) on 2026-10-21

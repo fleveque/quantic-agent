@@ -1,0 +1,816 @@
+[
+  {
+    "model": "qwen3.5:9b",
+    "runs": 50,
+    "correct": 45,
+    "outcomes": [
+      {
+        "case": "explicit window",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":10}",
+        "reason": ""
+      },
+      {
+        "case": "explicit window",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":10}",
+        "reason": ""
+      },
+      {
+        "case": "explicit window",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":10}",
+        "reason": ""
+      },
+      {
+        "case": "explicit window",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":10}",
+        "reason": ""
+      },
+      {
+        "case": "explicit window",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":10}",
+        "reason": ""
+      },
+      {
+        "case": "this week",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":7}",
+        "reason": ""
+      },
+      {
+        "case": "this week",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":7}",
+        "reason": ""
+      },
+      {
+        "case": "this week",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":7}",
+        "reason": ""
+      },
+      {
+        "case": "this week",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":7}",
+        "reason": ""
+      },
+      {
+        "case": "this week",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":7}",
+        "reason": ""
+      },
+      {
+        "case": "two months",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":60}",
+        "reason": ""
+      },
+      {
+        "case": "two months",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":60}",
+        "reason": ""
+      },
+      {
+        "case": "two months",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":60}",
+        "reason": ""
+      },
+      {
+        "case": "two months",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":60}",
+        "reason": ""
+      },
+      {
+        "case": "two months",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":60}",
+        "reason": ""
+      },
+      {
+        "case": "beyond the maximum",
+        "correct": false,
+        "valid": false,
+        "called": "dividend_calendar",
+        "args": "{\"days\":180}",
+        "reason": "dividend_calendar arguments: days: Input should be less than or equal to 120"
+      },
+      {
+        "case": "beyond the maximum",
+        "correct": false,
+        "valid": false,
+        "called": "dividend_calendar",
+        "args": "{\"days\":180}",
+        "reason": "dividend_calendar arguments: days: Input should be less than or equal to 120"
+      },
+      {
+        "case": "beyond the maximum",
+        "correct": false,
+        "valid": false,
+        "called": "dividend_calendar",
+        "args": "{\"days\":180}",
+        "reason": "dividend_calendar arguments: days: Input should be less than or equal to 120"
+      },
+      {
+        "case": "beyond the maximum",
+        "correct": false,
+        "valid": false,
+        "called": "dividend_calendar",
+        "args": "{\"days\":180}",
+        "reason": "dividend_calendar arguments: days: Input should be less than or equal to 120"
+      },
+      {
+        "case": "beyond the maximum",
+        "correct": false,
+        "valid": false,
+        "called": "dividend_calendar",
+        "args": "{\"days\":180}",
+        "reason": "dividend_calendar arguments: days: Input should be less than or equal to 120"
+      },
+      {
+        "case": "no window given",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":45}",
+        "reason": ""
+      },
+      {
+        "case": "no window given",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":45}",
+        "reason": ""
+      },
+      {
+        "case": "no window given",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":30}",
+        "reason": ""
+      },
+      {
+        "case": "no window given",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":45}",
+        "reason": ""
+      },
+      {
+        "case": "no window given",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":30}",
+        "reason": ""
+      },
+      {
+        "case": "one company",
+        "correct": true,
+        "valid": true,
+        "called": "get_stock",
+        "args": "{\"symbol\":\"AAPL\"}",
+        "reason": ""
+      },
+      {
+        "case": "one company",
+        "correct": true,
+        "valid": true,
+        "called": "get_stock",
+        "args": "{\"symbol\":\"AAPL\"}",
+        "reason": ""
+      },
+      {
+        "case": "one company",
+        "correct": true,
+        "valid": true,
+        "called": "get_stock",
+        "args": "{\"symbol\":\"AAPL\"}",
+        "reason": ""
+      },
+      {
+        "case": "one company",
+        "correct": true,
+        "valid": true,
+        "called": "get_stock",
+        "args": "{\"symbol\":\"AAPL\"}",
+        "reason": ""
+      },
+      {
+        "case": "one company",
+        "correct": true,
+        "valid": true,
+        "called": "get_stock",
+        "args": "{\"symbol\":\"AAPL\"}",
+        "reason": ""
+      },
+      {
+        "case": "one stock",
+        "correct": true,
+        "valid": true,
+        "called": "get_stock",
+        "args": "{\"symbol\":\"KO\"}",
+        "reason": ""
+      },
+      {
+        "case": "one stock",
+        "correct": true,
+        "valid": true,
+        "called": "get_stock",
+        "args": "{\"symbol\":\"KO\"}",
+        "reason": ""
+      },
+      {
+        "case": "one stock",
+        "correct": true,
+        "valid": true,
+        "called": "get_stock",
+        "args": "{\"symbol\":\"KO\"}",
+        "reason": ""
+      },
+      {
+        "case": "one stock",
+        "correct": true,
+        "valid": true,
+        "called": "get_stock",
+        "args": "{\"symbol\":\"KO\"}",
+        "reason": ""
+      },
+      {
+        "case": "one stock",
+        "correct": true,
+        "valid": true,
+        "called": "get_stock",
+        "args": "{\"symbol\":\"KO\"}",
+        "reason": ""
+      },
+      {
+        "case": "two stocks",
+        "correct": true,
+        "valid": true,
+        "called": "get_stock,get_stock",
+        "args": "{\"symbol\":\"MSFT\"},{\"symbol\":\"JNJ\"}",
+        "reason": ""
+      },
+      {
+        "case": "two stocks",
+        "correct": true,
+        "valid": true,
+        "called": "get_stock,get_stock",
+        "args": "{\"symbol\":\"MSFT\"},{\"symbol\":\"JNJ\"}",
+        "reason": ""
+      },
+      {
+        "case": "two stocks",
+        "correct": true,
+        "valid": true,
+        "called": "get_stock,get_stock",
+        "args": "{\"symbol\":\"MSFT\"},{\"symbol\":\"JNJ\"}",
+        "reason": ""
+      },
+      {
+        "case": "two stocks",
+        "correct": true,
+        "valid": true,
+        "called": "get_stock,get_stock",
+        "args": "{\"symbol\":\"MSFT\"},{\"symbol\":\"JNJ\"}",
+        "reason": ""
+      },
+      {
+        "case": "two stocks",
+        "correct": true,
+        "valid": true,
+        "called": "get_stock,get_stock",
+        "args": "{\"symbol\":\"MSFT\"},{\"symbol\":\"JNJ\"}",
+        "reason": ""
+      },
+      {
+        "case": "definition, no tool",
+        "correct": true,
+        "valid": true,
+        "called": "",
+        "args": "",
+        "reason": ""
+      },
+      {
+        "case": "definition, no tool",
+        "correct": true,
+        "valid": true,
+        "called": "",
+        "args": "",
+        "reason": ""
+      },
+      {
+        "case": "definition, no tool",
+        "correct": true,
+        "valid": true,
+        "called": "",
+        "args": "",
+        "reason": ""
+      },
+      {
+        "case": "definition, no tool",
+        "correct": true,
+        "valid": true,
+        "called": "",
+        "args": "",
+        "reason": ""
+      },
+      {
+        "case": "definition, no tool",
+        "correct": true,
+        "valid": true,
+        "called": "",
+        "args": "",
+        "reason": ""
+      },
+      {
+        "case": "arithmetic, no tool",
+        "correct": true,
+        "valid": true,
+        "called": "",
+        "args": "",
+        "reason": ""
+      },
+      {
+        "case": "arithmetic, no tool",
+        "correct": true,
+        "valid": true,
+        "called": "",
+        "args": "",
+        "reason": ""
+      },
+      {
+        "case": "arithmetic, no tool",
+        "correct": true,
+        "valid": true,
+        "called": "",
+        "args": "",
+        "reason": ""
+      },
+      {
+        "case": "arithmetic, no tool",
+        "correct": true,
+        "valid": true,
+        "called": "",
+        "args": "",
+        "reason": ""
+      },
+      {
+        "case": "arithmetic, no tool",
+        "correct": true,
+        "valid": true,
+        "called": "",
+        "args": "",
+        "reason": ""
+      }
+    ]
+  },
+  {
+    "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+    "runs": 50,
+    "correct": 48,
+    "outcomes": [
+      {
+        "case": "explicit window",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":10}",
+        "reason": ""
+      },
+      {
+        "case": "explicit window",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":10}",
+        "reason": ""
+      },
+      {
+        "case": "explicit window",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":10}",
+        "reason": ""
+      },
+      {
+        "case": "explicit window",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":10}",
+        "reason": ""
+      },
+      {
+        "case": "explicit window",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":10}",
+        "reason": ""
+      },
+      {
+        "case": "this week",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":7}",
+        "reason": ""
+      },
+      {
+        "case": "this week",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":7}",
+        "reason": ""
+      },
+      {
+        "case": "this week",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":7}",
+        "reason": ""
+      },
+      {
+        "case": "this week",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":7}",
+        "reason": ""
+      },
+      {
+        "case": "this week",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":7}",
+        "reason": ""
+      },
+      {
+        "case": "two months",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":60}",
+        "reason": ""
+      },
+      {
+        "case": "two months",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":60}",
+        "reason": ""
+      },
+      {
+        "case": "two months",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":60}",
+        "reason": ""
+      },
+      {
+        "case": "two months",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":60}",
+        "reason": ""
+      },
+      {
+        "case": "two months",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":60}",
+        "reason": ""
+      },
+      {
+        "case": "beyond the maximum",
+        "correct": false,
+        "valid": false,
+        "called": "dividend_calendar",
+        "args": "{\"days\":180}",
+        "reason": "dividend_calendar arguments: days: Input should be less than or equal to 120"
+      },
+      {
+        "case": "beyond the maximum",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":120}",
+        "reason": ""
+      },
+      {
+        "case": "beyond the maximum",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":120}",
+        "reason": ""
+      },
+      {
+        "case": "beyond the maximum",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":120}",
+        "reason": ""
+      },
+      {
+        "case": "beyond the maximum",
+        "correct": false,
+        "valid": false,
+        "called": "dividend_calendar",
+        "args": "{\"days\":182}",
+        "reason": "dividend_calendar arguments: days: Input should be less than or equal to 120"
+      },
+      {
+        "case": "no window given",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{}",
+        "reason": ""
+      },
+      {
+        "case": "no window given",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{}",
+        "reason": ""
+      },
+      {
+        "case": "no window given",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{}",
+        "reason": ""
+      },
+      {
+        "case": "no window given",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{}",
+        "reason": ""
+      },
+      {
+        "case": "no window given",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{}",
+        "reason": ""
+      },
+      {
+        "case": "one company",
+        "correct": true,
+        "valid": true,
+        "called": "get_stock",
+        "args": "{\"symbol\":\"AAPL\"}",
+        "reason": ""
+      },
+      {
+        "case": "one company",
+        "correct": true,
+        "valid": true,
+        "called": "dividend_calendar",
+        "args": "{\"days\":45}",
+        "reason": ""
+      },
+      {
+        "case": "one company",
+        "correct": true,
+        "valid": true,
+        "called": "get_stock",
+        "args": "{\"symbol\":\"AAPL\"}",
+        "reason": ""
+      },
+      {
+        "case": "one company",
+        "correct": true,
+        "valid": true,
+        "called": "get_stock",
+        "args": "{\"symbol\":\"AAPL\"}",
+        "reason": ""
+      },
+      {
+        "case": "one company",
+        "correct": true,
+        "valid": true,
+        "called": "get_stock",
+        "args": "{\"symbol\":\"AAPL\"}",
+        "reason": ""
+      },
+      {
+        "case": "one stock",
+        "correct": true,
+        "valid": true,
+        "called": "get_stock",
+        "args": "{\"symbol\":\"KO\"}",
+        "reason": ""
+      },
+      {
+        "case": "one stock",
+        "correct": true,
+        "valid": true,
+        "called": "get_stock",
+        "args": "{\"symbol\":\"KO\"}",
+        "reason": ""
+      },
+      {
+        "case": "one stock",
+        "correct": true,
+        "valid": true,
+        "called": "get_stock",
+        "args": "{\"symbol\":\"KO\"}",
+        "reason": ""
+      },
+      {
+        "case": "one stock",
+        "correct": true,
+        "valid": true,
+        "called": "get_stock",
+        "args": "{\"symbol\":\"KO\"}",
+        "reason": ""
+      },
+      {
+        "case": "one stock",
+        "correct": true,
+        "valid": true,
+        "called": "get_stock",
+        "args": "{\"symbol\":\"KO\"}",
+        "reason": ""
+      },
+      {
+        "case": "two stocks",
+        "correct": true,
+        "valid": true,
+        "called": "get_stock,get_stock",
+        "args": "{\"symbol\":\"MSFT\"},{\"symbol\":\"JNJ\"}",
+        "reason": ""
+      },
+      {
+        "case": "two stocks",
+        "correct": true,
+        "valid": true,
+        "called": "get_stock,get_stock",
+        "args": "{\"symbol\":\"MSFT\"},{\"symbol\":\"JNJ\"}",
+        "reason": ""
+      },
+      {
+        "case": "two stocks",
+        "correct": true,
+        "valid": true,
+        "called": "get_stock,get_stock",
+        "args": "{\"symbol\":\"MSFT\"},{\"symbol\":\"JNJ\"}",
+        "reason": ""
+      },
+      {
+        "case": "two stocks",
+        "correct": true,
+        "valid": true,
+        "called": "get_stock,get_stock",
+        "args": "{\"symbol\":\"MSFT\"},{\"symbol\":\"JNJ\"}",
+        "reason": ""
+      },
+      {
+        "case": "two stocks",
+        "correct": true,
+        "valid": true,
+        "called": "get_stock,get_stock",
+        "args": "{\"symbol\":\"MSFT\"},{\"symbol\":\"JNJ\"}",
+        "reason": ""
+      },
+      {
+        "case": "definition, no tool",
+        "correct": true,
+        "valid": true,
+        "called": "",
+        "args": "",
+        "reason": ""
+      },
+      {
+        "case": "definition, no tool",
+        "correct": true,
+        "valid": true,
+        "called": "",
+        "args": "",
+        "reason": ""
+      },
+      {
+        "case": "definition, no tool",
+        "correct": true,
+        "valid": true,
+        "called": "",
+        "args": "",
+        "reason": ""
+      },
+      {
+        "case": "definition, no tool",
+        "correct": true,
+        "valid": true,
+        "called": "",
+        "args": "",
+        "reason": ""
+      },
+      {
+        "case": "definition, no tool",
+        "correct": true,
+        "valid": true,
+        "called": "",
+        "args": "",
+        "reason": ""
+      },
+      {
+        "case": "arithmetic, no tool",
+        "correct": true,
+        "valid": true,
+        "called": "",
+        "args": "",
+        "reason": ""
+      },
+      {
+        "case": "arithmetic, no tool",
+        "correct": true,
+        "valid": true,
+        "called": "",
+        "args": "",
+        "reason": ""
+      },
+      {
+        "case": "arithmetic, no tool",
+        "correct": true,
+        "valid": true,
+        "called": "",
+        "args": "",
+        "reason": ""
+      },
+      {
+        "case": "arithmetic, no tool",
+        "correct": true,
+        "valid": true,
+        "called": "",
+        "args": "",
+        "reason": ""
+      },
+      {
+        "case": "arithmetic, no tool",
+        "correct": true,
+        "valid": true,
+        "called": "",
+        "args": "",
+        "reason": ""
+      }
+    ]
+  }
+]

@@ -6,7 +6,7 @@ understand Python. The first version was Go, up to milestone 8: `../quantic-agen
 `github.com/fleveque/quantic-agent-go`). Its design, ADRs, benchmarks, fixtures and lessons are the
 starting point here.
 
-## Status — 2026-10-08
+## Status — 2026-10-09
 
 - **Milestone 0 merged** (#1): design, ADRs 0001–0007 and benchmarks carried over; lesson 00.
 - **Milestone 1 merged** (#2): `quantic_agent/cli.py`, `quantic_agent/tools.py`; lesson 01.
@@ -65,18 +65,24 @@ starting point here.
   Migration 0005 (`posts`); exit 6 when a locale is held; a run is recorded before its files are
   written; week-ahead runs can't be `--approve`d. Real runs: 10/10 published, 0 of 114 translations
   held, Catalan visibly wrong (design open question 12); lesson 11.
-- **Milestone 12 in review** (branch `m12-pull-requests`, ADR 0014): `--pr N` and `--sync`. The
-  author chose: a GitHub App; PRs on the Quantic repo now (path `priv/insights/`, `--repo-path`);
-  every ready locale in the PR, reviewed by the author; `--sync` (merged = approved, closed =
-  rejected). Quantic's `main` can't be protected (private repo, free plan), so the author chose the
+- **Milestone 12 merged** (#13, ADR 0014): `--pr N` and `--sync`. The author chose: a GitHub App
+  (`quantic-agent-fleveque`, installed on `fleveque/quantic` only); PRs on the Quantic repo (path
+  `priv/insights/`, `--repo-path`); every ready locale, reviewed by the author; `--sync` (merged =
+  approved, closed = rejected). Quantic's `main` can't be protected (private repo, free plan), so the
   agent's guard plus a deploy check (quantic#486). `quantic_agent/github.py`: App JWT (PyJWT, RS256)
-  → installation token, cached; the only ref write is creating `refs/heads/agent/...`; no PATCH,
-  PUT or DELETE. `quantic_agent/publish.py` builds branch, files and description from the run as
-  stored. Migration 0006 (`pull_requests`, one per run, one open per week). Settings:
+  → installation token, cached; the only ref write is creating `refs/heads/agent/...`; no PATCH, PUT
+  or DELETE. `quantic_agent/publish.py` builds branch, files and description from the run as stored.
+  Migration 0006 (`pull_requests`, one per run, one open per week). Settings:
   `QUANTIC_AGENT_GITHUB_APP_ID`, key file `~/.config/quantic-agent/github-app.pem` (refused unless
-  600), `QUANTIC_AGENT_REPO`; runbook §8b. First real PR: quantic#487, closed, synced as rejected
-  (`docs/benchmarks/2026-10-09-pull-request/`). From a Friday the 9B, told the date, still asked for 7
-  days: the question now says how many days away Sunday is (5/5 then); lesson 12.
+  600), `QUANTIC_AGENT_REPO`; runbook §8b. First real PR: quantic#487, closed, synced as rejected.
+  The Week Ahead question says how many days away Sunday is (from a Friday the 9B asked for 7);
+  lesson 12.
+- **Default model, 2026-10-09** (branch `week-ahead-two`, decision 0005's update): Qwen3.8-27B
+  `UD-IQ3_S` replaces `qwen3.5:9b`, chosen on the agent's work
+  (`docs/benchmarks/2026-10-09-models/`): 20/20 Week Aheads against ~24/35, better research
+  (evaltools 48/50 vs 45/50; provenance 12/15 vs 8/15). 14GB, 86% on the GPU, 102–174s per Week
+  Ahead; `--timeout` default 600s. The author: background work can be slow. Prompt rewordings for
+  "two" made it worse and weren't merged.
 - design.md keeps Go's "As built in Go" notes next to this repository's "As built" notes.
 - PRs are squash-merged, so a walkthrough built from a branch commit cites a SHA `main` won't have.
   After merge, rebuild the walkthrough page from the merge commit and republish the artifact. That
@@ -93,7 +99,9 @@ starting point here.
 ## Next, in order
 
 1. **Milestone 13 — ship it**: logging, a systemd unit (README roadmap). The timer would run
-   `--week-ahead`, `--pr` and `--sync`. Quantic's `/insights` section (design open question 2) is
+   `--week-ahead`, `--pr` and `--sync`, at a time the author isn't using the GPU: the 27B takes most
+   of the card for about two minutes. The author suggested Claude review a PR's translations and
+   claims by hand before merging (a question, not yet a decision). Quantic's `/insights` section (design open question 2) is
    still unbuilt: merged posts land in `priv/insights/` with nothing rendering them.
 2. Ollama's truncation is invisible in its replies (only its log says `truncating input prompt`);
    detecting it from the agent is open.
@@ -104,9 +112,11 @@ starting point here.
    acceleration" for a slowing dividend; "safety remains strong" for one on watch), and phrasing
    that leans towards advice ("a stable alternative"). Numbers in words are recognised in English
    only, so a translation's "dues" passes.
-5. Milestone 12's runs, 2026-10-09: 3 of 5 wrote "two" (the companies) in the prose after 3
-   attempts, nothing written, where milestone 11 had 19/20 on identical data. Unexplained; the prompt
-   itself says "two" twice. How to fix it is the author's decision.
+5. Seen 2026-10-09, not caught, with either model: false growth comparisons with no figure
+   ("Coca-Cola's recent growth outpaced its average"); "one" isn't recognised as a figure ("just one
+   company going ex-dividend" passed); "both" passes the check though the prompt forbids it. The
+   27B's Catalan still has visible errors (design open question 12). With the 9B, the prose step
+   alone held 1 of 40 writings but 7 of 35 inside full runs; the difference wasn't found.
 6. Ratios in get_stock (`cagr_5y` 0.1023) written as percentages ("10.23%") are flagged as
    converted figures, correctly by N1; a percentage calculator tool would let them through.
 
