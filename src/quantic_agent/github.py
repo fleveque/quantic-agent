@@ -10,7 +10,8 @@ too. So this client is written so it can't change an existing branch:
   refuses for a ref that exists, as main always does;
 - the branch must be under BRANCH_PREFIX, checked before any request;
 - there is no method that updates a ref, deletes one, merges, or writes
-  files through the contents API.
+  files through the contents API. It reads files through it: what a merged
+  pull request published (milestone 14).
 
 Quantic's deploy workflow refuses a push to main by a bot, so a change to
 this module that broke the rule still wouldn't deploy.
@@ -21,12 +22,14 @@ repositories the App is installed on, with the permissions it was given.
 No person's token is involved (decision 0006's rule, applied to GitHub).
 """
 
+import base64
 import time
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from types import TracebackType
 from typing import Any, Self
+from urllib.parse import quote
 
 import httpx
 import jwt
@@ -105,6 +108,9 @@ class PullRequest(BaseModel):
     html_url: str
     state: str  # "open" or "closed"
     merged_at: datetime | None = None
+    # Once merged, the commit on the base branch that merged it: with a squash
+    # merge, the one commit main gained.
+    merge_commit_sha: str | None = None
     head: _Head
 
     @property
@@ -124,6 +130,12 @@ class _Ref(BaseModel):
 class _Commit(BaseModel):
     sha: str
     tree: _Object
+
+
+class _Content(BaseModel):
+    type: str
+    encoding: str
+    content: str
 
 
 class _Installation(BaseModel):
@@ -235,6 +247,22 @@ class Client:
     async def pull_request(self, number: int) -> PullRequest:
         """A pull request as it stands now."""
         return _validated(PullRequest, await self._call("GET", f"pulls/{number}"))
+
+    async def file(self, path: str, ref: str) -> str | None:
+        """A text file's content as it is at ref (a commit's SHA, or a
+        branch), or None if there is no file there. A read: GET only."""
+        try:
+            found = await self._call("GET", f"contents/{quote(path)}?ref={quote(ref)}")
+        except APIError as err:
+            if err.status == 404:
+                return None
+            raise
+        content = _validated(_Content, found)
+        # Up to 1 MB the content comes inline, base64; a larger file comes
+        # with encoding "none" and no content. A post is about 12 KB.
+        if content.type != "file" or content.encoding != "base64":
+            raise GitHubError(f"{path} at {ref}: a {content.type}, encoded {content.encoding!r}")
+        return base64.b64decode(content.content).decode()
 
     async def _installation_token(self) -> str:
         """The installation token, fetched on first use and again a minute

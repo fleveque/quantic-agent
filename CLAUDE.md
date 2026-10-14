@@ -102,6 +102,16 @@ starting point here.
   PYTHONUNBUFFERED). The author chose all four. The first real `--weekly` opened a duplicate PR
   (quantic#494, closed) by taking the week's newest answered run: fixed, tested. A oneshot has no
   start timeout by default (systemd.service(5)); lesson 13.
+- **Milestone 14** (branch `m14-corrections`, ADR 0016): the reviewer's corrections captured.
+  The author chose capture only (glossary and retrieval later). `--sync` reads a merged pull
+  request's files back from its merge commit (contents API, GET; `github.Client.file`) and
+  `corrections.compare` stores each changed section (prose by key, `data`, `frontmatter`, or the
+  whole `file`) with the drafted and published text; migration 0007 (`corrections`,
+  `pull_requests.merge_commit`, set in the same transaction: NULL = not read yet, so old merges
+  and failed reads are read on the next sync). `--run N` shows word diffs (`difflib`; not minimal,
+  unlike git's Myers). Real quantic#492: 8 sections in 6 locales, English untouched; lesson 14.
+  Tested against a copy of the real database: the installed agent doesn't know migration 0007
+  until it's reinstalled.
 - design.md keeps Go's "As built in Go" notes next to this repository's "As built" notes.
 - PRs are squash-merged, so a walkthrough built from a branch commit cites a SHA `main` won't have.
   After merge, rebuild the walkthrough page from the merge commit and republish the artifact. That
@@ -143,17 +153,14 @@ starting point here.
    alone held 1 of 40 writings but 7 of 35 inside full runs; the difference wasn't found.
 6. Ratios in get_stock (`cagr_5y` 0.1023) written as percentages ("10.23%") are flagged as
    converted figures, correctly by N1; a percentage calculator tool would let them through.
-7. **Learning from the reviewer's corrections** (an open question, raised 2026-10-14 reviewing
-   quantic#492, not yet a milestone). `--sync` records only *whether* a pull request was merged,
-   not what the author changed on its branch: corrections are lost, and a run's stored posts can
-   differ from what was published. The 27B's translations there had errors no check sees: Catalan
-   "divisió" for dividend and "per davant" (ahead) for behind, Italian "dello stesso periodo" for
-   "in the same week", Portuguese "lucros" (profits) for results. Options put to the author:
-   capture first (`--sync` diffs the merged files against the stored posts, by locale and
-   section); then a per-locale glossary in `locales.json` with a check that holds a known-wrong
-   term (the only option that guarantees anything), and past corrections retrieved as examples for
-   the translator (RAG, design §3.4's style memory extended to Week Aheads, which today can't be
-   style memory). §3.4's other planned uses have no milestone yet: don't-repeat-yourself (what was
+7. **Learning from the reviewer's corrections** (raised 2026-10-14 reviewing quantic#492). Capture
+   is milestone 14: `--sync` stores each section changed before merging. On quantic#492 the 27B's
+   translations had errors no check sees: Catalan "divisió" for dividend and "per davant" (ahead)
+   for behind, Italian "dello stesso periodo" for "in the same week", Portuguese "lucros"
+   (profits) for results. Still open, the author's to choose: a per-locale glossary in
+   `locales.json` with a check that holds a known-wrong term (the only option that guarantees
+   anything), and past corrections retrieved as examples for the translator (RAG, design §3.4's
+   style memory extended to Week Aheads). §3.4's other planned uses have no milestone yet: don't-repeat-yourself (what was
    recently written about a ticker) and filings and news text (open questions 7 and 11).
 
 ## Conventions

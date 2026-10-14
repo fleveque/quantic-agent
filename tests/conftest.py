@@ -4,6 +4,7 @@ pytest loads this file before the tests in this directory, and any fixture
 defined here is available to every test by naming it as a parameter.
 """
 
+import base64
 import json
 import select
 import socket
@@ -16,6 +17,7 @@ from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qs, unquote, urlsplit
 
 import jwt
 import pytest
@@ -325,19 +327,28 @@ class FakeGitHub:
     the installation token on every repository request, keeps the
     repository's refs, and records every request as (method, path, body,
     authorization). pulls maps a pull request's number to the state GET
-    answers with: "open", "merged" or "closed"."""
+    answers with: "open", "merged" or "closed". branches maps it to the files
+    on its branch, by path: what a merge publishes, read back through the
+    contents API at merge_commit(number). A test edits them as a reviewer
+    would."""
 
     url: str
     public_key: str
     repo: str = "fleveque/quantic"
     refs: dict[str, str] = field(default_factory=lambda: dict[str, str]())
     pulls: dict[int, str] = field(default_factory=lambda: dict[int, str]())
+    branches: dict[int, dict[str, str]] = field(default_factory=lambda: dict[int, dict[str, str]]())
     requests: list[tuple[str, str, Any, str]] = field(
         default_factory=lambda: list[tuple[str, str, Any, str]]()
     )
     token: str = "ghs_installationtoken"
     token_lifetime: float = 3600.0
     tokens_issued: int = 0
+
+
+def merge_commit(number: int) -> str:
+    """The SHA the fake GitHub gives pull request number's merge commit."""
+    return f"merge{number:035d}"
 
 
 def github_fixture(name: str) -> dict[str, Any]:
@@ -366,6 +377,9 @@ def github_api(app_key: tuple[str, str]) -> Iterator[FakeGitHub]:
     """A fake GitHub on a free port for the length of one test."""
     fake: FakeGitHub
     created = {"n": 0}
+    # What was committed: a tree's files by path, a commit's tree.
+    trees: dict[str, dict[str, str]] = {}
+    commits: dict[str, str] = {}
 
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self) -> None:
@@ -440,12 +454,14 @@ def github_api(app_key: tuple[str, str]) -> Iterator[FakeGitHub]:
                 created["n"] += 1
                 reply = github_fixture("tree.json")
                 reply["sha"] = f"tree{created['n']:036d}"
+                trees[reply["sha"]] = {f["path"]: f["content"] for f in body["tree"]}
                 return 201, reply
             if method == "POST" and rest == "git/commits":
                 created["n"] += 1
                 reply = github_fixture("commit.json")
                 reply["sha"] = f"commit{created['n']:034d}"
                 reply["tree"]["sha"] = body["tree"]
+                commits[reply["sha"]] = body["tree"]
                 return 201, reply
             if method == "POST" and rest == "git/refs":
                 if body["ref"] in fake.refs:
@@ -457,12 +473,32 @@ def github_api(app_key: tuple[str, str]) -> Iterator[FakeGitHub]:
             if method == "POST" and rest == "pulls":
                 number = 100 + len(fake.pulls)
                 fake.pulls[number] = "open"
+                head = fake.refs[f"refs/heads/{body['head']}"]
+                fake.branches[number] = dict(trees[commits[head]])
                 return 201, self._pull(number, body["head"])
             if method == "GET" and rest.startswith("pulls/"):
                 number = int(rest.removeprefix("pulls/"))
                 if number not in fake.pulls:
                     return 404, github_fixture("not-found.json")
                 return 200, self._pull(number, "agent/x")
+            if method == "GET" and rest.startswith("contents/"):
+                url = urlsplit(rest)
+                path = unquote(url.path.removeprefix("contents/"))
+                ref = parse_qs(url.query)["ref"][0]
+                merged = [n for n, s in fake.pulls.items() if s == "merged"]
+                files = next(
+                    (fake.branches[n] for n in merged if merge_commit(n) == ref), dict[str, str]()
+                )
+                if path not in files:
+                    return 404, github_fixture("contents-not-found.json")
+                reply = github_fixture("contents.json")
+                reply["path"], reply["name"] = path, path.rsplit("/", 1)[-1]
+                # Base64 in lines of 60 characters, as GitHub sends it.
+                encoded = base64.b64encode(files[path].encode()).decode()
+                reply["content"] = "".join(
+                    encoded[i : i + 60] + "\n" for i in range(0, len(encoded), 60)
+                )
+                return 200, reply
             return 404, github_fixture("not-found.json")
 
         def _pull(self, number: int, head: str) -> dict[str, Any]:
@@ -472,7 +508,9 @@ def github_api(app_key: tuple[str, str]) -> Iterator[FakeGitHub]:
             reply["html_url"] = f"https://github.com/{fake.repo}/pull/{number}"
             reply["head"]["ref"] = head
             reply["state"] = "open" if state == "open" else "closed"
-            if state != "merged":
+            if state == "merged":
+                reply["merge_commit_sha"] = merge_commit(number)
+            else:
                 reply["merged_at"] = None
             return reply
 

@@ -40,8 +40,7 @@ def proposal(run: store.Run, repo_path: str) -> Proposal:
     if not any(p.locale == weekahead.SOURCE for p in ready):
         raise NotPublishableError(f"run {run.id} has no English post")
     week = weekahead.week_after(run.started_at.astimezone().date())
-    folder = f"{repo_path.strip('/')}/{week.path}"
-    files = [github.File(f"{folder}/{p.locale}.md", p.content) for p in ready]
+    files = [github.File(path, p.content) for p, path in locations(run, repo_path)]
     locales = ", ".join(p.locale for p in ready)
     return Proposal(
         period=week.period,
@@ -52,6 +51,15 @@ def proposal(run: store.Run, repo_path: str) -> Proposal:
         title=f"Dividend Week Ahead, {week.period}",
         body=_body(run, week, files),
     )
+
+
+def locations(run: store.Run, repo_path: str) -> list[tuple[store.Post, str]]:
+    """Each ready post of a run, with its file's path in the repository:
+    repo_path/<ISO year>/<slug>/<locale>.md. Where the pull request put
+    them, and where --sync reads them back from once it's merged."""
+    week = weekahead.week_after(run.started_at.astimezone().date())
+    folder = f"{repo_path.strip('/')}/{week.path}"
+    return [(p, f"{folder}/{p.locale}.md") for p in run.posts if p.ready]
 
 
 def _body(run: store.Run, week: weekahead.Week, files: list[github.File]) -> str:

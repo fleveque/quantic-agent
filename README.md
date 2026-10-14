@@ -95,7 +95,8 @@ Python with Go. Milestones 0–8 are ports of the Go version; the lessons say wh
 | 10 | Retrieval: embeddings, brute-force cosine, style memory | `array`, `math.sumprod`, `heapq`, vectors as BLOBs, measuring retrieval |
 | 11 | Week Ahead end to end, 7 locales, translation validator | dates, YAML, package data |
 | 12 | GitHub PR flow | a GitHub client, auth |
-| 13 | Ship it: logging, a systemd unit *(you are here)* | structured logging, packaging an application |
+| 13 | Ship it: logging, a systemd unit | structured logging, packaging an application |
+| 14 | The reviewer's corrections, read back *(you are here)* | `difflib`, base64, an ordered set from a dict |
 
 ## Working on this
 

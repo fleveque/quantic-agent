@@ -107,6 +107,28 @@ class PullRequest:
     period: str
     state: str  # "open", "merged" or "closed"
     run_id: int = 0
+    # Merged: the commit its files were read from to find the corrections.
+    # None until they have been.
+    merge_commit: str | None = None
+
+
+# A PullRequest's columns, in its fields' order.
+_PULL_REQUESTS = (
+    "SELECT repo, number, url, branch, period, state, run_id, merge_commit FROM pull_requests "
+)
+
+
+@dataclass(frozen=True)
+class Correction:
+    """A section of a post that the reviewer changed before merging it: what
+    the agent wrote, and what was published. section is a prose section's
+    key, or "data" or "frontmatter" for the YAML, or "file" when the file
+    was left out (published is None) or doesn't read back as a post."""
+
+    locale: str
+    section: str
+    drafted: str
+    published: str | None
 
 
 @dataclass(frozen=True)
@@ -141,6 +163,7 @@ class Run:
     examples: list[tuple[int, float]] = field(default_factory=lambda: list[tuple[int, float]]())
     posts: list[Post] = field(default_factory=lambda: list[Post]())  # a Week Ahead's files
     pull_request: PullRequest | None = None
+    corrections: list[Correction] = field(default_factory=lambda: list[Correction]())
 
     def records(self) -> list[Record]:
         """The run's successful calls as provenance records: exactly what its
@@ -407,8 +430,7 @@ class Store:
         """The pull requests last seen open, oldest first; only period's, if
         given."""
         rows = self._db.execute(
-            "SELECT repo, number, url, branch, period, state, run_id FROM pull_requests "
-            "WHERE state = 'open' AND (? IS NULL OR period = ?) ORDER BY id",
+            _PULL_REQUESTS + "WHERE state = 'open' AND (? IS NULL OR period = ?) ORDER BY id",
             (period, period),
         )
         return [PullRequest(*row) for row in rows]
@@ -430,6 +452,40 @@ class Store:
             ).fetchone()
             how = "merged" if merged else "closed without merging"
             self._verdict(run_id, "approved" if merged else "rejected", f"{row[0]}#{row[1]} {how}")
+
+    def unread_merges(self) -> list[PullRequest]:
+        """The merged pull requests whose files haven't been compared with
+        the drafts yet, oldest first: merged since the last sync, or before
+        the agent could read them."""
+        rows = self._db.execute(
+            _PULL_REQUESTS + "WHERE state = 'merged' AND merge_commit IS NULL ORDER BY id"
+        )
+        return [PullRequest(*row) for row in rows]
+
+    def record_corrections(
+        self, run_id: int, merge_commit: str, corrections: Sequence[Correction]
+    ) -> None:
+        """Records what the reviewer changed in a run's merged post, read at
+        merge_commit: none, if it was merged as written. Once only, in one
+        transaction with the commit, so a run never has half its
+        corrections."""
+        with self._transaction():
+            cursor = self._db.execute(
+                "UPDATE pull_requests SET merge_commit = ? "
+                "WHERE run_id = ? AND state = 'merged' AND merge_commit IS NULL",
+                (merge_commit, run_id),
+            )
+            if cursor.rowcount != 1:
+                raise NotFoundError(f"run {run_id} has no merged pull request still to read")
+            self._db.executemany(
+                "INSERT INTO corrections "
+                "(run_id, locale, section, drafted, published, created_at) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                [
+                    (run_id, c.locale, c.section, c.drafted, c.published, self._stamp())
+                    for c in corrections
+                ],
+            )
 
     def memories(self, model: str) -> list[memory.Memory]:
         """Every approved answer embedded with model: the style memory a
@@ -499,8 +555,7 @@ class Store:
             )
         )
         found = self._db.execute(
-            "SELECT repo, number, url, branch, period, state, run_id FROM pull_requests "
-            "WHERE run_id = ?",
+            _PULL_REQUESTS + "WHERE run_id = ?",
             (run_id,),
         ).fetchone()
         run.pull_request = PullRequest(*found) if found is not None else None
@@ -508,6 +563,14 @@ class Store:
             Post(locale, status == "ready", content, json.loads(problems))
             for locale, status, content, problems in self._db.execute(
                 "SELECT locale, status, content, problems FROM posts WHERE run_id = ? ORDER BY id",
+                (run_id,),
+            )
+        ]
+        run.corrections = [
+            Correction(*correction)
+            for correction in self._db.execute(
+                "SELECT locale, section, drafted, published FROM corrections "
+                "WHERE run_id = ? ORDER BY id",
                 (run_id,),
             )
         ]

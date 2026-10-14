@@ -182,4 +182,4 @@ run 1, 2026-W43's, is written run=1 period=2026-W43
 
 ---
 
-**Previous:** [Lesson 12 — A merge is a verdict](12-a-merge-is-a-verdict.md)
+**Previous:** [Lesson 12 — A merge is a verdict](12-a-merge-is-a-verdict.md) · **Next:** [Lesson 14 — What I changed before merging](14-what-i-changed-before-merging.md)
