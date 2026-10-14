@@ -6,7 +6,7 @@ sometimes: "offering distinct profiles for income-focused investors", "Both comp
 long histories". Now a list of rules catches those phrases and sends them back to the writer, the
 way a figure is. I learned more from measuring it than from writing it.
 
-*Also readable as a [formatted page](LESSON_URL), with a [code walkthrough](WALKTHROUGH_URL) of every
+*Also readable as a [formatted page](https://claude.ai/artifact/KcQeXD23ncBeX1kU94Nmx2), with a [code walkthrough](https://claude.ai/artifact/DnRLm51mYFbyMH3idu2ZDT) of every
 change the milestone made.*
 
 ---
