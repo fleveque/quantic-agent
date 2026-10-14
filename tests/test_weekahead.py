@@ -1,23 +1,34 @@
 import json
 from datetime import date
+from typing import Any
 
 import pytest
 import yaml
 from conftest import tool_result
-from test_agent import ScriptedModel, answers
+from test_agent import FakeServer, ScriptedModel, answers
 
-from quantic_agent import provenance, weekahead
+from quantic_agent import provenance, quantic, weekahead
 from quantic_agent.agent import Call
-from quantic_agent.weekahead import Prose, Week
+from quantic_agent.weekahead import Prose, Week, WeekData
 
-# The week after Thursday 2026-10-08, when the fixtures were captured: Procter
-# & Gamble and Coca-Cola go ex-dividend in it.
+# The week after Thursday 2026-10-08, when the first fixtures were captured:
+# Procter & Gamble and Coca-Cola go ex-dividend in it.
 WEEK = Week(date(2026, 10, 12))
+
+# The week after Wednesday 2026-10-14, when the earnings and dividend changes
+# were captured, with a calendar and lookups to go with them: Apple and
+# Iberdrola go ex-dividend in it, and Iberdrola reports earnings.
+NEXT = Week(date(2026, 10, 19))
 
 
 def calls(*names: str) -> list[Call]:
     """Successful calls answered by captured tools/call replies."""
-    tools = {"calendar": "dividend_calendar", "get-stock": "get_stock"}
+    tools = {
+        "calendar": "dividend_calendar",
+        "get-stock": "get_stock",
+        "earnings": "earnings_calendar",
+        "changes": "dividend_changes",
+    }
     out: list[Call] = []
     for name in names:
         tool = next(t for prefix, t in tools.items() if name.startswith(f"call-{prefix}"))
@@ -26,6 +37,14 @@ def calls(*names: str) -> list[Call]:
 
 
 RESEARCHED = ("call-calendar-45.sse", "call-get-stock-pg.sse", "call-get-stock-ko.sse")
+GATHERED = (
+    "call-calendar-11.sse",
+    "call-get-stock-aapl.sse",
+    "call-get-stock-ibe.sse",
+    "call-earnings-12.sse",
+    "call-changes-7.sse",
+)
+EMPTY = WeekData(ex_dividends=[], earnings=[], dividend_changes=[])
 
 
 def manifest(gathered: list[Call]) -> provenance.Manifest:
@@ -47,11 +66,13 @@ def manifest(gathered: list[Call]) -> provenance.Manifest:
 def test_the_week_after(today: date, start: date, period: str) -> None:
     week = weekahead.week_after(today)
     assert (week.start, week.end.weekday(), week.period) == (start, 6, period)
-    assert week.slug == f"week-ahead-{period}"
+    # Quantic's path: the ISO year, then the week, which the build checks.
+    year, number = period.split("-")
+    assert (week.slug, week.path) == (f"week-ahead-{number}", f"{year}/week-ahead-{number}")
 
 
 def test_gather_takes_the_weeks_companies_from_the_tools() -> None:
-    rows = weekahead.gather(WEEK, calls(*RESEARCHED))
+    rows = weekahead.ex_dividends(WEEK, calls(*RESEARCHED))
 
     assert [(r.symbol, r.ex_dividend_date) for r in rows] == [
         ("PG", "2026-10-16"),
@@ -70,43 +91,207 @@ def test_gather_takes_the_weeks_companies_from_the_tools() -> None:
         "tight_liquidity",
     ]
     assert pg.growth_ttm == 0.039728682170542484  # the ratio, unrounded
+    # A calendar from before the rate, the yield and the pay date: absent is null.
+    assert (pg.dividend_rate, pg.currency, pg.dividend_yield, pg.pay_date) == (None,) * 4
+
+
+def test_gather_adds_the_weeks_earnings_and_the_dividend_changes() -> None:
+    data = weekahead.gather(NEXT, calls(*GATHERED))
+
+    assert [(r.symbol, r.ex_dividend_date) for r in data.ex_dividends] == [
+        ("AAPL", "2026-10-19"),
+        ("IBE.MC", "2026-10-20"),
+    ]
+    ibe = data.ex_dividends[1]
+    # The calendar's 3.15 (%) as the ratio the post carries; the rate and the
+    # pay date were null in Quantic when captured, and stay null.
+    assert (ibe.currency, ibe.dividend_yield, ibe.dividend_rate, ibe.pay_date) == (
+        "EUR",
+        0.0315,
+        None,
+        None,
+    )
+    # The calendar asked for twelve days holds the rest of this week and
+    # some of the one after; the post has its own week only.
+    assert len(data.earnings) == 66
+    assert {e.earnings_date for e in data.earnings} <= {f"2026-10-{day}" for day in range(19, 26)}
+    iberdrola = next(e for e in data.earnings if e.symbol == "IBE.MC")
+    assert (iberdrola.earnings_date, iberdrola.earnings_date_end, iberdrola.estimated) == (
+        "2026-10-21",
+        None,
+        False,
+    )
+    assert data.dividend_changes == []  # the log started the day these were captured
+
+
+def test_dividend_changes_are_copied_as_the_tool_has_them() -> None:
+    # No raise or cut had been logged when the fixtures were captured (the log
+    # started that day), so this result is written to the tool's shape, from
+    # Quantic's lib/quantic_web/mcp/tools/dividend_changes.ex.
+    changes = {
+        "from": "2026-10-07",
+        "to": "2026-10-14",
+        "changes": [
+            {
+                "symbol": "VFC",
+                "name": "V.F. Corporation",
+                "sector": "Consumer Cyclical",
+                "kind": "cut",
+                "old_rate": 0.72,
+                "new_rate": 0.36,
+                "currency": "USD",
+                "detected_on": "2026-10-08",
+            }
+        ],
+    }
+    gathered = [
+        *calls(*GATHERED[:-1]),
+        Call(tool="dividend_changes", arguments={"days": 7}, result=json.dumps(changes)),
+    ]
+
+    data = weekahead.gather(NEXT, gathered)
+
+    # kind isn't carried: the page tells a raise from a cut by the rates.
+    assert weekahead.data_block(data)["dividend_changes"] == [
+        {
+            "symbol": "VFC",
+            "name": "V.F. Corporation",
+            "sector": "Consumer Cyclical",
+            "old_rate": 0.72,
+            "new_rate": 0.36,
+            "currency": "USD",
+            "detected_on": "2026-10-08",
+        }
+    ]
+    assert (
+        provenance.check_data(
+            weekahead.data_block(data), manifest(gathered), percentages=weekahead.PERCENTAGES
+        )
+        == []
+    )
 
 
 def test_every_value_in_the_data_traces_to_a_tool() -> None:
-    gathered = calls(*RESEARCHED)
-    rows = weekahead.gather(WEEK, gathered)
-    assert provenance.check_data(weekahead.data_block(rows), manifest(gathered)) == []
+    gathered = calls(*GATHERED)
+    data = weekahead.gather(NEXT, gathered)
+    block = weekahead.data_block(data)
+
+    def check(block: dict[str, Any]) -> list[str]:
+        found = provenance.check_data(block, manifest(gathered), percentages=weekahead.PERCENTAGES)
+        return [str(f) for f in found]
+
+    assert check(block) == []
 
     # A value code changed on the way, as rounding would, is caught.
-    rounded = rows[0].model_copy(update={"growth_ttm": 0.0397})
-    found = provenance.check_data(weekahead.data_block([rounded, rows[1]]), manifest(gathered))
-    assert [str(f) for f in found] == ["ex_dividends[0].growth_ttm = 0.0397"]
+    rows = data.ex_dividends
+    rounded = rows[0].model_copy(update={"growth_ttm": 0.0392})
+    changed = data.model_copy(update={"ex_dividends": [rounded, rows[1]]})
+    assert check(weekahead.data_block(changed)) == ["ex_dividends[0].growth_ttm = 0.0392"]
+
+    # The yield is found as the percentage it was divided from, and only as that.
+    assert block["ex_dividends"][0]["dividend_yield"] == 0.0032
+    as_returned = rows[0].model_copy(update={"dividend_yield": 0.32})
+    changed = data.model_copy(update={"ex_dividends": [as_returned, rows[1]]})
+    assert check(weekahead.data_block(changed)) == ["ex_dividends[0].dividend_yield = 0.32"]
+    unnamed = provenance.check_data(block, manifest(gathered))
+    assert [f.path for f in unnamed] == [
+        "ex_dividends[0].dividend_yield",
+        "ex_dividends[1].dividend_yield",
+    ]
 
 
 def test_a_calendar_that_stops_short_of_the_week_is_not_enough() -> None:
     # 45 days from 2026-10-08 reach Sunday 2026-11-22, and Quantic's calendar
     # includes its last day (MarketData.stocks_with_ex_dividend_between): that
     # week is covered, the next one isn't.
-    assert weekahead.gather(Week(date(2026, 11, 16)), calls(*RESEARCHED)) == []
+    assert weekahead.ex_dividends(Week(date(2026, 11, 16)), calls(*RESEARCHED)) == []
     with pytest.raises(weekahead.IncompleteError, match="no dividend_calendar call covers"):
-        weekahead.gather(Week(date(2026, 11, 23)), calls(*RESEARCHED))
+        weekahead.ex_dividends(Week(date(2026, 11, 23)), calls(*RESEARCHED))
+
+
+@pytest.mark.parametrize(
+    ("left_out", "error"),
+    [
+        ("call-earnings-12.sse", "no earnings_calendar call covers the week"),
+        ("call-changes-7.sse", "no dividend_changes call succeeded"),
+    ],
+)
+def test_the_weeks_earnings_and_changes_are_needed(left_out: str, error: str) -> None:
+    with pytest.raises(weekahead.IncompleteError, match=error):
+        weekahead.gather(NEXT, calls(*(name for name in GATHERED if name != left_out)))
+
+
+def test_an_earnings_calendar_that_stops_short_of_the_week_is_not_enough() -> None:
+    # Twelve days from 2026-10-14 reach 2026-10-26: the week after isn't covered.
+    with pytest.raises(weekahead.IncompleteError, match="no earnings_calendar call covers"):
+        weekahead.gather(Week(date(2026, 10, 26)), calls(*GATHERED))
 
 
 def test_a_company_not_looked_up_is_named() -> None:
     with pytest.raises(weekahead.IncompleteError, match=r"not looked up with get_stock: KO$"):
-        weekahead.gather(WEEK, calls("call-calendar-45.sse", "call-get-stock-pg.sse"))
+        weekahead.ex_dividends(WEEK, calls("call-calendar-45.sse", "call-get-stock-pg.sse"))
 
 
 def test_failed_calls_are_not_data() -> None:
     gathered = calls(*RESEARCHED)
     gathered[2].failed = True  # KO's lookup, as if it had been refused
     with pytest.raises(weekahead.IncompleteError, match="KO"):
-        weekahead.gather(WEEK, gathered)
+        weekahead.ex_dividends(WEEK, gathered)
 
 
 def test_a_week_with_no_companies_has_no_rows() -> None:
     # The week before PG's: nothing in the calendar falls in it.
-    assert weekahead.gather(Week(date(2026, 10, 26)), calls(*RESEARCHED)) == []
+    assert weekahead.ex_dividends(Week(date(2026, 10, 26)), calls(*RESEARCHED)) == []
+
+
+def captured(name: str) -> quantic.Result:
+    return quantic.Result(text=tool_result(name), is_error=False)
+
+
+@pytest.mark.anyio
+async def test_code_looks_up_the_weeks_earnings_and_changes() -> None:
+    server = FakeServer(
+        results={
+            "earnings_calendar": captured("call-earnings-12.sse"),
+            "dividend_changes": captured("call-changes-7.sse"),
+        }
+    )
+    gathered = calls(*GATHERED[:3])
+
+    await weekahead.look_up(server, NEXT, date(2026, 10, 14), gathered, gathered.append)
+
+    # Through Sunday the 25th, a day more for the server's UTC; seven days back.
+    assert server.received == [
+        ("earnings_calendar", {"days": 12}),
+        ("dividend_changes", {"days": 7}),
+    ]
+    assert [(c.tool, c.arguments, c.failed) for c in gathered[3:]] == [
+        ("earnings_calendar", {"days": 12}, False),
+        ("dividend_changes", {"days": 7}, False),
+    ]
+    assert len(weekahead.gather(NEXT, gathered).earnings) == 66
+
+    # Resumed, a call already made isn't made again.
+    server.received.clear()
+    await weekahead.look_up(server, NEXT, date(2026, 10, 14), gathered, gathered.append)
+    assert server.received == []
+
+
+@pytest.mark.anyio
+async def test_a_look_up_that_fails_is_recorded_then_raised() -> None:
+    down = quantic.ToolServerUnavailableError("connection refused")
+    server = FakeServer(results={"earnings_calendar": down})
+    gathered: list[Call] = []
+
+    with pytest.raises(quantic.ToolServerUnavailableError):
+        await weekahead.look_up(server, NEXT, date(2026, 10, 14), gathered, gathered.append)
+
+    [call] = gathered
+    assert (call.tool, call.failed, call.result) == (
+        "earnings_calendar",
+        True,
+        "error: connection refused",
+    )
 
 
 PROSE = Prose(
@@ -118,9 +303,9 @@ PROSE = Prose(
 @pytest.mark.anyio
 async def test_the_writer_answers_in_the_prose_format() -> None:
     model = ScriptedModel([answers(PROSE.model_dump_json(), 100)])
-    rows = weekahead.gather(WEEK, calls(*RESEARCHED))
+    data = weekahead.gather(NEXT, calls(*GATHERED))
 
-    written = await weekahead.write(model, WEEK, rows)
+    written = await weekahead.write(model, NEXT, data)
 
     assert (written.prose, written.findings, written.attempts, written.tokens) == (
         PROSE,
@@ -132,10 +317,13 @@ async def test_the_writer_answers_in_the_prose_format() -> None:
     system, user = model.shown[0]
     assert system.content == weekahead.WRITE_PROMPT
     # Shown the data, every company in it, under names with no figures in them.
-    assert '"symbol": "KO"' in user.content
-    assert '"long_term_growth": 0.044617420086995985' in user.content
+    assert '"symbol": "IBE.MC"' in user.content
+    assert '"long_term_growth": 0.02923938553006833' in user.content
     assert not any(name in user.content for name in ("cagr_5y", "growth_ttm", "streak_years"))
-    assert "Monday 2026-10-12 to Sunday 2026-10-18" in user.content
+    assert "Monday 2026-10-19 to Sunday 2026-10-25" in user.content
+    # And the week's earnings, and the raises and cuts (none, that week).
+    assert '"earnings_date": "2026-10-21"' in user.content
+    assert '"dividend_changes": []' in user.content
 
 
 @pytest.mark.anyio
@@ -146,7 +334,7 @@ async def test_prose_with_figures_is_sent_back() -> None:
             answers(PROSE.model_dump_json(), 20),
         ]
     )
-    written = await weekahead.write(model, WEEK, [])
+    written = await weekahead.write(model, WEEK, EMPTY)
 
     assert (written.prose, written.findings, written.attempts, written.tokens) == (PROSE, [], 2, 30)
     retry = model.shown[1]
@@ -160,7 +348,7 @@ async def test_the_last_attempt_is_returned_with_its_figures() -> None:
     model = ScriptedModel(
         [answers(json.dumps({"summary": "A streak of 28 years.", "watch": "Calm."}))] * 3
     )
-    written = await weekahead.write(model, WEEK, [])
+    written = await weekahead.write(model, WEEK, EMPTY)
 
     assert written.attempts == 3
     assert [str(f) for f in written.findings] == ["'28' (number 28)"]
@@ -178,7 +366,7 @@ async def test_the_last_attempt_is_returned_with_its_figures() -> None:
 async def test_a_reply_that_isnt_prose(reply: str, error: str) -> None:
     model = ScriptedModel([answers(reply, 7)])
     with pytest.raises(weekahead.NotProseError, match=error) as caught:
-        await weekahead.write(model, WEEK, [])
+        await weekahead.write(model, WEEK, EMPTY)
     assert caught.value.tokens == 7
 
 
@@ -221,15 +409,18 @@ async def test_a_translation_that_isnt_prose_is_held_as_it_came() -> None:
 
 
 def test_a_post_file_reads_back_as_it_was_checked() -> None:
-    rows = weekahead.gather(WEEK, calls(*RESEARCHED))
-    data = weekahead.data_yaml(rows)
+    data = weekahead.gather(NEXT, calls(*GATHERED))
+    block = weekahead.data_yaml(data)
 
-    text = weekahead.render(WEEK, 7, "es", data, SPANISH)
+    text = weekahead.render(NEXT, 7, "es", block, SPANISH)
 
-    assert text.startswith('---\nkind: "week_ahead"\nperiod: "2026-W42"\nlocale: "es"\n')
-    assert '    ex_dividend_date: "2026-10-16"\n' in text
+    assert text.startswith('---\nkind: "week_ahead"\nperiod: "2026-W43"\nlocale: "es"\n')
+    assert '    ex_dividend_date: "2026-10-20"\n' in text
+    assert "    dividend_yield: 0.0315\n    pay_date: null\n" in text
+    assert '  earnings:\n  - symbol: "' in text
+    assert "  dividend_changes: []\n" in text
     assert "## La semana que viene\n\n" + SPANISH.summary in text
-    assert weekahead.check_file(text, "es", rows, SPANISH) == []
+    assert weekahead.check_file(text, "es", data, SPANISH) == []
     front, sections = weekahead.read_back(text, "es")
     assert (front["run_id"], front["fold_after"], front["sections"]) == (
         7,
@@ -240,42 +431,47 @@ def test_a_post_file_reads_back_as_it_was_checked() -> None:
 
 
 def test_every_locale_carries_the_same_data_block() -> None:
-    rows = weekahead.gather(WEEK, calls(*RESEARCHED))
-    data = weekahead.data_yaml(rows)
-    files = [weekahead.render(WEEK, 7, locale, data, PROSE) for locale in weekahead.LOCALES]
-    assert all(data in f for f in files)
+    block = weekahead.data_yaml(weekahead.gather(NEXT, calls(*GATHERED)))
+    files = [weekahead.render(NEXT, 7, locale, block, PROSE) for locale in weekahead.LOCALES]
+    assert all(block in f for f in files)
     assert len(files) == 7
 
 
 def test_strings_are_quoted_whatever_they_look_like() -> None:
     # "ON" is a boolean to a YAML 1.1 parser, and 1E3 a number to a YAML 1.2
     # one; PyYAML would leave the second bare. Quoted, both stay strings.
-    rows = weekahead.gather(WEEK, calls(*RESEARCHED))
-    odd = [r.model_copy(update={"symbol": s}) for r, s in zip(rows, ["ON", "1E3"], strict=True)]
-    data = weekahead.data_yaml(odd)
-    assert 'symbol: "ON"' in data
-    assert 'symbol: "1E3"' in data
-    text = weekahead.render(WEEK, 7, "en", data, PROSE)
+    data = weekahead.gather(NEXT, calls(*GATHERED))
+    rows = data.ex_dividends
+    odd = data.model_copy(
+        update={
+            "ex_dividends": [
+                r.model_copy(update={"symbol": s}) for r, s in zip(rows, ["ON", "1E3"], strict=True)
+            ]
+        }
+    )
+    block = weekahead.data_yaml(odd)
+    assert 'symbol: "ON"' in block
+    assert 'symbol: "1E3"' in block
+    text = weekahead.render(NEXT, 7, "en", block, PROSE)
     assert weekahead.check_file(text, "en", odd, PROSE) == []
 
 
 def test_prose_that_breaks_the_file_is_caught() -> None:
-    rows = weekahead.gather(WEEK, calls(*RESEARCHED))
-    data = weekahead.data_yaml(rows)
+    data = weekahead.gather(NEXT, calls(*GATHERED))
     headed = PROSE.model_copy(update={"watch": "Calm.\n\n## Buy now\n\nIt goes up."})
 
-    text = weekahead.render(WEEK, 7, "en", data, headed)
+    text = weekahead.render(NEXT, 7, "en", weekahead.data_yaml(data), headed)
 
-    assert weekahead.check_file(text, "en", rows, headed) == [
+    assert weekahead.check_file(text, "en", data, headed) == [
         "the file doesn't read back: an unexpected heading: '## Buy now'"
     ]
 
 
 def test_a_data_block_that_reads_back_differently_is_caught() -> None:
-    rows = weekahead.gather(WEEK, calls(*RESEARCHED))
-    text = weekahead.render(WEEK, 7, "en", weekahead.data_yaml(rows), PROSE)
-    tampered = text.replace("streak_years: 28", "streak_years: 29", 1)
-    assert weekahead.check_file(tampered, "en", rows, PROSE) == [
+    data = weekahead.gather(NEXT, calls(*GATHERED))
+    text = weekahead.render(NEXT, 7, "en", weekahead.data_yaml(data), PROSE)
+    tampered = text.replace("estimated: false", "estimated: true", 1)
+    assert weekahead.check_file(tampered, "en", data, PROSE) == [
         "the file's data block doesn't read back as the data"
     ]
     assert yaml.safe_load(tampered.split("---\n")[1])["locale"] == "en"

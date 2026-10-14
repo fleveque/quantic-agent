@@ -6,7 +6,7 @@ understand Python. The first version was Go, up to milestone 8: `../quantic-agen
 `github.com/fleveque/quantic-agent-go`). Its design, ADRs, benchmarks, fixtures and lessons are the
 starting point here.
 
-## Status — 2026-10-09
+## Status — 2026-10-14
 
 - **Milestone 0 merged** (#1): design, ADRs 0001–0007 and benchmarks carried over; lesson 00.
 - **Milestone 1 merged** (#2): `quantic_agent/cli.py`, `quantic_agent/tools.py`; lesson 01.
@@ -83,6 +83,15 @@ starting point here.
   (evaltools 48/50 vs 45/50; provenance 12/15 vs 8/15). 14GB, 86% on the GPU, 102–174s per Week
   Ahead; `--timeout` default 600s. The author: background work can be slow. Prompt rewordings for
   "two" made it worse and weren't merged.
+- **The Week Ahead's new data, 2026-10-14** (branch `week-ahead-new-data`, ADR 0013's update), after
+  quantic#490/#491: `dividend_rate`, `currency`, `dividend_yield` (the calendar's percentage / 100,
+  `check_data(percentages=...)`), `pay_date`; `earnings` (the week only) and `dividend_changes` (7
+  days). The author chose: **code calls `earnings_calendar` and `dividend_changes`**
+  (`weekahead.look_up`), after research is known complete, not the model (up to ~30 KB of earnings
+  in season). Files at `<out or priv/insights>/<ISO year>/week-ahead-WNN/`. No lesson (like #14).
+  Real runs: `docs/benchmarks/2026-10-14-week-ahead-data/`, 3/3, all files pass Quantic's checks.
+- The week-ahead CLI tests pin the run's start date: the PR tests took the week from the real
+  clock and failed on `main` from Monday 2026-10-12.
 - design.md keeps Go's "As built in Go" notes next to this repository's "As built" notes.
 - PRs are squash-merged, so a walkthrough built from a branch commit cites a SHA `main` won't have.
   After merge, rebuild the walkthrough page from the merge commit and republish the artifact. That
@@ -101,8 +110,8 @@ starting point here.
 1. **Milestone 13 — ship it**: logging, a systemd unit (README roadmap). The timer would run
    `--week-ahead`, `--pr` and `--sync`, at a time the author isn't using the GPU: the 27B takes most
    of the card for about two minutes. The author suggested Claude review a PR's translations and
-   claims by hand before merging (a question, not yet a decision). Quantic's `/insights` section (design open question 2) is
-   still unbuilt: merged posts land in `priv/insights/` with nothing rendering them.
+   claims by hand before merging (a question, not yet a decision). Quantic's `/insights` renders
+   merged posts since quantic#489/#491.
 2. Ollama's truncation is invisible in its replies (only its log says `truncating input prompt`);
    detecting it from the agent is open.
 3. Seen in real runs, not caught: counts of a filtered subset ("four companies") are flagged though
@@ -110,7 +119,8 @@ starting point here.
    9B sometimes reasons out loud in an answer despite `think: false`.
 4. Seen in milestone 11's real runs, not caught: prose that's wrong without a figure ("recent
    acceleration" for a slowing dividend; "safety remains strong" for one on watch), and phrasing
-   that leans towards advice ("a stable alternative"). Numbers in words are recognised in English
+   that leans towards advice ("a stable alternative"; with the 27B on 2026-10-14, "for
+   income-focused investors" and "may influence sentiment"). Numbers in words are recognised in English
    only, so a translation's "dues" passes.
 5. Seen 2026-10-09, not caught, with either model: false growth comparisons with no figure
    ("Coca-Cola's recent growth outpaced its average"); "one" isn't recognised as a figure ("just one

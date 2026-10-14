@@ -702,8 +702,8 @@ def asks_for(*calls: tuple[str, Mapping[str, object]]) -> Reply:
 
 
 ENGLISH = {
-    "summary": "Procter & Gamble and Coca-Cola go ex-dividend late in the week.",
-    "watch": "Coca-Cola is rated safe, while Procter & Gamble is on watch for tight liquidity.",
+    "summary": "Apple and Iberdrola go ex-dividend early in the week.",
+    "watch": "Apple is rated safe, while Iberdrola is on watch for tight liquidity and reports.",
 }
 
 
@@ -716,7 +716,7 @@ def translated(locale: str) -> Reply:
     return prose({key: f"[{locale}] {text}" for key, text in ENGLISH.items()})
 
 
-LOOKUPS = (("get_stock", {"symbol": "PG"}), ("get_stock", {"symbol": "KO"}))
+LOOKUPS = (("get_stock", {"symbol": "AAPL"}), ("get_stock", {"symbol": "IBE.MC"}))
 
 
 def week_ahead_servers(
@@ -728,21 +728,24 @@ def week_ahead_servers(
     writer: list[Reply] | None = None,
     translations: dict[str, Reply] | None = None,
 ) -> None:
-    """Thursday 2026-10-08, when the fixtures were captured from Quantic:
-    the week after has Procter & Gamble and Coca-Cola in it. The model asks
-    for the calendar, then both companies at once, then stops; the writer
-    and the six translators answer in turn."""
-    monkeypatch.setattr(cli, "today", lambda: date(2026, 10, 8))
+    """Wednesday 2026-10-14, when the fixtures were captured from Quantic:
+    the week after has Apple and Iberdrola in it. The model asks for the
+    calendar, then both companies at once, then stops; code looks up the
+    week's earnings and the dividend changes; the writer and the six
+    translators answer in turn."""
+    monkeypatch.setattr(cli, "today", lambda: date(2026, 10, 14))
     quantic_mcp.tools.update(
         {
-            "dividend_calendar": "call-calendar-45.sse",
-            "get_stock:PG": "call-get-stock-pg.sse",
-            "get_stock:KO": "call-get-stock-ko.sse",
+            "dividend_calendar": "call-calendar-11.sse",
+            "get_stock:AAPL": "call-get-stock-aapl.sse",
+            "get_stock:IBE.MC": "call-get-stock-ibe.sse",
+            "earnings_calendar": "call-earnings-12.sse",
+            "dividend_changes": "call-changes-7.sse",
         }
     )
     if research is None:
         research = [
-            asks_for(("dividend_calendar", {"days": 45})),
+            asks_for(("dividend_calendar", {"days": 11})),
             asks_for(*LOOKUPS),
             Reply(says("Done.")),
         ]
@@ -776,12 +779,12 @@ def test_week_ahead_writes_every_locale(
 
     assert week_ahead(ollama, quantic_mcp, tmp_path / "out") == 0
 
-    folder = tmp_path / "out" / "week-ahead-2026-W42"
+    folder = tmp_path / "out" / "2026" / "week-ahead-W43"
     files = {p.stem: p.read_text() for p in folder.iterdir()}
     assert sorted(files) == sorted(weekahead.LOCALES)
     # One data block, the same in every file; only the prose differs.
     assert len({data_block(text) for text in files.values()}) == 1
-    assert "## Die kommende Woche\n\n[de] Procter & Gamble" in files["de"]
+    assert "## Die kommende Woche\n\n[de] Apple" in files["de"]
     out, err = capsys.readouterr()
     assert out == files["en"] + "\n"
     assert f"es: {folder / 'es.md'}" in err
@@ -790,18 +793,24 @@ def test_week_ahead_writes_every_locale(
     assert (run.kind, run.state, run.input) == (
         "week_ahead",
         store.State.ANSWERED,
-        "Today is Thursday 2026-10-08. "
-        "Gather the data for the Dividend Week Ahead, for the week from Monday 2026-10-12 "
-        "to Sunday 2026-10-18: find every company that goes ex-dividend in that week, and "
-        "look up each one. Sunday 2026-10-18 is 10 days from today.",
+        "Today is Wednesday 2026-10-14. "
+        "Gather the data for the Dividend Week Ahead, for the week from Monday 2026-10-19 "
+        "to Sunday 2026-10-25: find every company that goes ex-dividend in that week, and "
+        "look up each one. Sunday 2026-10-25 is 11 days from today.",
     )
-    # The two lookups ran at once, recorded in the order they finished.
-    calendar, *lookups = [(c.tool, c.arguments) for c in run.calls]
-    assert calendar == ("dividend_calendar", {"days": 45})
+    # The two lookups ran at once, recorded in the order they finished; then
+    # code's own calls, after the model's.
+    calendar, *lookups, earnings, changes = [(c.tool, c.arguments) for c in run.calls]
+    assert calendar == ("dividend_calendar", {"days": 11})
     assert sorted(lookups, key=str) == [
-        ("get_stock", {"symbol": "KO"}),
-        ("get_stock", {"symbol": "PG"}),
+        ("get_stock", {"symbol": "AAPL"}),
+        ("get_stock", {"symbol": "IBE.MC"}),
     ]
+    assert (earnings, changes) == (
+        ("earnings_calendar", {"days": 12}),
+        ("dividend_changes", {"days": 7}),
+    )
+    assert '    earnings_date: "2026-10-21"\n' in files["en"]
     assert run.draft is not None
     assert run.draft.content == files["en"]
     assert [(p.locale, p.ready, p.content) for p in run.posts] == [
@@ -848,8 +857,8 @@ def test_a_held_translation_is_not_written(
     figure = prose({"summary": "[fr] 3 " + ENGLISH["summary"], "watch": "[fr] " + ENGLISH["watch"]})
     week_ahead_servers(ollama, quantic_mcp, monkeypatch, translations={"fr": figure})
     # An earlier run's French file, which this run's mustn't be mistaken for.
-    folder = tmp_path / "week-ahead-2026-W42"
-    folder.mkdir()
+    folder = tmp_path / "2026" / "week-ahead-W43"
+    folder.mkdir(parents=True)
     (folder / "fr.md").write_text("an older post")
 
     assert week_ahead(ollama, quantic_mcp, tmp_path) == 6
@@ -862,7 +871,7 @@ def test_a_held_translation_is_not_written(
     assert run.state is store.State.ANSWERED
     held = [p for p in run.posts if not p.ready]
     assert [(p.locale, p.problems) for p in held] == [("fr", ["summary: figure '3'"])]
-    assert "[fr] 3 Procter" in held[0].content  # what was refused, kept for review
+    assert "[fr] 3 Apple" in held[0].content  # what was refused, kept for review
 
 
 def test_prose_with_figures_publishes_nothing(
@@ -878,7 +887,7 @@ def test_prose_with_figures_publishes_nothing(
 
     assert week_ahead(ollama, quantic_mcp, tmp_path) == 4
 
-    assert not (tmp_path / "week-ahead-2026-W42").exists()
+    assert not (tmp_path / "2026").exists()
     assert len(ollama.bodies) == 3 + 3  # research, then three writers; no translators
     assert "after 3 attempts the prose still has figures" in capsys.readouterr().err
     [run] = stored_runs(isolated_state)
@@ -906,8 +915,8 @@ def test_the_published_data_is_checked_against_the_tools(
 
     assert week_ahead(ollama, quantic_mcp, tmp_path) == 1
 
-    assert "data no tool returned: ex_dividends[0].growth_ttm = 0.0397" in capsys.readouterr().err
-    assert not (tmp_path / "week-ahead-2026-W42").exists()
+    assert "data no tool returned: ex_dividends[0].growth_ttm = 0.0392" in capsys.readouterr().err
+    assert not (tmp_path / "2026").exists()
 
 
 def test_a_week_not_fully_researched_fails_and_resumes(
@@ -919,21 +928,22 @@ def test_a_week_not_fully_researched_fails_and_resumes(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     # The model reads the calendar and stops, without looking anyone up.
-    research = [asks_for(("dividend_calendar", {"days": 45})), Reply(says("Done."))]
+    research = [asks_for(("dividend_calendar", {"days": 11})), Reply(says("Done."))]
     week_ahead_servers(ollama, quantic_mcp, monkeypatch, research=research)
 
     assert week_ahead(ollama, quantic_mcp, tmp_path) == 1
 
     err = capsys.readouterr().err
-    assert "research didn't gather the whole week: not looked up with get_stock: PG, KO" in err
+    assert (
+        "research didn't gather the whole week: not looked up with get_stock: AAPL, IBE.MC" in err
+    )
     [run] = stored_runs(isolated_state)
     assert (run.state, run.phase) == (store.State.FAILED, store.Phase.RESEARCH)
 
     # Resumed, the calendar is replayed rather than called, and the model
     # looks the companies up. The week is the one after the day the run
-    # started, which the store took from the real clock: set it to Thursday.
-    with sqlite3.connect(isolated_state) as db:
-        db.execute("UPDATE runs SET started_at = '2026-10-08T12:00:00+00:00'")
+    # started, which the store took from the real clock: set it to Wednesday.
+    started_on_wednesday()
     week_ahead_servers(
         ollama, quantic_mcp, monkeypatch, research=[asks_for(*LOOKUPS), Reply(says("Done."))]
     )
@@ -953,10 +963,14 @@ def test_a_week_not_fully_researched_fails_and_resumes(
         == 0
     )
 
+    # Code's calls came once research was complete: not in the run that
+    # stopped short, which would have replayed them to the model.
     assert [c["name"] for c in quantic_mcp.calls()] == [
         "dividend_calendar",
         "get_stock",
         "get_stock",
+        "earnings_calendar",
+        "dividend_changes",
     ]
     [run] = stored_runs(isolated_state)
     assert (run.state, len(run.posts)) == (store.State.ANSWERED, 7)
@@ -970,11 +984,14 @@ def test_a_week_with_no_companies_writes_nothing(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     week_ahead_servers(ollama, quantic_mcp, monkeypatch)
-    # Ten days later: the calendar captured on the 8th still covers the week
-    # after, and nothing in it goes ex-dividend then.
+    # Eleven days after the 45-day calendar captured on the 8th: it still
+    # covers the week after, and nothing in it goes ex-dividend then.
+    quantic_mcp.tools["dividend_calendar"] = "call-calendar-45.sse"
     monkeypatch.setattr(cli, "today", lambda: date(2026, 10, 19))
 
     assert week_ahead(ollama, quantic_mcp, tmp_path / "out") == 5
+    # Nothing to write about: code doesn't look up the week's earnings.
+    assert {c["name"] for c in quantic_mcp.calls()} == {"dividend_calendar", "get_stock"}
 
     assert "no company goes ex-dividend from 2026-10-26 to 2026-11-01" in capsys.readouterr().err
     assert not (tmp_path / "out").exists()
@@ -994,7 +1011,7 @@ def test_a_week_ahead_run_is_shown_and_rechecked(
     assert main(["--run", "1"]) == 0
     shown = capsys.readouterr().out
     assert "post es: ready\n" in shown
-    assert "streak_years: 28" in shown
+    assert "streak_years: 13" in shown
     assert (
         "provenance, re-checked now: every value in the data traces to a stored tool "
         "result, and the prose has no figures"
@@ -1021,7 +1038,7 @@ def test_a_post_is_recorded_before_its_files_are_written(
 
     assert week_ahead(ollama, quantic_mcp, blocked) == 1
 
-    assert f"writing {blocked / 'week-ahead-2026-W42'}:" in capsys.readouterr().err
+    assert f"writing {blocked / '2026' / 'week-ahead-W43'}:" in capsys.readouterr().err
     # The files couldn't be written, but the run and its posts are on record.
     [run] = stored_runs(isolated_state)
     assert (run.state, len(run.posts)) == (store.State.ANSWERED, 7)
@@ -1051,9 +1068,22 @@ def written_week(
     out: Path,
     translations: dict[str, Reply] | None = None,
 ) -> None:
-    """A Week Ahead run, answered: run 1, unless runs came before it."""
+    """A Week Ahead run, answered: run 1, unless runs came before it. It
+    started on Wednesday 2026-10-14, whatever the real clock says: the post's
+    week is the one after the day its run started."""
     week_ahead_servers(ollama, quantic_mcp, monkeypatch, translations=translations)
     assert week_ahead(ollama, quantic_mcp, out) in (0, 6)
+    started_on_wednesday()
+
+
+def started_on_wednesday() -> None:
+    """The latest run as started on Wednesday 2026-10-14, the fixtures' day.
+    The database is isolated_state's, which the environment names."""
+    with sqlite3.connect(os.environ["QUANTIC_AGENT_DB"]) as db:
+        db.execute(
+            "UPDATE runs SET started_at = '2026-10-14T12:00:00+00:00' "
+            "WHERE id = (SELECT max(id) FROM runs)"
+        )
 
 
 def test_a_week_ahead_run_becomes_a_pull_request(
@@ -1079,20 +1109,24 @@ def test_a_week_ahead_run_becomes_a_pull_request(
     [run] = stored_runs(isolated_state)
     # The files are the run's posts as recorded, under the repository path.
     assert {e["path"]: e["content"] for e in bodies["trees"]["tree"]} == {
-        f"priv/insights/week-ahead-2026-W42/{p.locale}.md": p.content for p in run.posts
+        f"priv/insights/2026/week-ahead-W43/{p.locale}.md": p.content for p in run.posts
     }
-    assert bodies["refs"]["ref"] == "refs/heads/agent/week-ahead-2026-W42-run-1"
-    assert bodies["pulls"]["title"] == "Dividend Week Ahead, 2026-W42"
+    assert bodies["refs"]["ref"] == "refs/heads/agent/week-ahead-2026-W43-run-1"
+    assert bodies["pulls"]["title"] == "Dividend Week Ahead, 2026-W43"
     body = bodies["pulls"]["body"]
     assert "**Merging publishes it.**" in body
     assert "These checks don't read the language" in body
-    assert "- Procter & Gamble (PG), ex-dividend 2026-10-16" in body
+    assert "- Iberdrola (IBE.MC), ex-dividend 2026-10-20" in body
+    assert (
+        "**Also in the data block:** 66 earnings report(s) in the week, 0 dividend raise(s) "
+        "or cut(s) seen in the last 7 days."
+    ) in body
     assert "Held back" not in body
     assert run.pull_request is not None
     assert (run.pull_request.number, run.pull_request.state, run.pull_request.period) == (
         100,
         "open",
-        "2026-W42",
+        "2026-W43",
     )
 
     assert main(["--run", "1"]) == 0
@@ -1117,7 +1151,7 @@ def test_a_held_locale_stays_out_of_the_pull_request(
 
     bodies = {p.rsplit("/", 1)[1]: b for m, p, b, _ in github_api.requests if m == "POST"}
     paths = [e["path"] for e in bodies["trees"]["tree"]]
-    assert "priv/insights/week-ahead-2026-W42/fr.md" not in paths
+    assert "priv/insights/2026/week-ahead-W43/fr.md" not in paths
     assert len(paths) == 6
     assert "- **fr**: summary: figure '3'" in bodies["pulls"]["body"]
 
@@ -1165,7 +1199,7 @@ def test_one_pull_request_per_run_and_one_open_per_week(
     assert "run 1 already has a pull request" in capsys.readouterr().err
     # Run 2 is the same week: it waits until #100 is merged or closed.
     assert main(["--pr", "2"]) == 1
-    assert "2026-W42 already has an open pull request" in capsys.readouterr().err
+    assert "2026-W43 already has an open pull request" in capsys.readouterr().err
     github_api.pulls[100] = "closed"
     assert main(["--sync"]) == 0
     assert main(["--pr", "2"]) == 0

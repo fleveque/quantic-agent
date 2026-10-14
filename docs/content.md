@@ -54,18 +54,26 @@ is the agent's to read (N4, [decision 0006](decisions/0006-anonymous-mcp-for-pub
 radar movers are out of this post for good.
 
 Per company it shows: symbol, name, sector, ex-dividend date, payment frequency, safety status and
-its reasons, raise streak, growth over the last twelve months and the five-year growth rate. Two
+its reasons, raise streak, growth over the last twelve months and the five-year growth rate; since
+2026-10-14 also the forward annual rate, its currency, the yield and the pay date. Beside the
+companies: the week's earnings reports, and the dividend raises and cuts Quantic saw in the last
+seven days, which code looks up itself (`earnings_calendar`, `dividend_changes`). Two
 prose sections, *The week ahead* (before the registration gate) and *What to watch*, neither with a
 figure in it. A real one is in [the benchmarks](benchmarks/2026-10-08-week-ahead/post/en.md).
 
-What the plan has that the public tools don't, and what would add it, as Quantic work:
+What the plan has that the public tools didn't, and what added it (Quantic #490 and #491, merged
+2026-10-14; [decision 0013's update](decisions/0013-week-ahead.md#update-2026-10-14-the-dividend-raises-and-cuts-and-earnings)):
 
-| In the plan | Missing from the public tools |
-|---|---|
-| Amount of the coming dividend | `dividend_calendar` (or `get_stock`) returning the declared amount and currency |
-| Yield | a current yield: `get_stock`'s `yield_band.current` is null for an anonymous caller |
-| Raises declared | the previous and the new amount of a declaration, or a tool listing recent raises |
-| Cuts | the same, for cuts; at-risk flags are there already (the safety status) |
+| In the plan | Now in the public tools | In the post |
+|---|---|---|
+| Amount of the coming dividend | `dividend_calendar`'s `dividend_rate` and `currency`: the forward *annual* rate, not the coming payment | `dividend_rate`, as returned, never divided into a payment |
+| Yield | `dividend_calendar`'s `dividend_yield`, a percentage | `dividend_yield`, the percentage divided by 100 in code |
+| Pay date | `dividend_calendar`'s `pay_date`, null when unknown | `pay_date` |
+| Raises declared, cuts | `dividend_changes`: old and new rate, the day Quantic saw it (not the declaration). The log starts 2026-10-14 | `dividend_changes`, the last seven days |
+| (not in the plan) | `earnings_calendar`, with `estimated` for a projected date | `earnings`, the post's week only |
+
+The page renders the raises and cuts and the earnings under headings of its own. The prose may name a
+company that raised, cut or reports, with no figure.
 
 ### 2. Raise & Cut Notes — event-driven
 

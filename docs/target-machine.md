@@ -199,8 +199,8 @@ uv run quantic-agent --week-ahead --out ~/insights   # next week's post, in seve
 ```
 
 It researches the week after today (run on a Sunday, the week that starts tomorrow) and writes
-`~/insights/week-ahead-2026-W42/en.md`, `es.md`, and so on: one file per locale, all with the same
-data block. `--out` defaults to `$QUANTIC_AGENT_OUT`, else `insights` in the current directory. It's a
+`~/insights/2026/week-ahead-W42/en.md`, `es.md`, and so on: one file per locale, all with the same
+data block, under the ISO week's year as on Quantic. `--out` defaults to `$QUANTIC_AGENT_OUT`, else `insights` in the current directory. It's a
 run like a `--research` one: recorded, listed by `--runs`, shown by `--run N` with each locale's
 status and the data re-checked against the stored tool results, and resumable.
 
@@ -244,7 +244,7 @@ uv run quantic-agent --pr 4      # prints the pull request's URL
 uv run quantic-agent --sync      # after merging or closing it
 ```
 
-The files go under `priv/insights/week-ahead-2026-W42/` (`--repo-path`), on a branch
+The files go under `priv/insights/2026/week-ahead-W42/` (`--repo-path`), on a branch
 `agent/week-ahead-2026-W42-run-4`, one commit. A held locale stays out, and the description says why.
 One pull request per run, and one open per week: a second run for the same week waits until the
 first is merged or closed and `--sync` has seen it. If a pull request fails halfway, its branch may

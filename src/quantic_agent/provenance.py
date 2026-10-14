@@ -22,7 +22,7 @@ question being answered.
 
 import json
 import re
-from collections.abc import Iterable
+from collections.abc import Collection, Iterable
 from dataclasses import dataclass, replace
 from datetime import date
 from enum import StrEnum
@@ -146,6 +146,12 @@ class Manifest:
         """Where n appears, if anywhere."""
         return self._numbers.get(n, [])
 
+    def percentage(self, ratio: float) -> list[Source]:
+        """Where a percentage appears that is ratio once divided by 100, as
+        code divides it: 2.84 for 0.0284. Floats are compared exactly, so
+        this finds the percentage only if ratio was computed as p / 100."""
+        return [at for n, sources in self._numbers.items() if n / 100 == ratio for at in sources]
+
     def date(self, iso: str) -> list[Source]:
         """Where a YYYY-MM-DD date appears, if anywhere."""
         return self._dates.get(iso, [])
@@ -194,7 +200,9 @@ class DataFinding:
 _AS_JSON: TypeAdapter[Any] = TypeAdapter(Any)
 
 
-def check_data(data: object, manifest: Manifest) -> list[DataFinding]:
+def check_data(
+    data: object, manifest: Manifest, *, percentages: Collection[str] = ()
+) -> list[DataFinding]:
     """Every value in data that the manifest doesn't contain.
 
     data is a post's typed data block: a Pydantic model, a dataclass, a dict,
@@ -206,28 +214,43 @@ def check_data(data: object, manifest: Manifest) -> list[DataFinding]:
     Strings are held to the same rule as numbers, so an invented ticker or a
     date no tool returned is caught too. Findings come in the data's own
     order: Python's dicts keep the order keys were inserted in.
+
+    percentages names the fields whose numbers are ratios code made from a
+    percentage a tool returned: dividend_calendar's dividend_yield is 2.84
+    for 2.84%, and a post carries 0.0284. Those are found as the percentage
+    (Manifest.percentage), and only those: any other field holding 0.0284
+    would need a tool to have returned 0.0284.
     """
     findings: list[DataFinding] = []
-    _check(_AS_JSON.dump_python(data, mode="json"), "", manifest, findings)
+    _check(_AS_JSON.dump_python(data, mode="json"), "", manifest, findings, set(percentages))
     return findings
 
 
-def _check(value: JSON, path: str, manifest: Manifest, out: list[DataFinding]) -> None:
+def _check(
+    value: JSON,
+    path: str,
+    manifest: Manifest,
+    out: list[DataFinding],
+    percentages: set[str],
+    percentage: bool = False,
+) -> None:
     match value:
         case bool() | None:
             pass
         case int() | float():
-            if not manifest.number(value):
+            found = manifest.percentage(value) if percentage else manifest.number(value)
+            if not found:
                 out.append(DataFinding(path, value))
         case str():
             if not manifest.string(value):
                 out.append(DataFinding(path, value))
         case list():
             for i, item in enumerate(value):
-                _check(item, f"{path}[{i}]", manifest, out)
+                _check(item, f"{path}[{i}]", manifest, out, percentages, percentage)
         case dict():
             for key, item in value.items():
-                _check(item, f"{path}.{key}" if path else key, manifest, out)
+                at = f"{path}.{key}" if path else key
+                _check(item, at, manifest, out, percentages, key in percentages)
 
 
 # ---- prose -----------------------------------------------------------------

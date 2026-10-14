@@ -33,7 +33,8 @@ deploy-side check rather than a paid plan or a sandbox repository.
    broke rule 2 would land in `main` but not deploy.
 4. **`--pr N` opens one pull request per Week Ahead run**, from the run's posts as stored: one
    commit with every ready locale under `priv/insights/<slug>/` (`--repo-path`), on
-   `agent/<slug>-run-N`. Held locales stay out and are listed. The description says that merging
+   `agent/<slug>-run-N`. (Since 2026-10-14, `priv/insights/2026/week-ahead-W42/`, the path Quantic's
+   `/insights` reads, on `agent/week-ahead-2026-W42-run-N`.) Held locales stay out and are listed. The description says that merging
    publishes, what was checked, and that the translation checks don't read the language. A week
    with a pull request open can't have a second until `--sync` has seen the first decided.
 5. **`--sync` reads back each open pull request.** A merge records the run as approved, a close

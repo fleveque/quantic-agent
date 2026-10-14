@@ -16,7 +16,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Protocol
 
 from quantic_agent import llm, quantic
-from quantic_agent.tools import ArgumentsError, Tool
+from quantic_agent.tools import ArgumentsError, Tool, ToolArgs
 
 
 class Model(Protocol):
@@ -274,15 +274,26 @@ class Researcher:
 
         if self.server is None:
             raise RuntimeError("Researcher.research needs a tool server")
-        try:
-            result = await self.server.call_tool(tool.name, args.model_dump())
-        except quantic.RPCError as err:
-            return finish(f"error: {err}", failed=True)  # the request was at fault
-        except quantic.ToolServerError as err:
-            return finish(f"error: {err}", failed=True, error=err)
-        if result.is_error:
-            return finish(f"error: {result.text}", failed=True)  # the tool ran and declined
-        return finish(result.text)
+        result, failed, error = await call_tool(self.server, tool, args)
+        return finish(result, failed=failed, error=error)
+
+
+async def call_tool(
+    server: ToolServer, tool: Tool[Any], args: ToolArgs
+) -> tuple[str, bool, quantic.ToolServerError | None]:
+    """Runs one tool call with arguments already checked: its result, or the
+    error to record; whether it failed; and a failure no change of arguments
+    can fix (the server down), for the caller to raise once the call is
+    recorded. Shared by the loop and by code that calls a tool itself."""
+    try:
+        result = await server.call_tool(tool.name, args.model_dump())
+    except quantic.RPCError as err:
+        return f"error: {err}", True, None  # the request was at fault
+    except quantic.ToolServerError as err:
+        return f"error: {err}", True, err
+    if result.is_error:
+        return f"error: {result.text}", True, None  # the tool ran and declined
+    return result.text, False, None
 
 
 def replay(calls: Sequence[Call]) -> list[llm.Message]:

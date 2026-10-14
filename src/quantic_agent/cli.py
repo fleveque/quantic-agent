@@ -13,9 +13,10 @@ shows one and re-checks its answer against the data it was given, and
 --approve N and --reject N record a reviewer's verdict on a run's answer.
 Approved answers are style memory: a writer is shown the most similar ones as
 examples of the house voice, and --recall shows which those would be.
---week-ahead researches next week's ex-dividend dates the same way, then
-writes the Dividend Week Ahead in every locale into --out, one folder per
-week: the data from the tool results, the prose by the model, with no
+--week-ahead researches next week's ex-dividend dates the same way, looks up
+the week's earnings and recent dividend changes itself, then writes the
+Dividend Week Ahead in every locale into --out, in YEAR/week-ahead-WNN as on
+Quantic: the data from the tool results, the prose by the model, with no
 figures in it, translated and checked locale by locale. --pr N opens a pull
 request with a Week Ahead run's files on Quantic's repository, as a GitHub
 App; the agent never merges. --sync reads back what became of its pull
@@ -624,14 +625,38 @@ async def _research_phase(
         _trace(call, label)
         db.record_call(run.id, seq, call)
 
-    def on_retry(method: str, retry: int, wait: float) -> None:
-        _error(f"{label}Quantic's rate limit; retry {retry} of {method} in {wait:.1f}s")
-
-    async with quantic.Server(args.mcp, on_retry=on_retry, pace=pace) as server:
+    async with quantic.Server(args.mcp, on_retry=_on_retry(label), pace=pace) as server:
         researcher = agent.Researcher(
             model=client, server=server, tools=[DIVIDEND_CALENDAR, GET_STOCK], options=options
         )
         await researcher.research(run.input, gathered, on_call=on_call)
+
+
+def _on_retry(label: str) -> quantic.OnRetry:
+    def on_retry(method: str, retry: int, wait: float) -> None:
+        _error(f"{label}Quantic's rate limit; retry {retry} of {method} in {wait:.1f}s")
+
+    return on_retry
+
+
+async def _look_up(
+    db: store.Store,
+    run: store.Run,
+    gathered: agent.Research,
+    week: weekahead.Week,
+    args: argparse.Namespace,
+    pace: quantic.Pace,
+) -> None:
+    """The Week Ahead's calls that code makes (weekahead.look_up), recorded
+    with the run's calls, after the model's."""
+
+    def record(call: agent.Call) -> None:
+        gathered.calls.append(call)
+        _trace(call, "")
+        db.record_call(run.id, len(gathered.calls) - 1, call)
+
+    async with quantic.Server(args.mcp, on_retry=_on_retry(""), pace=pace) as server:
+        await weekahead.look_up(server, week, today(), gathered.calls, record)
 
 
 async def _week_ahead(
@@ -681,22 +706,29 @@ async def _week_ahead(
                     _error("research gathered no data (no tool call succeeded); nothing to write")
                     finish(store.State.NO_DATA, "research gathered no data")
                     return EXIT_NO_DATA
-            rows = weekahead.gather(week, gathered.calls)
-            if not rows:
-                _error(f"no company goes ex-dividend from {week.start} to {week.end}")
-                finish(store.State.NO_DATA, "no company goes ex-dividend that week")
-                return EXIT_NO_DATA
+                # Checked before code's own calls: a run that has to go back
+                # to research would replay them to the model on --resume.
+                if not weekahead.ex_dividends(week, gathered.calls):
+                    _error(f"no company goes ex-dividend from {week.start} to {week.end}")
+                    finish(store.State.NO_DATA, "no company goes ex-dividend that week")
+                    return EXIT_NO_DATA
+                await _look_up(db, run, gathered, week, args, pace)
+            data = weekahead.gather(week, gathered.calls)
             if run.phase is store.Phase.RESEARCH:
                 db.checkpoint(run.id, store.Phase.WRITE, gathered.tokens, gathered.exhausted)
             # Built by code from the tool results, so this finds nothing
             # unless that code is wrong. It is the check the format exists
             # for (docs/rendering.md), and it runs on what is published.
-            unsourced = provenance.check_data(weekahead.data_block(rows), _manifest(gathered.calls))
+            unsourced = provenance.check_data(
+                weekahead.data_block(data),
+                _manifest(gathered.calls),
+                percentages=weekahead.PERCENTAGES,
+            )
             if unsourced:
                 raise provenance.ProvenanceError(
                     f"data no tool returned: {', '.join(map(str, unsourced))}"
                 )
-            written = await weekahead.write(client, week, rows, options=options)
+            written = await weekahead.write(client, week, data, options=options)
             spent += written.tokens
             _error(f"prose written in {written.attempts} attempt(s)")
             translations: list[weekahead.Translation] = []
@@ -729,8 +761,8 @@ async def _week_ahead(
         finish(store.State.FAILED, str(err))
         return _fail(err, args)
 
-    data = weekahead.data_yaml(rows)
-    english = weekahead.render(week, run.id, weekahead.SOURCE, data, written.prose)
+    block = weekahead.data_yaml(data)
+    english = weekahead.render(week, run.id, weekahead.SOURCE, block, written.prose)
     print(english)
     if written.findings:
         _error(f"after {written.attempts} attempts the prose still has figures: nothing written")
@@ -739,7 +771,7 @@ async def _week_ahead(
         draft = store.Draft(content=english, truncated=False, findings=written.findings)
         finish(store.State.UNVERIFIED, draft=draft)
         return EXIT_UNVERIFIED
-    problems = weekahead.check_file(english, weekahead.SOURCE, rows, written.prose)
+    problems = weekahead.check_file(english, weekahead.SOURCE, data, written.prose)
     if problems:
         finish(store.State.FAILED, "; ".join(problems))
         _error(f"the English file: {'; '.join(problems)}")
@@ -750,14 +782,14 @@ async def _week_ahead(
         if t.prose is None:
             posts.append(store.Post(t.locale, False, t.raw, t.problems))
             continue
-        content = weekahead.render(week, run.id, t.locale, data, t.prose)
-        problems = t.problems + weekahead.check_file(content, t.locale, rows, t.prose)
+        content = weekahead.render(week, run.id, t.locale, block, t.prose)
+        problems = t.problems + weekahead.check_file(content, t.locale, data, t.prose)
         posts.append(store.Post(t.locale, not problems, content, problems))
     draft = store.Draft(content=english, truncated=False, findings=[])
     finish(store.State.ANSWERED, draft=draft, posts=posts)
 
     # Recorded first, then written: a file on disk always has its run.
-    folder = args.out / week.slug
+    folder = args.out / week.path
     try:
         _save_post(folder, posts)
     except OSError as err:
@@ -1012,7 +1044,9 @@ def _show_post(run: store.Run) -> int:
     except ValueError as err:
         print(f"the file doesn't read back: {err}")
         return EXIT_UNVERIFIED
-    unsourced = provenance.check_data(front.get("data"), _manifest(run.calls))
+    unsourced = provenance.check_data(
+        front.get("data"), _manifest(run.calls), percentages=weekahead.PERCENTAGES
+    )
     figures = provenance.no_figures("\n\n".join(sections.values()))
     if not unsourced and not figures:
         print(

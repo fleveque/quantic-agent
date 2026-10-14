@@ -28,8 +28,8 @@ class Proposal:
 
 def proposal(run: store.Run, repo_path: str) -> Proposal:
     """The pull request for a Week Ahead run: its ready locales' files under
-    repo_path/<slug>/, on a branch of its own. Held locales stay out, and the
-    description says why."""
+    repo_path/<ISO year>/<slug>/, on a branch of its own. Held locales stay
+    out, and the description says why."""
     if run.kind != weekahead.KIND:
         raise NotPublishableError(f"run {run.id} is a {run.kind}: only a Week Ahead is published")
     if run.state is not store.State.ANSWERED:
@@ -40,12 +40,12 @@ def proposal(run: store.Run, repo_path: str) -> Proposal:
     if not any(p.locale == weekahead.SOURCE for p in ready):
         raise NotPublishableError(f"run {run.id} has no English post")
     week = weekahead.week_after(run.started_at.astimezone().date())
-    folder = f"{repo_path.strip('/')}/{week.slug}"
+    folder = f"{repo_path.strip('/')}/{week.path}"
     files = [github.File(f"{folder}/{p.locale}.md", p.content) for p in ready]
     locales = ", ".join(p.locale for p in ready)
     return Proposal(
         period=week.period,
-        branch=f"{github.BRANCH_PREFIX}{week.slug}-run-{run.id}",
+        branch=f"{github.BRANCH_PREFIX}week-ahead-{week.period}-run-{run.id}",
         files=files,
         message=f"Dividend Week Ahead {week.period}, from quantic-agent run {run.id}\n\n"
         f"Locales: {locales}.",
@@ -57,9 +57,10 @@ def proposal(run: store.Run, repo_path: str) -> Proposal:
 def _body(run: store.Run, week: weekahead.Week, files: list[github.File]) -> str:
     english = next(p for p in run.posts if p.locale == weekahead.SOURCE)
     front, _ = weekahead.read_back(english.content, weekahead.SOURCE)
+    data = front["data"]
     companies = "\n".join(
         f"- {row['name']} ({row['symbol']}), ex-dividend {row['ex_dividend_date']}"
-        for row in front["data"]["ex_dividends"]
+        for row in data["ex_dividends"]
     )
     rows = "\n".join(
         f"| {f.path.rsplit('/', 1)[1].removesuffix('.md')} | `{f.path}` |" for f in files
@@ -93,6 +94,10 @@ it leans towards advice. That is this review.
 **The week's companies**
 
 {companies}
+
+**Also in the data block:** {len(data["earnings"])} earnings report(s) in the week, \
+{len(data["dividend_changes"])} dividend raise(s) or cut(s) seen in the last \
+{weekahead.CHANGES_DAYS} days.
 
 `quantic-agent --run {run.id}` shows the tool calls behind it, on the machine that wrote it.
 """
