@@ -20,6 +20,7 @@ Why the design is what it is, one decision per file. New decisions are numbered 
 | [0014](0014-pull-requests-as-a-github-app.md) | Pull requests as a GitHub App, a client that can't touch main, and merges as verdicts | 2026-10-08 |
 | [0015](0015-the-weekly-job.md) | The weekly job: one idempotent command, a systemd user timer, logs for the journal | 2026-10-14 |
 | [0016](0016-corrections-captured.md) | The reviewer's corrections, read back from the merge commit | 2026-10-14 |
+| [0017](0017-wording-checks.md) | Wording rules for the prose, sent back like figures | 2026-10-14 |
 
 **0001–0007 were written for the Go version**, [quantic-agent-go](https://github.com/fleveque/quantic-agent-go),
 and are carried over unchanged, links aside: they are records of what was decided and why, at the

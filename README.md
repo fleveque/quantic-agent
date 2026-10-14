@@ -96,7 +96,8 @@ Python with Go. Milestones 0–8 are ports of the Go version; the lessons say wh
 | 11 | Week Ahead end to end, 7 locales, translation validator | dates, YAML, package data |
 | 12 | GitHub PR flow | a GitHub client, auth |
 | 13 | Ship it: logging, a systemd unit | structured logging, packaging an application |
-| 14 | The reviewer's corrections, read back *(you are here)* | `difflib`, base64, an ordered set from a dict |
+| 14 | The reviewer's corrections, read back | `difflib`, base64, an ordered set from a dict |
+| 15 | Wording the prose can't use *(you are here)* | `re` alternations and word boundaries, a rule as data, measuring a check |
 
 ## Working on this
 

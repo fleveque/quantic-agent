@@ -344,6 +344,34 @@ async def test_prose_with_figures_is_sent_back() -> None:
 
 
 @pytest.mark.anyio
+async def test_wording_the_post_cant_use_is_sent_back_like_a_figure() -> None:
+    # Run 4's summary (2026-10-14, the 27B), and a count in words.
+    leaning = (
+        "Apple and Iberdrola lead the weekly ex-dividend slate, offering distinct profiles "
+        "for income-focused investors. Both pay quarterly or twice a year."
+    )
+    model = ScriptedModel(
+        [
+            answers(json.dumps({"summary": leaning, "watch": "Six raises were seen."}), 10),
+            answers(PROSE.model_dump_json(), 20),
+        ]
+    )
+    written = await weekahead.write(model, WEEK, EMPTY)
+
+    assert (written.prose, written.findings, written.attempts) == (PROSE, [], 2)
+    retry = model.shown[1][3].content
+    # The figure and each phrase named, and what to do instead, once per rule.
+    assert retry == (
+        "That prose has figures in it: 'Six'. The post's tables show every figure, so the "
+        "prose must have none. It has wording the post can't use: 'income-focused', "
+        "'investors', 'Both'. Don't address the reader or name an audience: describe the "
+        "companies. Don't count the companies, in any form: name them, or say \"these "
+        'companies". Write both fields again without numbers, dates, counts or durations, in '
+        "digits or in words."
+    )
+
+
+@pytest.mark.anyio
 async def test_the_last_attempt_is_returned_with_its_figures() -> None:
     model = ScriptedModel(
         [answers(json.dumps({"summary": "A streak of 28 years.", "watch": "Calm."}))] * 3

@@ -59,6 +59,7 @@ from quantic_agent import (
     quantic,
     store,
     weekahead,
+    wording,
 )
 from quantic_agent.tools import DIVIDEND_CALENDAR, GET_STOCK
 
@@ -813,7 +814,10 @@ async def _week_ahead(
     if show:  # not under the timer: the files are the post, not the journal
         print(english)
     if written.findings:
-        _error(f"after {written.attempts} attempts the prose still has figures: nothing written")
+        _error(
+            f"after {written.attempts} attempts the prose still has figures or wording it "
+            "can't use: nothing written"
+        )
         for finding in written.findings:
             print(f"  {finding}", file=sys.stderr)
         draft = store.Draft(content=english, truncated=False, findings=written.findings)
@@ -1255,17 +1259,21 @@ def _show_post(run: store.Run) -> int:
     unsourced = provenance.check_data(
         front.get("data"), _manifest(run.calls), percentages=weekahead.PERCENTAGES
     )
-    figures = provenance.no_figures("\n\n".join(sections.values()))
-    if not unsourced and not figures:
+    text = "\n\n".join(sections.values())
+    figures = provenance.no_figures(text)
+    phrases = wording.check(text)
+    if not unsourced and not figures and not phrases:
         print(
             "provenance, re-checked now: every value in the data traces to a stored tool "
-            "result, and the prose has no figures"
+            "result, and the prose has no figures and no wording a rule names"
         )
         return EXIT_OK
     for finding in unsourced:
         print(f"no tool returned: {finding}")
     for figure in figures:
         print(f"a figure in the prose: {figure}")
+    for phrase in phrases:
+        print(f"wording the post can't use: {phrase}")
     return EXIT_UNVERIFIED
 
 

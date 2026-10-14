@@ -102,7 +102,7 @@ starting point here.
   PYTHONUNBUFFERED). The author chose all four. The first real `--weekly` opened a duplicate PR
   (quantic#494, closed) by taking the week's newest answered run: fixed, tested. A oneshot has no
   start timeout by default (systemd.service(5)); lesson 13.
-- **Milestone 14** (branch `m14-corrections`, ADR 0016): the reviewer's corrections captured.
+- **Milestone 14 merged** (#21, ADR 0016): the reviewer's corrections captured.
   The author chose capture only (glossary and retrieval later). `--sync` reads a merged pull
   request's files back from its merge commit (contents API, GET; `github.Client.file`) and
   `corrections.compare` stores each changed section (prose by key, `data`, `frontmatter`, or the
@@ -110,8 +110,15 @@ starting point here.
   `pull_requests.merge_commit`, set in the same transaction: NULL = not read yet, so old merges
   and failed reads are read on the next sync). `--run N` shows word diffs (`difflib`; not minimal,
   unlike git's Myers). Real quantic#492: 8 sections in 6 locales, English untouched; lesson 14.
-  Tested against a copy of the real database: the installed agent doesn't know migration 0007
-  until it's reinstalled.
+  Reinstalled 2026-10-14; the real database is at 0007 and has quantic#492's corrections.
+- **Milestone 15** (branch `m15-prose-checks`, ADR 0017): wording rules for the English prose
+  (`wording.py`: audience, advice, market, count, duration; whole words, any case). A match is a
+  `provenance.Finding` of `Kind.PHRASE` (value = the rule), sent back to the writer like a figure
+  (`weekahead.check_prose`, `_again`), held after 3 attempts (exit 4), re-checked by `--run N`.
+  Rules come from reading their matches in 120 real 27B writings
+  (`docs/benchmarks/2026-10-14-prose-checks/`): 22 of 60 baseline writings had such wording; with
+  the check 60/60 published, 33/23/4 attempts, 13 s vs 9 s. Each measurement round found new
+  wordings ("readers should note"): it's a list, not a meaning check. English only; lesson 15.
 - design.md keeps Go's "As built in Go" notes next to this repository's "As built" notes.
 - PRs are squash-merged, so a walkthrough built from a branch commit cites a SHA `main` won't have.
   After merge, rebuild the walkthrough page from the merge commit and republish the artifact. That
@@ -141,19 +148,17 @@ starting point here.
 3. Seen in real runs, not caught: counts of a filtered subset ("four companies") are flagged though
    right; a wrong statement whose figures all trace ("no companies in the next 10 days") passes; the
    9B sometimes reasons out loud in an answer despite `think: false`.
-4. Seen in milestone 11's real runs, not caught: prose that's wrong without a figure ("recent
-   acceleration" for a slowing dividend; "safety remains strong" for one on watch), and phrasing
-   that leans towards advice ("a stable alternative"; with the 27B on 2026-10-14, "for
-   income-focused investors" and "may influence sentiment"). Numbers in words are recognised in English
-   only, so a translation's "dues" passes.
-5. Seen 2026-10-09, not caught, with either model: false growth comparisons with no figure
-   ("Coca-Cola's recent growth outpaced its average"); "one" isn't recognised as a figure ("just one
-   company going ex-dividend" passed); "both" passes the check though the prompt forbids it. The
-   27B's Catalan still has visible errors (design open question 12). With the 9B, the prose step
-   alone held 1 of 40 writings but 7 of 35 inside full runs; the difference wasn't found.
-6. Ratios in get_stock (`cagr_5y` 0.1023) written as percentages ("10.23%") are flagged as
+4. Prose that's wrong without a figure, seen in real runs and not caught: "recent acceleration"
+   for a slowing dividend, "safety remains strong" or "each name carries a safe profile" for one
+   on watch, false growth comparisons ("Coca-Cola's recent growth outpaced its average"). A claim
+   check against the data (direction words vs `growth_ttm`/`cagr_5y`, safety words vs `safety`) is
+   open. Milestone 15 checks wording, not claims. Numbers in words are recognised in English only,
+   so a translation's "dues" passes, and the wording rules don't read translations. The 27B's
+   Catalan still has visible errors (design open question 12). With the 9B, the prose step alone
+   held 1 of 40 writings but 7 of 35 inside full runs; the difference wasn't found.
+5. Ratios in get_stock (`cagr_5y` 0.1023) written as percentages ("10.23%") are flagged as
    converted figures, correctly by N1; a percentage calculator tool would let them through.
-7. **Learning from the reviewer's corrections** (raised 2026-10-14 reviewing quantic#492). Capture
+6. **Learning from the reviewer's corrections** (raised 2026-10-14 reviewing quantic#492). Capture
    is milestone 14: `--sync` stores each section changed before merging. On quantic#492 the 27B's
    translations had errors no check sees: Catalan "divisió" for dividend and "per davant" (ahead)
    for behind, Italian "dello stesso periodo" for "in the same week", Portuguese "lucros"
