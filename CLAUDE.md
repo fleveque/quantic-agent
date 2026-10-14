@@ -129,6 +129,18 @@ starting point here.
    alone held 1 of 40 writings but 7 of 35 inside full runs; the difference wasn't found.
 6. Ratios in get_stock (`cagr_5y` 0.1023) written as percentages ("10.23%") are flagged as
    converted figures, correctly by N1; a percentage calculator tool would let them through.
+7. **Learning from the reviewer's corrections** (an open question, raised 2026-10-14 reviewing
+   quantic#492, not yet a milestone). `--sync` records only *whether* a pull request was merged,
+   not what the author changed on its branch: corrections are lost, and a run's stored posts can
+   differ from what was published. The 27B's translations there had errors no check sees: Catalan
+   "divisió" for dividend and "per davant" (ahead) for behind, Italian "dello stesso periodo" for
+   "in the same week", Portuguese "lucros" (profits) for results. Options put to the author:
+   capture first (`--sync` diffs the merged files against the stored posts, by locale and
+   section); then a per-locale glossary in `locales.json` with a check that holds a known-wrong
+   term (the only option that guarantees anything), and past corrections retrieved as examples for
+   the translator (RAG, design §3.4's style memory extended to Week Aheads, which today can't be
+   style memory). §3.4's other planned uses have no milestone yet: don't-repeat-yourself (what was
+   recently written about a ticker) and filings and news text (open questions 7 and 11).
 
 ## Conventions
 
