@@ -25,7 +25,7 @@ Ruby that turned out wrong, and what changed from the Go version and why.
 | [11](11-seven-files-one-set-of-figures.md) | Seven files, one set of figures | 11 — the Week Ahead end to end, 7 locales, translation validator | [Seven files, one set of figures](https://claude.ai/artifact/VFJgaAxgiZx8YiwPFuFBgL) | [The Week Ahead, line by line](https://claude.ai/artifact/M1FoS3w2xAD3AehxYu7G2u) |
 | [12](12-a-merge-is-a-verdict.md) | A merge is a verdict | 12 — pull requests as a GitHub App, merges as verdicts | [A merge is a verdict](https://claude.ai/artifact/6rVThLvzeZV4REpF9v3ssU) | [Pull requests, line by line](https://claude.ai/artifact/G4oMqWLNDdTnkheWyzCysZ) |
 | [13](13-sunday-without-me.md) | Sunday, without me | 13 — the weekly job: a systemd timer, the GPU check, logs for the journal | [Sunday, without me](https://claude.ai/artifact/KafaQjeZnB6NYqNrfqxvZt) | [The weekly job, line by line](https://claude.ai/artifact/UC8pHu5WxBkz5tJ3hiJLwF) |
-| [14](14-what-i-changed-before-merging.md) | What I changed before merging | 14 — the reviewer's corrections, read back from the merge commit | [What I changed before merging](LESSON_URL) | [Corrections, line by line](WALKTHROUGH_URL) |
+| [14](14-what-i-changed-before-merging.md) | What I changed before merging | 14 — the reviewer's corrections, read back from the merge commit | [What I changed before merging](https://claude.ai/artifact/4cqkDMqeD5yZVVBpcWP6NR) | [Corrections, line by line](https://claude.ai/artifact/7Vk6EXjDr8NE7Ac6Q14UJs) |
 
 Lessons tell the story of a milestone: what surprised me and why. Walkthroughs go through the code
 itself in reading order, the way a tech lead would with a new teammate. Formatted pages are built

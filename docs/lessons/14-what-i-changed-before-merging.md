@@ -5,7 +5,7 @@ On quantic#492, the first Week Ahead I published, a review corrected six of the 
 the branch before I merged, and the agent kept its own drafts. Now `--sync` reads the published files back and stores
 every section I changed, next to what it wrote.
 
-*Also readable as a [formatted page](LESSON_URL), with a [code walkthrough](WALKTHROUGH_URL) of every
+*Also readable as a [formatted page](https://claude.ai/artifact/4cqkDMqeD5yZVVBpcWP6NR), with a [code walkthrough](https://claude.ai/artifact/7Vk6EXjDr8NE7Ac6Q14UJs) of every
 change the milestone made.*
 
 ---
