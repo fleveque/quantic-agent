@@ -231,13 +231,14 @@ once by hand:
    ```
 
 4. **Install App** → Only select repositories → the Quantic repository.
-5. Tell the agent, in its environment:
+5. Tell the agent, in its environment. With direnv, copy the sample and fill it in:
 
    ```sh
-   export QUANTIC_AGENT_GITHUB_APP_ID=123456       # the App ID
-   export QUANTIC_AGENT_REPO=owner/quantic         # where pull requests go
-   # QUANTIC_AGENT_GITHUB_KEY, if the key is somewhere else
+   cp .env.example .env              # QUANTIC_AGENT_GITHUB_APP_ID, QUANTIC_AGENT_REPO
+   echo dotenv > .envrc && direnv allow
    ```
+
+   Both files are gitignored. Without direnv, export the same variables in your shell.
 
 ```sh
 uv run quantic-agent --pr 4      # prints the pull request's URL

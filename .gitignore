@@ -6,3 +6,7 @@ __pycache__/
 .pyright/
 dist/
 *.egg-info/
+
+# Local settings (.env.example says what goes in .env); direnv loads them.
+.env
+.envrc
