@@ -142,6 +142,34 @@ the working copy. I'm often on a branch halfway through something, and Sunday sh
 package data, so they came along. I checked by installing it into a scratch directory and running
 it against an empty database: it migrated, and found the prompts and all seven locales.
 
+## The whole week, under systemd
+
+With the game closed, the same unit settings in a transient service (`systemd-run --user`), an
+empty database and no GitHub App, so nothing could be proposed. `journalctl -o cat`, the post's own
+lines left out:
+
+```
+no GitHub App configured (QUANTIC_AGENT_REPO, QUANTIC_AGENT_GITHUB_APP_ID): the post stays in --out
+the GPU is free enough: other programs hold 1828 MiB others_mib=1828 total_mib=16376 ollama_mib=0
+tool dividend_calendar {"days": 11} → 1056 bytes (304ms) tool=dividend_calendar ms=304 bytes=1056
+tool get_stock {"symbol": "IBE.MC"} → 1494 bytes (137ms) tool=get_stock ms=137 bytes=1494
+...
+tool earnings_calendar {"days": 12} → 12933 bytes (502ms) tool=earnings_calendar ms=502 bytes=12933
+tool dividend_changes {"days": 7} → 52 bytes (129ms) tool=dividend_changes ms=129 bytes=52
+prose written in 1 attempt(s) attempts=1
+run 1 answered run=1 state=answered
+en: .../out/2026/week-ahead-W43/en.md locale=en
+```
+
+Three minutes and twenty-six seconds, exit 0, seven files. "The post's own lines left out" was the
+last fix: `--week-ahead` prints the post to stdout, which is right in a terminal and was about 600
+lines of YAML in the journal. Under `--weekly` the files are the post, and nothing is printed. Run
+again, it took 0.6 seconds and touched neither the GPU nor the model:
+
+```
+run 1, 2026-W43's, is written run=1 period=2026-W43
+```
+
 ## What I'm taking on
 
 - A job that a timer retries must be safe to run twice. Write the test with the data you actually

@@ -1480,10 +1480,15 @@ def test_weekly_without_a_github_app_writes_the_post_only(
 
     assert weekly(ollama, quantic_mcp, tmp_path / "out", usage=None) == 0
 
-    err = capsys.readouterr().err
+    out, err = capsys.readouterr()
     assert "no answer from nvidia-smi" in err
     assert "no GitHub App configured" in err
     assert (tmp_path / "out" / "2026" / "week-ahead-W43" / "en.md").exists()
+    # The post is in its files; under the timer it isn't printed into the journal too.
+    assert out == ""
+
+    assert weekly(ollama, quantic_mcp, tmp_path / "out", usage=None) == 0
+    assert "run 1, 2026-W43's, is written" in capsys.readouterr().err
 
 
 @pytest.mark.usefixtures("on_wednesday")

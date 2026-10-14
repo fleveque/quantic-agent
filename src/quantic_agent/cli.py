@@ -711,6 +711,7 @@ async def _week_ahead(
     pace: quantic.Pace,
     *,
     run: store.Run | None = None,
+    show: bool = True,
 ) -> int:
     """The Dividend Week Ahead for the week after today: research as for any
     question, then the post in every locale (weekahead), recorded with the
@@ -808,7 +809,8 @@ async def _week_ahead(
 
     block = weekahead.data_yaml(data)
     english = weekahead.render(week, run.id, weekahead.SOURCE, block, written.prose)
-    print(english)
+    if show:  # not under the timer: the files are the post, not the journal
+        print(english)
     if written.findings:
         _error(f"after {written.attempts} attempts the prose still has figures: nothing written")
         for finding in written.findings:
@@ -1054,6 +1056,8 @@ async def _weekly(args: argparse.Namespace) -> int:
         if publishing:
             opened = await _with_github(args, _open_pr(db, args, run.id))
             status = status or opened
+        else:
+            _note(f"run {run.id}, {week.period}'s, is written", run=run.id, period=week.period)
         return status
 
 
@@ -1083,7 +1087,7 @@ async def _write_week(db: store.Store, args: argparse.Namespace, run: store.Run 
             return EXIT_FAILED
         _note(f"resuming run {run.id} in its {run.phase} phase", run=run.id, phase=run.phase)
     async with llm.Client(args.ollama, run.model if run else args.model) as client:
-        return await _week_ahead(client, db, args, _pace(), run=run)
+        return await _week_ahead(client, db, args, _pace(), run=run, show=False)
 
 
 def _gpu_busy(args: argparse.Namespace) -> bool:
