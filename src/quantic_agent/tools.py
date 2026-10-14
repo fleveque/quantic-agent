@@ -1,4 +1,4 @@
-"""The tools the research loop can call.
+"""The tools the research loop can call, and the ones code calls itself.
 
 Two kinds so far. Quantic's tools, run on its MCP server: each is a Tool here,
 with the agent's own description and an arguments model whose fields are the
@@ -91,7 +91,9 @@ DIVIDEND_CALENDAR = Tool(
     description=(
         "List the companies going ex-dividend soon, soonest first. Each entry has the "
         "company name, symbol, sector, ex-dividend date (YYYY-MM-DD) and how often it "
-        "pays. The list starts today and covers the given number of days."
+        "pays, and when known its forward annual dividend rate and currency, its yield as "
+        "a percentage, and its payment date. The list starts today and covers the given "
+        "number of days."
     ),
     args=DividendCalendarArgs,
 )
@@ -119,6 +121,51 @@ GET_STOCK = Tool(
         "last one recorded rather than a live one. Call it once per company."
     ),
     args=GetStockArgs,
+)
+
+
+class EarningsCalendarArgs(ToolArgs):
+    days: int = Field(
+        default=14,
+        ge=1,
+        le=60,
+        description="How many days ahead to look, counting from today. Defaults to 14; at most 60.",
+    )
+
+
+# The Week Ahead's other two tools are called by code, not by the model: their
+# arguments follow from the week, and nothing in research depends on what they
+# return. Earnings in season run to nearly two hundred companies a week, about
+# ten thousand tokens the loop would read again on every turn (ADR 0013's
+# update). The descriptions say what the tools are; no model is shown them yet.
+EARNINGS_CALENDAR = Tool(
+    name="earnings_calendar",
+    description=(
+        "List the companies reporting earnings soon, soonest first: name, symbol, sector, "
+        "the date (YYYY-MM-DD), the end of the window when only a window is known, and "
+        "whether the date is estimated from the previous cycle rather than confirmed."
+    ),
+    args=EarningsCalendarArgs,
+)
+
+
+class DividendChangesArgs(ToolArgs):
+    days: int = Field(
+        default=7,
+        ge=1,
+        le=90,
+        description="How many days back to look, up to today. Defaults to 7; at most 90.",
+    )
+
+
+DIVIDEND_CHANGES = Tool(
+    name="dividend_changes",
+    description=(
+        "List the dividend raises and cuts Quantic saw recently, newest first: the forward "
+        "annual rate before and after, its currency, and the day Quantic first saw the new "
+        "rate, which is not the company's declaration date."
+    ),
+    args=DividendChangesArgs,
 )
 
 

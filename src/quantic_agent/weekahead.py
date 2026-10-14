@@ -1,8 +1,10 @@
 """The Dividend Week Ahead (docs/content.md): one post, in seven locales.
 
 Research is agent.Researcher's loop, as for any question: the model decides
-which tools to call. What it gathered then becomes a post in three steps, and
-in none of them does the model write a figure:
+which tools to call to find the week's ex-dividends. Code then makes the
+calls whose arguments follow from the week, earnings and dividend changes
+(look_up), recorded like the model's. What was gathered becomes a post in
+three steps, and in none of them does the model write a figure:
 
 - the data block is built by code from the recorded tool results
   (gather), and checked against them like any data (provenance.check_data);
@@ -17,7 +19,8 @@ figure can differ between them: no figure is translated (docs/rendering.md).
 """
 
 import json
-from collections.abc import Sequence
+import time
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from importlib import resources
@@ -27,9 +30,14 @@ from typing import Any
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-from quantic_agent import llm, provenance
+from quantic_agent import agent, llm, provenance
 from quantic_agent.agent import Call, Model
-from quantic_agent.tools import DIVIDEND_CALENDAR, GET_STOCK
+from quantic_agent.tools import (
+    DIVIDEND_CALENDAR,
+    DIVIDEND_CHANGES,
+    EARNINGS_CALENDAR,
+    GET_STOCK,
+)
 
 KIND = "week_ahead"  # the post's kind, and its runs' kind in the store
 
@@ -89,8 +97,15 @@ class Week:
 
     @property
     def slug(self) -> str:
-        """The post's name in its URL, /insights/week-ahead-2026-W42."""
-        return f"week-ahead-{self.period}"
+        """The post's name in its URL, /insights/2026/week-ahead-W42."""
+        return f"week-ahead-W{self.start.isocalendar().week:02d}"
+
+    @property
+    def path(self) -> str:
+        """Where its files go, under the ISO year: 2026/week-ahead-W42. The
+        year is the period's, so 2027-01-01 is in 2026/week-ahead-W53;
+        Quantic's build checks the path against the period."""
+        return f"{self.start.isocalendar().year}/{self.slug}"
 
 
 def week_after(today: date) -> Week:
@@ -150,6 +165,53 @@ class ExDividend(_Data):
     streak_years: int | None
     growth_ttm: float | None  # ratios, as returned: 0.0397, not 3.97%
     cagr_5y: float | None
+    # The forward annual rate: the latest declared payment annualised, not the
+    # coming payment's own amount, which the post doesn't have.
+    dividend_rate: float | None
+    currency: str | None
+    dividend_yield: float | None  # a ratio, 0.0284; the calendar's 2.84 divided by 100
+    pay_date: str | None
+
+
+# The fields holding a ratio code made from a tool's percentage, for
+# provenance.check_data: the one value in the post that isn't copied as it is.
+PERCENTAGES = ("dividend_yield",)
+
+
+class Earning(_Data):
+    """A company reporting earnings in the week, as earnings_calendar has it.
+    estimated is the provider's projection from the previous cycle, not a
+    date the company confirmed."""
+
+    symbol: str
+    name: str
+    sector: str | None
+    earnings_date: str
+    earnings_date_end: str | None  # when only a window is known
+    estimated: bool
+
+
+class DividendChange(_Data):
+    """A raise or a cut of the forward annual rate, as dividend_changes has
+    it. detected_on is when Quantic first saw the new rate, not the
+    company's declaration. Which of the two it is, and by how much, the page
+    works out from the rates: data carries no figure no tool returned."""
+
+    symbol: str
+    name: str
+    sector: str | None
+    old_rate: float
+    new_rate: float
+    currency: str | None
+    detected_on: str
+
+
+class WeekData(_Data):
+    """Everything the post shows, as its data block carries it."""
+
+    ex_dividends: list[ExDividend]
+    earnings: list[Earning]
+    dividend_changes: list[DividendChange]
 
 
 # What the tools return, read as far as the post needs. Pydantic ignores the
@@ -162,15 +224,51 @@ class _Listed(BaseModel):
     sector: str | None = None
     ex_dividend_date: date
     payment_frequency: str | None = None
+    dividend_rate: float | None = None
+    currency: str | None = None
+    dividend_yield: float | None = None  # a percentage: 2.84 for 2.84%
+    pay_date: date | None = None
 
 
-class _Calendar(BaseModel):
+class _Ahead(BaseModel):
+    """A calendar that starts today and looks days ahead."""
+
     from_: date = Field(alias="from")  # "from" is a Python keyword
     days: int
-    stocks: list[_Listed]
 
     def covers(self, week: Week) -> bool:
         return self.from_ <= week.start and self.from_ + timedelta(days=self.days) >= week.end
+
+
+class _Calendar(_Ahead):
+    stocks: list[_Listed]
+
+
+class _Reporting(BaseModel):
+    symbol: str
+    name: str
+    sector: str | None = None
+    earnings_date: date
+    earnings_date_end: date | None = None
+    estimated: bool
+
+
+class _Earnings(_Ahead):
+    stocks: list[_Reporting]
+
+
+class _Change(BaseModel):
+    symbol: str
+    name: str
+    sector: str | None = None
+    old_rate: float
+    new_rate: float
+    currency: str | None = None
+    detected_on: date
+
+
+class _Changes(BaseModel):
+    changes: list[_Change]
 
 
 class _Safety(BaseModel):
@@ -199,7 +297,30 @@ class IncompleteError(Exception):
     missing."""
 
 
-def gather(week: Week, calls: Sequence[Call]) -> list[ExDividend]:
+def _results[M: BaseModel](calls: Sequence[Call], tool: str, model: type[M]) -> list[M]:
+    """The successful results of a run's calls to tool, in order, read as
+    model. One that doesn't read is IncompleteError: the post can't be built
+    from what the tool returned."""
+    out: list[M] = []
+    for c in calls:
+        if c.tool != tool or c.failed:
+            continue
+        try:
+            out.append(model.model_validate_json(c.result))
+        except ValidationError as err:
+            raise IncompleteError(f"{c.tool} returned something unexpected: {err}") from err
+    return out
+
+
+def _covering[A: _Ahead](week: Week, calendars: Sequence[A], tool: str) -> A:
+    """The latest calendar that covers the whole week."""
+    covering = [cal for cal in calendars if cal.covers(week)]
+    if not covering:
+        raise IncompleteError(f"no {tool} call covers the week {week.start} to {week.end}")
+    return covering[-1]
+
+
+def ex_dividends(week: Week, calls: Sequence[Call]) -> list[ExDividend]:
     """The companies going ex-dividend in week, from a run's successful
     calls: the latest calendar that covers the whole week, and each listed
     company's get_stock.
@@ -208,26 +329,11 @@ def gather(week: Week, calls: Sequence[Call]) -> list[ExDividend]:
     or skipped a company. Either raises IncompleteError: a post that quietly
     left a company out would be wrong about the week.
     """
-    calendars: list[_Calendar] = []
-    stocks: dict[str, _Stock] = {}
-    for c in calls:
-        if c.failed:
-            continue
-        try:
-            if c.tool == DIVIDEND_CALENDAR.name:
-                calendars.append(_Calendar.model_validate_json(c.result))
-            elif c.tool == GET_STOCK.name:
-                stock = _Stock.model_validate_json(c.result)
-                stocks[stock.profile.symbol] = stock
-        except ValidationError as err:
-            raise IncompleteError(f"{c.tool} returned something unexpected: {err}") from err
-
-    covering = [cal for cal in calendars if cal.covers(week)]
-    if not covering:
-        raise IncompleteError(
-            f"no dividend_calendar call covers the week {week.start} to {week.end}"
-        )
-    listed = [s for s in covering[-1].stocks if week.start <= s.ex_dividend_date <= week.end]
+    calendar = _covering(
+        week, _results(calls, DIVIDEND_CALENDAR.name, _Calendar), "dividend_calendar"
+    )
+    stocks = {s.profile.symbol: s for s in _results(calls, GET_STOCK.name, _Stock)}
+    listed = [s for s in calendar.stocks if week.start <= s.ex_dividend_date <= week.end]
     missing = [s.symbol for s in listed if s.symbol not in stocks]
     if missing:
         raise IncompleteError(f"not looked up with get_stock: {', '.join(missing)}")
@@ -247,13 +353,110 @@ def _row(listed: _Listed, profile: _DividendProfile) -> ExDividend:
         streak_years=profile.streak_years,
         growth_ttm=profile.growth_ttm,
         cagr_5y=profile.cagr_5y,
+        dividend_rate=listed.dividend_rate,
+        currency=listed.currency,
+        # The post's ratios are ratios (docs/rendering.md); Quantic refuses a
+        # yield of 1 or more as a percentage that wasn't divided.
+        dividend_yield=None if listed.dividend_yield is None else listed.dividend_yield / 100,
+        pay_date=None if listed.pay_date is None else listed.pay_date.isoformat(),
     )
 
 
-def data_block(rows: Sequence[ExDividend]) -> dict[str, Any]:
+# How far back the post's raises and cuts go: since the week before's post.
+CHANGES_DAYS = 7
+
+
+def look_ups(week: Week, today: date) -> list[tuple[str, dict[str, Any]]]:
+    """The calls code makes for the week, with their arguments: earnings
+    through the week's Sunday, and the raises and cuts of the last
+    CHANGES_DAYS. The calendar counts from the server's day, which is UTC: a
+    day more than today's distance to Sunday covers the week when the
+    agent's date is a day ahead of it."""
+    days = (week.end - today).days + 1
+    return [
+        (EARNINGS_CALENDAR.name, {"days": days}),
+        (DIVIDEND_CHANGES.name, {"days": CHANGES_DAYS}),
+    ]
+
+
+async def look_up(
+    server: agent.ToolServer,
+    week: Week,
+    today: date,
+    calls: Sequence[Call],
+    record: Callable[[Call], None],
+) -> None:
+    """Makes look_ups' calls, each recorded as it completes, except those a
+    resumed run already made successfully. A failure no arguments can fix
+    (the server down) is raised once its call is recorded; a tool's refusal
+    is recorded, and gather then says what is missing."""
+    tools = {t.name: t for t in (EARNINGS_CALENDAR, DIVIDEND_CHANGES)}
+    for name, arguments in look_ups(week, today):
+        if any(c.tool == name and not c.failed for c in calls):
+            continue
+        tool = tools[name]
+        start = time.monotonic()
+        result, failed, error = await agent.call_tool(server, tool, tool.decode_args(arguments))
+        record(
+            Call(
+                tool=name,
+                arguments=arguments,
+                result=result,
+                failed=failed,
+                duration=timedelta(seconds=time.monotonic() - start),
+            )
+        )
+        if error is not None:
+            raise error
+
+
+def gather(week: Week, calls: Sequence[Call]) -> WeekData:
+    """Everything the post shows, from a run's successful calls: the week's
+    ex-dividends (ex_dividends), the earnings in the latest earnings
+    calendar that covers the week, and the latest dividend changes. Raises
+    IncompleteError when any of them is missing."""
+    earnings = _covering(
+        week, _results(calls, EARNINGS_CALENDAR.name, _Earnings), "earnings_calendar"
+    )
+    changes = _results(calls, DIVIDEND_CHANGES.name, _Changes)
+    if not changes:
+        raise IncompleteError("no dividend_changes call succeeded")
+    return WeekData(
+        ex_dividends=ex_dividends(week, calls),
+        earnings=[
+            Earning(
+                symbol=e.symbol,
+                name=e.name,
+                sector=e.sector,
+                earnings_date=e.earnings_date.isoformat(),
+                earnings_date_end=None
+                if e.earnings_date_end is None
+                else e.earnings_date_end.isoformat(),
+                estimated=e.estimated,
+            )
+            for e in earnings.stocks
+            # Quantic refuses a report outside the post's week.
+            if week.start <= e.earnings_date <= week.end
+        ],
+        dividend_changes=[
+            DividendChange(
+                symbol=c.symbol,
+                name=c.name,
+                sector=c.sector,
+                old_rate=c.old_rate,
+                new_rate=c.new_rate,
+                currency=c.currency,
+                detected_on=c.detected_on.isoformat(),
+            )
+            for c in changes[-1].changes
+        ],
+    )
+
+
+def data_block(data: WeekData) -> dict[str, Any]:
     """The post's data, as plain values: what the file carries, and what
     provenance.check_data checks."""
-    return {"ex_dividends": [r.model_dump() for r in rows]}
+    return data.model_dump()
 
 
 # ---- the prose ---------------------------------------------------------------
@@ -313,7 +516,7 @@ class Written:
 async def write(
     model: Model,
     week: Week,
-    rows: Sequence[ExDividend],
+    data: WeekData,
     *,
     options: llm.Options | None = None,
     attempts: int = ATTEMPTS,
@@ -324,7 +527,7 @@ async def write(
     attempts times in all; the last attempt is returned whatever it holds.
     The data is the file's, under names with no figures in them (WRITER_NAMES).
     """
-    shown = json.dumps(data_block(rows), indent=1)
+    shown = json.dumps(data_block(data), indent=1)
     for name, plain in WRITER_NAMES.items():
         shown = shown.replace(f'"{name}":', f'"{plain}":')
     messages = [
@@ -473,10 +676,10 @@ def _yaml(value: dict[str, Any]) -> str:
     return yaml.dump(_quoted(value), Dumper=_Dumper, sort_keys=False, allow_unicode=True)
 
 
-def data_yaml(rows: Sequence[ExDividend]) -> str:
+def data_yaml(data: WeekData) -> str:
     """The data block as YAML: serialised once, and written into every
     locale's file as it is, so the seven are byte-identical where it counts."""
-    return _yaml({"data": data_block(rows)})
+    return _yaml({"data": data_block(data)})
 
 
 def render(week: Week, run_id: int, locale: str, data: str, prose: Prose) -> str:
@@ -525,7 +728,7 @@ def read_back(text: str, locale: str) -> tuple[dict[str, Any], dict[str, str]]:
     return front, {k: v.strip() for k, v in sections.items()}
 
 
-def check_file(text: str, locale: str, rows: Sequence[ExDividend], prose: Prose) -> list[str]:
+def check_file(text: str, locale: str, data: WeekData, prose: Prose) -> list[str]:
     """Whether the file, read back, says what was checked: the data block
     equal to the data, and each section equal to the prose. Prose that
     writes its own "## " heading, or YAML that a value broke, fails here,
@@ -535,7 +738,7 @@ def check_file(text: str, locale: str, rows: Sequence[ExDividend], prose: Prose)
     except (ValueError, yaml.YAMLError) as err:
         return [f"the file doesn't read back: {err}"]
     problems: list[str] = []
-    if front.get("data") != data_block(rows):
+    if front.get("data") != data_block(data):
         problems.append("the file's data block doesn't read back as the data")
     if front.get("locale") != locale:
         problems.append(f"the file's locale reads back as {front.get('locale')!r}")

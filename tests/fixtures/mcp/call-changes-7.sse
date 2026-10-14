@@ -1,0 +1,4 @@
+id: 0
+event: message
+data: {"id":3,"jsonrpc":"2.0","result":{"content":[{"text":"{\"from\":\"2026-10-07\",\"to\":\"2026-10-14\",\"changes\":[]}","type":"text"}],"isError":false}}
+

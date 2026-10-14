@@ -482,8 +482,8 @@ that can't protect branches. The agent acts as a GitHub App (Contents and Pull r
 installed on that repository only), and its client can only *create* a ref, under `agent/`: GitHub
 refuses to create one that exists, so `main` can't be written through it. Quantic's deploy refuses a
 push to `main` by a bot. `--pr N` commits a Week Ahead run's ready posts, as stored, in one commit
-under `priv/insights/<slug>/` and opens the pull request; `--sync` records a merge as the run's
-approval and a close as its rejection. The review queue is the pull requests themselves: no HTTP
+under `priv/insights/<ISO year>/<slug>/` (`<slug>/` until 2026-10-14) and opens the pull request;
+`--sync` records a merge as the run's approval and a close as its rejection. The review queue is the pull requests themselves: no HTTP
 view was needed.
 
 ## 4. Stack

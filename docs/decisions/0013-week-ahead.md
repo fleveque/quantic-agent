@@ -60,3 +60,50 @@ the existing agentic loop rather than fixed calls.
   universe had two to nine a week; the budget is sixteen calls.
 - `/insights` must render this format: the Phoenix side reads `sections`, `fold_after` and `data`,
   formats the ratios, words the safety reasons and counts the list.
+
+## Update, 2026-10-14: the dividend, raises and cuts, and earnings
+
+Quantic added what the public tools were missing (quantic#490, quantic#491): `dividend_calendar`
+rows carry the forward annual dividend rate, its currency, the yield (a percentage) and the pay
+date; `earnings_calendar` lists earnings reports, with `estimated` for a projected date;
+`dividend_changes` lists the raises and cuts Quantic saw, from a log that starts 2026-10-14.
+`/insights` renders them, and moved posts to `priv/insights/<ISO year>/week-ahead-W<NN>/`.
+
+The author chose, from options put to them: **code makes the two new calls, not the model.**
+
+1. **Point 1 grows.** Each company also has `dividend_rate` (as returned: the latest declared
+   payment annualised, never divided into the coming payment), `currency`, `dividend_yield` and
+   `pay_date`. Beside the companies, `earnings` (the post's week only, as Quantic requires) and
+   `dividend_changes` (the last seven days, without the tool's `kind`: the page compares the rates).
+   Nulls are copied as nulls.
+2. **Point 2 has a second step.** The loop still finds the week's ex-dividends. Once they are
+   complete, and before the checkpoint, code calls `earnings_calendar` through the week's Sunday (a
+   day more, for the server's UTC date) and `dividend_changes` for seven days, records the calls
+   with the run's, and builds the data from all of them. A resumed run doesn't repeat a call it has.
+   Why: the arguments follow from the week, nothing in research depends on the results, and in
+   earnings season the calendar is large: on 2026-10-14, 195 reports in ISO week 44 and 184 in week
+   45, about 30 KB for the days a Thursday run asks for, which the loop would read again on every
+   turn against a 64,000-token budget and a 32,768-token context. The calls come after research is
+   known complete, so a run that goes back to research doesn't replay them to the model.
+3. **The yield is the one value code changes**: the calendar's percentage divided by 100, since the
+   post's ratios are ratios. `provenance.check_data` is told which fields hold such a ratio and
+   finds them as that percentage, divided the same way, so the comparison stays exact.
+4. **The writer is shown all of it** and may name a company that raised, cut or reports, with no
+   figure; told that an estimated date is a projection, it says the company is expected to report.
+   The page has its own headings and tables for both lists.
+5. **The files** move to `--out/2026/week-ahead-W43/{locale}.md`, as on Quantic, whose build checks
+   the path against `period`. The pull request's branch keeps the period:
+   `agent/week-ahead-2026-W43-run-N`.
+
+Consequences of the update:
+
+- Measured on live data ([benchmarks](../benchmarks/2026-10-14-week-ahead-data/README.md)): 3 of 3
+  runs published all seven locales, prose in one attempt, 143–156s and about 13,500 tokens each;
+  all 21 files pass Quantic's own build checks. The model's research is unchanged: three calls.
+- The writer is shown every earnings report in the week, 66 that week and nearly two hundred at the
+  season's peak. That is prompt the writer reads once, not a loop's, but it is the next thing to
+  measure if `--num-ctx` ever overflows.
+- The rate and pay date were null for every company on the first day: Quantic fills them hourly and
+  nightly. The first weeks will have few raises or cuts, or none.
+- Code's calls aren't the model's, but the audit can't tell them apart: `--run N` lists them with
+  the rest, after the model's.

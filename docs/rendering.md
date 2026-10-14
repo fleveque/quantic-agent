@@ -201,7 +201,7 @@ locale-agnostic.
 
 Three consequences for content, all of them simplifications:
 
-- **The seven files are keyed by locale, not by path.** `/insights/week-ahead-2026-W38` is the same
+- **The seven files are keyed by locale, not by path.** `/insights/2026/week-ahead-W38` is the same
   route on every host; which locale's file it renders is decided by the host that served the request.
 - **Canonical, hreflang and per-host sitemaps are already automatic** through the existing SEO layer,
   driven by `:locale_origins`. The section needs to appear in the sitemap; the seven-way alternate
@@ -266,14 +266,49 @@ Where it differs from the sketch above:
 - **`run_id`, not `manifest_id`.** The run is where the provenance is: `quantic-agent --run 4` shows
   the tool results and re-checks the data against them.
 - **No `published_at`.** A draft doesn't know when it will be published; the merge does. The week is
-  `period` (the ISO week, which names the post: `/insights/week-ahead-2026-W42`), `week_start` and
-  `week_end`.
+  `period` (the ISO week, which names the post: `/insights/2026/week-ahead-W42`, the year being
+  the ISO week's), `week_start` and `week_end`.
 - **Prose sections are listed and headed per locale.** `sections` names them in order; in the body,
   each is a `##` heading in the file's language, from the agent's locale table, not from the model.
   The template can take them by position. `fold_after` is always `summary`.
 - **Every string is double-quoted.** Unquoted, `ON` is a boolean to a YAML 1.1 parser and `1E3` a
   number to a YAML 1.2 one. Quoted, a ticker is a string to any parser. Each file is read back before
   it's written, and must say exactly what was checked.
+
+## As built, 2026-10-14: the dividend, raises and cuts, and earnings
+
+Quantic #490 opened more data to anonymous callers and #491 renders it
+([decision 0013's update](decisions/0013-week-ahead.md#update-2026-10-14-the-dividend-raises-and-cuts-and-earnings)).
+Files live at `priv/insights/<ISO year>/week-ahead-W<NN>/<locale>.md`, which Quantic's build checks
+against `period`. The data block gains, all copied by code:
+
+```yaml
+data:
+  ex_dividends:
+  - symbol: "IBE.MC"
+    # ...the fields above, unchanged...
+    dividend_rate: null   # dividend_calendar's forward annual rate, as returned
+    currency: "EUR"
+    dividend_yield: 0.0315  # dividend_calendar's 3.15 (%), divided by 100 in code
+    pay_date: null
+  earnings:               # earnings_calendar, the post's week only
+  - symbol: "IBE.MC"
+    name: "Iberdrola"
+    sector: "Utilities"
+    earnings_date: "2026-10-21"
+    earnings_date_end: null
+    estimated: false
+  dividend_changes: []    # dividend_changes over the last seven days
+```
+
+- **The yield is the one value not copied as it is.** `provenance.check_data` is told which fields
+  hold a percentage divided by 100 and finds them as that percentage, computed the same way, so the
+  match is exact; any other field holding the ratio would need a tool to have returned it.
+- **A change has no `kind`.** The page tells a raise from a cut by its rates, and computes the
+  change itself: no figure in the data that no tool returned.
+- Quantic's build refuses a yield of 1 or more, a pay date before its ex-date, an earnings date
+  outside the week, and a change whose rates are equal or not positive: on the agent's pull request,
+  in CI.
 
 ## What this needs from the Quantic repo
 
