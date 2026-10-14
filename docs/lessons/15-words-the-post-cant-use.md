@@ -18,12 +18,13 @@ Each rule is a name, a pattern and the instruction the writer gets when it break
 ```python
 Rule(
     "audience",
-    _words(r"investors?", r"readers?", r"income[- ](?:focused|oriented|seekers?)", r"you", r"your"),
+    _words(r"investors?", r"readers?", r"you", r"your"),
     "Don't address the reader or name an audience: describe the companies.",
 )
 ```
 
-Five of them, in a tuple: audience, advice, market, count, duration. `_words` joins the alternatives
+(The real one also names "income-focused" and its variants.) Five of them, in a tuple: audience,
+advice, market, count, duration. `_words` joins the alternatives
 into one pattern, `\b(?:investors?|readers?|...)\b`, case-insensitive. In Go this would be a slice
 of structs with a `*regexp.Regexp` in each, compiled once at package level with `MustCompile`.
 In Elixir, a module attribute with `~r//i` sigils. Same idea in all three: the rules are a table,
