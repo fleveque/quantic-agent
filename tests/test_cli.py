@@ -906,6 +906,33 @@ def test_prose_with_figures_publishes_nothing(
     assert [str(f) for f in run.draft.findings] == ["'Two' (number 2)"]
 
 
+def test_prose_that_leans_towards_advice_publishes_nothing(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    isolated_state: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    leaning = prose({"summary": "A week for income-focused investors.", "watch": ENGLISH["watch"]})
+    week_ahead_servers(ollama, quantic_mcp, monkeypatch, writer=[leaning] * 3)
+
+    assert week_ahead(ollama, quantic_mcp, tmp_path) == 4
+
+    assert not (tmp_path / "2026").exists()
+    assert "still has figures or wording it can't use: nothing written" in capsys.readouterr().err
+    [run] = stored_runs(isolated_state)
+    assert run.state is store.State.UNVERIFIED
+    assert run.draft is not None
+    assert [str(f) for f in run.draft.findings] == [
+        "'income-focused' (phrase audience)",
+        "'investors' (phrase audience)",
+    ]
+    # Re-checked from the store, the same phrases.
+    assert main(["--run", "1"]) == 4
+    assert "wording the post can't use: 'investors' (phrase audience)" in capsys.readouterr().out
+
+
 def test_the_published_data_is_checked_against_the_tools(
     ollama: FakeOllama,
     quantic_mcp: FakeMCP,

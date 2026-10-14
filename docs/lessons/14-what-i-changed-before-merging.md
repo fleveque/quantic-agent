@@ -140,4 +140,4 @@ real reviews: which locales get corrected, and how much.
 
 ---
 
-**Previous:** [Lesson 13 — Sunday, without me](13-sunday-without-me.md)
+**Previous:** [Lesson 13 — Sunday, without me](13-sunday-without-me.md) · **Next:** [Lesson 15 — Words the post can't use](15-words-the-post-cant-use.md)

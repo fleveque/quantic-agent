@@ -30,7 +30,7 @@ from typing import Any
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-from quantic_agent import agent, llm, provenance
+from quantic_agent import agent, llm, provenance, wording
 from quantic_agent.agent import Call, Model
 from quantic_agent.tools import (
     DIVIDEND_CALENDAR,
@@ -504,8 +504,9 @@ class NotProseError(Exception):
 
 @dataclass(frozen=True)
 class Written:
-    """The English prose: the last attempt, the figures still in it (none,
-    if it can be published), how many attempts it took and their tokens."""
+    """The English prose: the last attempt, the figures and phrases still in
+    it (none, if it can be published), how many attempts it took and their
+    tokens."""
 
     prose: Prose
     findings: list[provenance.Finding]
@@ -523,8 +524,9 @@ async def write(
 ) -> Written:
     """Asks the model for the English prose, shown the week and its data.
 
-    Prose with figures in it is sent back with the figures named, up to
-    attempts times in all; the last attempt is returned whatever it holds.
+    Prose with figures in it, or wording a rule names (wording.py), is sent
+    back with them named, up to attempts times in all; the last attempt is
+    returned whatever it holds.
     The data is the file's, under names with no figures in them (WRITER_NAMES).
     """
     shown = json.dumps(data_block(data), indent=1)
@@ -542,22 +544,43 @@ async def write(
         resp = await model.chat(messages, think=False, format=PROSE_FORMAT, options=options)
         tokens += resp.prompt_eval_count + resp.eval_count
         prose = _prose(resp, tokens)
-        findings = provenance.no_figures(prose.text())
+        findings = check_prose(prose)
         if not findings or attempt == attempts:
             return Written(prose, findings, attempt, tokens)
-        named = ", ".join(repr(f.text) for f in findings)
-        messages += [
-            resp.message,
-            llm.Message(
-                role="user",
-                content=(
-                    f"That prose has figures in it: {named}. The post's tables show every "
-                    "figure, so the prose must have none. Write both fields again without "
-                    "numbers, dates, counts or durations, in digits or in words."
-                ),
-            ),
-        ]
+        messages += [resp.message, llm.Message(role="user", content=_again(findings))]
     raise AssertionError("unreachable: the last attempt returns")
+
+
+def check_prose(prose: Prose) -> list[provenance.Finding]:
+    """What the English prose mustn't have, in the order it's written: any
+    figure, and any phrase a wording rule names."""
+    text = prose.text()
+    return sorted(provenance.no_figures(text) + wording.check(text), key=lambda f: f.offset)
+
+
+def _again(findings: list[provenance.Finding]) -> str:
+    """The writer's next message: what was wrong with its prose, named."""
+    figures = [f for f in findings if f.kind is not provenance.Kind.PHRASE]
+    phrases = [f for f in findings if f.kind is provenance.Kind.PHRASE]
+    parts: list[str] = []
+    if figures:
+        named = ", ".join(repr(f.text) for f in figures)
+        parts.append(
+            f"That prose has figures in it: {named}. The post's tables show every figure, "
+            "so the prose must have none."
+        )
+    if phrases:
+        named = ", ".join(repr(f.text) for f in phrases)
+        parts.append(f"It has wording the post can't use: {named}.")
+        parts += wording.instructions(phrases)
+    if figures:
+        parts.append(
+            "Write both fields again without numbers, dates, counts or durations, in digits "
+            "or in words."
+        )
+    else:
+        parts.append("Write both fields again.")
+    return " ".join(parts)
 
 
 def _prose(resp: llm.ChatResponse, tokens: int) -> Prose:

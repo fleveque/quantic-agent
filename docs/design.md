@@ -55,6 +55,13 @@ logs, fixtures, or commits.
 does not recommend buying or selling. Quantic operates in the EU; "this stock is a buy" is a
 regulatory problem, not a style preference.
 
+*As built (milestone 15, [decision 0017](decisions/0017-wording-checks.md)).* The Week Ahead's
+English prose is checked against a list of wording rules ([`wording.py`](../src/quantic_agent/wording.py)):
+an audience ("investors"), advice ("attractive", "exposure", "warrants a closer look"), the market
+("sentiment"), counts ("both") and durations ("decade"). A match is sent back to the writer like a
+figure and holds the post after three attempts. It's a list of phrases, built from 120 real
+writings: a phrase it names is never published, and anything else is the reviewer's.
+
 ## 3. Architecture
 
 ### 3.1 The core split: agentic research, constrained writing

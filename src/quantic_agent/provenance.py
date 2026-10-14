@@ -260,6 +260,7 @@ class Kind(StrEnum):
     NUMBER = "number"
     DATE = "date"
     YEAR = "year"
+    PHRASE = "phrase"  # wording a post mustn't use (wording.py); value names the rule
 
 
 _WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
@@ -267,12 +268,15 @@ _WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday",
 
 @dataclass(frozen=True)
 class Finding:
-    """A figure in prose that no tool returned."""
+    """A figure in prose that no tool returned, or a phrase the prose mustn't
+    use (wording.py)."""
 
-    text: str  # as written: "$0.83", "October 8, 2026", "180"
+    text: str  # as written: "$0.83", "October 8, 2026", "180", "investors"
     offset: int  # character offset in the checked text
     kind: Kind
-    value: str  # normalised: "0.83", "2026-10-08", "--10-08" for a date with no year
+    # normalised: "0.83", "2026-10-08", "--10-08" for a date with no year; a
+    # phrase's rule: "advice"
+    value: str
 
     def __str__(self) -> str:
         return f"{self.text!r} ({self.kind} {self.value})"
@@ -301,6 +305,8 @@ class _Figure:
                 return str(self.year)
             case Kind.NUMBER:
                 return str(self.number)
+            case Kind.PHRASE:
+                raise AssertionError("a figure is never a phrase")
 
     def finding(self) -> Finding:
         return Finding(self.text, self.offset, self.kind, self.value())
@@ -334,6 +340,8 @@ class _Figure:
                 return bool(manifest.number(self.year)) or manifest.has_year(self.year)
             case Kind.NUMBER:
                 return bool(manifest.number(self.number))
+            case Kind.PHRASE:
+                raise AssertionError("a figure is never a phrase")
 
 
 def check_prose(text: str, manifest: Manifest) -> list[Finding]:
