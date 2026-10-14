@@ -92,7 +92,7 @@ starting point here.
   Real runs: `docs/benchmarks/2026-10-14-week-ahead-data/`, 3/3, all files pass Quantic's checks.
 - The week-ahead CLI tests pin the run's start date: the PR tests took the week from the real
   clock and failed on `main` from Monday 2026-10-12.
-- **Milestone 13** (branch `m13-ship-it`, ADR 0015): `--weekly`, the scheduled job: `--sync`, then
+- **Milestone 13 merged** (#18, ADR 0015): `--weekly`, the scheduled job: `--sync`, then
   next week's post (a week with any pull request, open/merged/closed, is done; a stopped run is
   resumed; none, one starts), then `--pr`. Idempotent. `gpu.py`: `nvidia-smi` total less Ollama's
   runners (`llama-server` under Ollama's path); over 4096 MiB (`--gpu-max-others`) exit 3.
@@ -117,12 +117,17 @@ starting point here.
 
 ## Next, in order
 
-1. After milestone 13 merges: the author installs it (`uv tool install` from `main`, the env file,
-   `systemctl --user enable --now quantic-agent.timer`, runbook §8c). A full `--weekly` write under
-   systemd with the GPU free wasn't run before the PR (the author was playing); the first Sunday,
-   2026-10-18 07:00, is that run. The author suggested Claude review a PR's translations and claims
-   by hand before merging; it did for quantic#492 (a review with suggested changes), not yet a
-   standing decision. Quantic's `/insights` renders merged posts since quantic#489/#491.
+1. **Installed and on, 2026-10-14**: `uv tool install` from `main` after #18's merge;
+   `~/.config/quantic-agent/env` (App ID, `QUANTIC_AGENT_REPO`, `QUANTIC_AGENT_OUT=~/insights`,
+   mode 600); the units in `~/.config/systemd/user/`; `quantic-agent.timer` enabled. A manual start
+   synced and exited 0. Sunday 2026-10-18 targets 2026-W43, already published (quantic#492), so it
+   only syncs; the first real write is Sunday 2026-10-25, for 2026-W44. Check its journal and its
+   pull request then. After merging agent changes: `uv tool install --reinstall
+   git+https://github.com/fleveque/quantic-agent`. The author suggested Claude review a PR's
+   translations and claims before merging; it did for quantic#492 (a review with suggested
+   changes), not yet a standing decision. Quantic's `/insights` renders merged posts.
+   Small: `--weekly`'s "has its pull request" names the week's newest reviewed run (run 4's closed
+   #494 for W43), not the merged one.
 2. Ollama's truncation is invisible in its replies (only its log says `truncating input prompt`);
    detecting it from the agent is open.
 3. Seen in real runs, not caught: counts of a filtered subset ("four companies") are flagged though
