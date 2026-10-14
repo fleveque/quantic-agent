@@ -48,6 +48,7 @@ from typing import Any, TextIO
 
 from quantic_agent import (
     agent,
+    corrections,
     github,
     gpu,
     llm,
@@ -974,25 +975,56 @@ async def _sync(db: store.Store, args: argparse.Namespace) -> int:
     it. A merge approves its run and a close rejects it, which is the accept
     rate of design open question 3."""
     waiting = db.open_pull_requests()
-    if not waiting:
+    if not waiting and not db.unread_merges():
         print("no open pull requests")
         return EXIT_OK
     clients: dict[str, github.Client] = {}
+
+    def client(repo: str) -> github.Client:
+        if repo not in clients:
+            clients[repo] = github_client(repo)
+        return clients[repo]
+
     try:
         for pr in waiting:
-            if pr.repo not in clients:
-                clients[pr.repo] = github_client(pr.repo)
-            now = await clients[pr.repo].pull_request(pr.number)
+            now = await client(pr.repo).pull_request(pr.number)
             if now.state == "open":
                 print(f"run {pr.run_id}: {pr.url} still open")
                 continue
             db.decide_pull_request(pr.run_id, now.merged)
             outcome = "merged: approved" if now.merged else "closed: rejected"
             print(f"run {pr.run_id}: {pr.url} {outcome}")
+        # Merged just now, or before this version could read them.
+        for pr in db.unread_merges():
+            await _read_corrections(db, client(pr.repo), pr, args.repo_path)
     finally:
-        for client in clients.values():
-            await client.aclose()
+        for gh in clients.values():
+            await gh.aclose()
     return EXIT_OK
+
+
+async def _read_corrections(
+    db: store.Store, gh: github.Client, pr: store.PullRequest, repo_path: str
+) -> None:
+    """Reads a merged post's files from its merge commit and records what
+    the reviewer changed in each, section by section (milestone 14)."""
+    merge = (await gh.pull_request(pr.number)).merge_commit_sha
+    if merge is None:
+        raise github.GitHubError(f"{pr.url} is merged but GitHub names no merge commit")
+    run = db.run(pr.run_id)
+    found: list[store.Correction] = []
+    for post, path in publish.locations(run, repo_path):
+        found += corrections.compare(post.locale, post.content, await gh.file(path, merge))
+    db.record_corrections(run.id, merge, found)
+    if not found:
+        print(f"run {run.id}: published as written")
+        return
+    changed = dict.fromkeys(c.locale for c in found)
+    where = ", ".join(
+        f"{locale} ({', '.join(c.section for c in found if c.locale == locale)})"
+        for locale in changed
+    )
+    print(f"run {run.id}: corrected before merging: {where}")
 
 
 # ---- the scheduled job --------------------------------------------------------
@@ -1208,6 +1240,7 @@ def _show_post(run: store.Run) -> int:
     the prose for figures, which it must not have."""
     if run.pull_request is not None:
         print(f"pull request: {run.pull_request.url} ({run.pull_request.state})")
+    _show_corrections(run)
     for post in run.posts:
         print(f"post {post.locale}: {'ready' if post.ready else 'held'}", end="")
         print(f": {'; '.join(post.problems)}" if post.problems else "")
@@ -1234,6 +1267,25 @@ def _show_post(run: store.Run) -> int:
     for figure in figures:
         print(f"a figure in the prose: {figure}")
     return EXIT_UNVERIFIED
+
+
+def _show_corrections(run: store.Run) -> None:
+    """What the reviewer changed before merging, as a word diff: what the
+    agent wrote, [-removed-] and {+added+}."""
+    pr = run.pull_request
+    if pr is None or pr.merge_commit is None:
+        return
+    if not run.corrections:
+        print(f"published as written (read at {pr.merge_commit[:7]})")
+        return
+    print(f"corrected before merging (read at {pr.merge_commit[:7]}):")
+    for c in run.corrections:
+        if c.published is None:
+            print(f"  {c.locale}: left out")
+        elif c.section in ("file", "data", "frontmatter"):
+            print(f"  {c.locale} {c.section}: changed")
+        else:
+            print(f"  {c.locale} {c.section}: {corrections.word_diff(c.drafted, c.published)}")
 
 
 def _shorten(text: str, n: int) -> str:

@@ -261,6 +261,14 @@ is plain Python over unit vectors, one `math.sumprod` each: about 10ms for 500, 
 approved answer's sentence shapes almost word for word: the review queue decides the voice.
 Don't-repeat-yourself and filing text aren't built.
 
+**As built (milestone 14, [`corrections.py`](../src/quantic_agent/corrections.py),
+[decision 0016](decisions/0016-corrections-captured.md)).** Not retrieval yet: the corpus it
+needs. A Week Ahead isn't style memory, and a merge approved the post *as the reviewer left it*.
+`--sync` reads a merged post's files back from the merge commit and stores each section the
+reviewer changed, with the agent's text and the published one; `--run N` shows them as word
+diffs. On quantic#492, 8 sections in 6 locales. Retrieving past corrections for the translator,
+and a per-locale glossary check, are built on these when the author chooses them.
+
 ### 3.5 Translation
 
 All seven Quantic locales are in scope from the first content milestone. The review burden is the
@@ -641,7 +649,10 @@ refused Qwen3.5 outright with a `412: requires a newer version of Ollama`.
     translates well enough, which needs a way to measure translation quality. *Needed before
     milestone 12 publishes anything.* *(2026-10-09: the 27B's Catalan is better than the 9B's and
     still has errors a reader sees ("augmentos", "segureta"). A larger local model alone doesn't
-    answer it. [Benchmarks](benchmarks/2026-10-09-models/README.md).)*
+    answer it. [Benchmarks](benchmarks/2026-10-09-models/README.md).)* *(2026-10-14: the reviewer
+    reads every locale in the pull request, and corrected six of seven on quantic#492. From
+    milestone 14 those corrections are stored per locale and section, the measure of translation
+    quality this question asked for, counted from real reviews.)*
 
 ## 6. Explicit non-goals
 

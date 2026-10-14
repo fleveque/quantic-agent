@@ -1,6 +1,6 @@
 import jwt
 import pytest
-from conftest import DEAD_URL, FakeGitHub, github_fixture
+from conftest import DEAD_URL, FakeGitHub, github_fixture, merge_commit
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
@@ -179,6 +179,25 @@ async def test_a_pull_requests_state_is_read_back(
     async with client(github_api, app_key) as gh:
         pr = await gh.pull_request(12)
     assert (pr.state, pr.merged) == (open_, merged)
+
+
+@pytest.mark.anyio
+async def test_a_merged_file_is_read_from_the_merge_commit(
+    github_api: FakeGitHub, app_key: tuple[str, str]
+) -> None:
+    async with client(github_api, app_key) as gh:
+        pr = await open_one(gh)
+        github_api.branches[pr.number][FILES[1].path] = "edited by the reviewer\n"
+        github_api.pulls[pr.number] = "merged"
+        merged = await gh.pull_request(pr.number)
+        assert merged.merge_commit_sha == merge_commit(pr.number)
+
+        sent = len(github_api.requests)
+        assert await gh.file(FILES[0].path, merge_commit(pr.number)) == FILES[0].content
+        assert await gh.file(FILES[1].path, merge_commit(pr.number)) == "edited by the reviewer\n"
+        assert await gh.file("priv/insights/none.md", merge_commit(pr.number)) is None
+    # Reading is GETs, nothing else.
+    assert {m for m, _, _, _ in github_api.requests[sent:]} == {"GET"}
 
 
 @pytest.mark.anyio

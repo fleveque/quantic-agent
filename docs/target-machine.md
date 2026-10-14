@@ -251,6 +251,12 @@ One pull request per run, and one open per week: a second run for the same week 
 first is merged or closed and `--sync` has seen it. If a pull request fails halfway, its branch may
 already exist; delete the branch on GitHub before trying that run again.
 
+Edit the files on the branch before merging if they need it: that is the review. When `--sync`
+sees the merge, it reads the files back from the merge commit and records each section you changed
+([decision 0016](decisions/0016-corrections-captured.md)). `--run N` shows them as word diffs,
+`[-what the agent wrote-]{+what you published+}`. A pull request merged before this version is read
+on the next sync.
+
 Quantic's `main` can't be protected on its plan, and the App's permission to push branches covers
 it. The agent's client can only create new `agent/` branches, and Quantic's deploy refuses a push to
 `main` made by a bot.

@@ -16,6 +16,7 @@ from quantic_agent import memory, store
 from quantic_agent.agent import Call, Limit
 from quantic_agent.provenance import Kind, Manifest, check_prose
 from quantic_agent.store import (
+    Correction,
     Draft,
     NotFoundError,
     NotResumableError,
@@ -100,6 +101,7 @@ def test_migrations_apply_once(tmp_path: Path) -> None:
         db.start_run("research", "q", "m")
     assert tables(tmp_path / "agent.db") == [
         "alembic_version",
+        "corrections",
         "drafts",
         "embeddings",
         "examples",
@@ -113,7 +115,7 @@ def test_migrations_apply_once(tmp_path: Path) -> None:
 
 
 # The latest migration.
-HEAD = "0006"
+HEAD = "0007"
 
 
 def tables(path: Path) -> list[str]:
@@ -467,3 +469,44 @@ def test_the_examples_a_writer_saw_are_recorded(tmp_path: Path) -> None:
         db.record_examples(run_id, [match])  # a resumed run writes again
 
         assert db.run(run_id).examples == [(example, pytest.approx(match.score))]
+
+
+def merged_run(db: Store) -> int:
+    """A run whose pull request was merged, not yet read back."""
+    run_id = db.start_run("week_ahead", "q", "m")
+    db.finish(run_id, State.ANSWERED, "", None)
+    db.record_pull_request(
+        run_id, store.PullRequest("o/r", 7, "https://x/7", "agent/x", "2026-W43", "open")
+    )
+    db.decide_pull_request(run_id, merged=True)
+    return run_id
+
+
+def test_corrections_are_recorded_once_with_their_commit(tmp_path: Path) -> None:
+    with open_store(tmp_path) as db:
+        run_id = merged_run(db)
+        assert [pr.number for pr in db.unread_merges()] == [7]
+        found = [Correction("ca", "watch", "per davant", "per darrere")]
+
+        db.record_corrections(run_id, "abc123", found)
+
+        assert db.unread_merges() == []
+        run = db.run(run_id)
+        assert run.pull_request is not None
+        assert run.pull_request.merge_commit == "abc123"
+        assert run.corrections == found
+        with pytest.raises(NotFoundError, match="no merged pull request still to read"):
+            db.record_corrections(run_id, "abc123", found)
+
+
+def test_corrections_are_all_or_nothing(tmp_path: Path) -> None:
+    with open_store(tmp_path) as db:
+        run_id = merged_run(db)
+        twice = [Correction("ca", "watch", "a", "b"), Correction("ca", "watch", "a", "c")]
+
+        with pytest.raises(sqlite3.IntegrityError, match="UNIQUE"):
+            db.record_corrections(run_id, "abc123", twice)
+
+        # Nothing kept, and the merge is still to read: the next sync tries again.
+        assert db.run(run_id).corrections == []
+        assert [pr.number for pr in db.unread_merges()] == [7]

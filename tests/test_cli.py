@@ -11,7 +11,16 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
-from conftest import DEAD_URL, FakeGitHub, FakeMCP, FakeOllama, Reply, fixture, nvidia_smi
+from conftest import (
+    DEAD_URL,
+    FakeGitHub,
+    FakeMCP,
+    FakeOllama,
+    Reply,
+    fixture,
+    merge_commit,
+    nvidia_smi,
+)
 
 from quantic_agent import cli, gpu, quantic, store, weekahead
 from quantic_agent.agent import Call
@@ -1281,6 +1290,7 @@ def test_sync_records_merges_as_approvals_and_closes_as_rejections(
         "run 1: https://github.com/fleveque/quantic/pull/100 merged: approved\n"
         "run 2: https://github.com/fleveque/quantic/pull/101 closed: rejected\n"
         "run 3: https://github.com/fleveque/quantic/pull/102 still open\n"
+        "run 1: published as written\n"
     )
     runs = {r.id: r for r in stored_runs(isolated_state)}
     assert runs[1].review is not None
@@ -1297,6 +1307,80 @@ def test_sync_records_merges_as_approvals_and_closes_as_rejections(
     assert [p for _, p, _, _ in github_api.requests[asked:] if "/pulls/" in p] == [
         "/repos/fleveque/quantic/pulls/102"
     ]
+
+
+def test_sync_records_what_the_reviewer_changed_before_merging(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    github_api: FakeGitHub,
+    app_key: tuple[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    isolated_state: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    written_week(ollama, quantic_mcp, monkeypatch, tmp_path / "out")
+    as_the_app(monkeypatch, github_api, app_key[0], tmp_path)
+    assert main(["--pr", "1"]) == 0
+    # The reviewer adds a sentence to the Catalan and leaves the Italian out.
+    branch = github_api.branches[100]
+    folder = "priv/insights/2026/week-ahead-W43"
+    catalan, italian = branch[f"{folder}/ca.md"], branch.pop(f"{folder}/it.md")
+    watch = weekahead.read_back(catalan, "ca")[1]["watch"]
+    branch[f"{folder}/ca.md"] = catalan.replace(watch, f"{watch} Afegit pel revisor.")
+    github_api.pulls[100] = "merged"
+    capsys.readouterr()
+
+    assert main(["--sync"]) == 0
+
+    assert capsys.readouterr().out == (
+        "run 1: https://github.com/fleveque/quantic/pull/100 merged: approved\n"
+        "run 1: corrected before merging: ca (watch), it (file)\n"
+    )
+    [run] = stored_runs(isolated_state)
+    assert run.pull_request is not None
+    assert run.pull_request.merge_commit == merge_commit(100)
+    assert run.corrections == [
+        store.Correction("ca", "watch", watch, f"{watch} Afegit pel revisor."),
+        store.Correction("it", "file", italian, None),
+    ]
+    assert main(["--run", "1"]) == 0
+    shown = capsys.readouterr().out
+    assert f"corrected before merging (read at {merge_commit(100)[:7]}):" in shown
+    assert "  ca watch: " in shown
+    assert shown.split("  ca watch: ")[1].split("\n")[0].endswith(" {+Afegit pel revisor.+}")
+    assert "  it: left out" in shown
+
+
+def test_a_merge_synced_before_corrections_were_read_is_read_next_time(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    github_api: FakeGitHub,
+    app_key: tuple[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    isolated_state: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # As quantic#492 was: merged, and synced by a version that read nothing.
+    written_week(ollama, quantic_mcp, monkeypatch, tmp_path / "out")
+    as_the_app(monkeypatch, github_api, app_key[0], tmp_path)
+    assert main(["--pr", "1"]) == 0
+    github_api.pulls[100] = "merged"
+    with store.Store(isolated_state) as db:
+        db.decide_pull_request(1, merged=True)
+    capsys.readouterr()
+
+    assert main(["--sync"]) == 0
+    assert capsys.readouterr().out == "run 1: published as written\n"
+
+    # Read once: the next sync has nothing to ask GitHub.
+    asked = len(github_api.requests)
+    assert main(["--sync"]) == 0
+    assert capsys.readouterr().out == "no open pull requests\n"
+    assert github_api.requests[asked:] == []
+    assert main(["--run", "1"]) == 0
+    assert f"published as written (read at {merge_commit(100)[:7]})" in capsys.readouterr().out
 
 
 def test_github_not_answering_exits_3(
