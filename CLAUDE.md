@@ -92,6 +92,16 @@ starting point here.
   Real runs: `docs/benchmarks/2026-10-14-week-ahead-data/`, 3/3, all files pass Quantic's checks.
 - The week-ahead CLI tests pin the run's start date: the PR tests took the week from the real
   clock and failed on `main` from Monday 2026-10-12.
+- **Milestone 13** (branch `m13-ship-it`, ADR 0015): `--weekly`, the scheduled job: `--sync`, then
+  next week's post (a week with any pull request, open/merged/closed, is done; a stopped run is
+  resumed; none, one starts), then `--pr`. Idempotent. `gpu.py`: `nvidia-smi` total less Ollama's
+  runners (`llama-server` under Ollama's path); over 4096 MiB (`--gpu-max-others`) exit 3.
+  `logs.py`: stdlib logging; terminal output unchanged; under systemd (`JOURNAL_STREAM` = stderr's
+  dev:inode) `<N>` priority prefix + `key=value` fields. `contrib/systemd/` user service + timer
+  (Sun 07:00, Persistent, Restart on exit 3 every 30min for 12h, SuccessExitStatus 4 5 6,
+  PYTHONUNBUFFERED). The author chose all four. The first real `--weekly` opened a duplicate PR
+  (quantic#494, closed) by taking the week's newest answered run: fixed, tested. A oneshot has no
+  start timeout by default (systemd.service(5)); lesson 13.
 - design.md keeps Go's "As built in Go" notes next to this repository's "As built" notes.
 - PRs are squash-merged, so a walkthrough built from a branch commit cites a SHA `main` won't have.
   After merge, rebuild the walkthrough page from the merge commit and republish the artifact. That
@@ -107,11 +117,12 @@ starting point here.
 
 ## Next, in order
 
-1. **Milestone 13 — ship it**: logging, a systemd unit (README roadmap). The timer would run
-   `--week-ahead`, `--pr` and `--sync`, at a time the author isn't using the GPU: the 27B takes most
-   of the card for about two minutes. The author suggested Claude review a PR's translations and
-   claims by hand before merging (a question, not yet a decision). Quantic's `/insights` renders
-   merged posts since quantic#489/#491.
+1. After milestone 13 merges: the author installs it (`uv tool install` from `main`, the env file,
+   `systemctl --user enable --now quantic-agent.timer`, runbook §8c). A full `--weekly` write under
+   systemd with the GPU free wasn't run before the PR (the author was playing); the first Sunday,
+   2026-10-18 07:00, is that run. The author suggested Claude review a PR's translations and claims
+   by hand before merging; it did for quantic#492 (a review with suggested changes), not yet a
+   standing decision. Quantic's `/insights` renders merged posts since quantic#489/#491.
 2. Ollama's truncation is invisible in its replies (only its log says `truncating input prompt`);
    detecting it from the agent is open.
 3. Seen in real runs, not caught: counts of a filtered subset ("four companies") are flagged though
