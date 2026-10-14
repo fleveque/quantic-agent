@@ -45,6 +45,12 @@ def anyio_backend() -> str:
     return "asyncio"
 
 
+def nvidia_smi(name: str) -> str:
+    """One of nvidia-smi's answers, captured on the author's machine
+    (tests/fixtures/nvidia-smi)."""
+    return (FIXTURES / "nvidia-smi" / name).read_text()
+
+
 def fixture(name: str) -> bytes:
     """A reply captured from a real Ollama server (tests/fixtures/ollama)."""
     return (FIXTURES / "ollama" / name).read_bytes()

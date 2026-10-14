@@ -4,15 +4,16 @@ import re
 import signal
 import sqlite3
 import threading
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 
 import pytest
-from conftest import DEAD_URL, FakeGitHub, FakeMCP, FakeOllama, Reply, fixture
+from conftest import DEAD_URL, FakeGitHub, FakeMCP, FakeOllama, Reply, fixture, nvidia_smi
 
-from quantic_agent import cli, quantic, store, weekahead
+from quantic_agent import cli, gpu, quantic, store, weekahead
 from quantic_agent.agent import Call
 from quantic_agent.cli import main
 
@@ -1314,3 +1315,206 @@ def test_github_not_answering_exits_3(
     assert main(["--pr", "1"]) == 3
     [run] = stored_runs(isolated_state)
     assert run.pull_request is None
+
+
+# ---- the scheduled job ---------------------------------------------------------
+
+FREE = gpu.Usage(used=2216, total=16376, ollama=0)  # the desktop alone, 2026-10-14
+
+
+@pytest.fixture
+def on_wednesday(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Every store's clock at Wednesday 2026-10-14, the fixtures' day: --weekly
+    finds the week's run by the day it started, which the store records."""
+    init = store.Store.__init__
+    wednesday = datetime(2026, 10, 14, 12, tzinfo=UTC)
+
+    def at_wednesday(
+        self: store.Store, path: Path | str, *, now: Callable[[], datetime] | None = None
+    ) -> None:
+        init(self, path, now=now or (lambda: wednesday))
+
+    monkeypatch.setattr(store.Store, "__init__", at_wednesday)
+
+
+def weekly(
+    ollama: FakeOllama, quantic_mcp: FakeMCP, out: Path, usage: gpu.Usage | None = FREE
+) -> int:
+    with patch.object(gpu, "usage", lambda: usage):
+        return main(
+            ["--ollama", ollama.url, "--mcp", quantic_mcp.url, "--weekly", "--out", str(out)]
+        )
+
+
+@pytest.mark.usefixtures("on_wednesday")
+def test_weekly_writes_the_week_and_opens_its_pull_request_once(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    github_api: FakeGitHub,
+    app_key: tuple[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    isolated_state: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    as_the_app(monkeypatch, github_api, app_key[0], tmp_path)
+    week_ahead_servers(ollama, quantic_mcp, monkeypatch)
+
+    assert weekly(ollama, quantic_mcp, tmp_path / "out") == 0
+
+    err = capsys.readouterr().err
+    assert "the GPU is free enough: other programs hold 2216 MiB" in err
+    assert "run 1: pull request #100, 7 file(s), for review" in err
+    [run] = stored_runs(isolated_state)
+    assert (run.state, run.pull_request is not None) == (store.State.ANSWERED, True)
+    models, tools = len(ollama.bodies), len(quantic_mcp.calls())
+
+    # Run again, as a retry or a second timer would: nothing new is written,
+    # no model or tool is called, no second pull request.
+    assert weekly(ollama, quantic_mcp, tmp_path / "out") == 0
+
+    assert "run 1, 2026-W43's, has its pull request" in capsys.readouterr().err
+    assert (len(ollama.bodies), len(quantic_mcp.calls())) == (models, tools)
+    assert len(stored_runs(isolated_state)) == 1
+    assert [p for m, p, _, _ in github_api.requests if m == "POST"].count(
+        "/repos/fleveque/quantic/pulls"
+    ) == 1
+
+
+@pytest.mark.usefixtures("on_wednesday")
+def test_weekly_leaves_a_reviewed_week_alone_whichever_run_is_newest(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    github_api: FakeGitHub,
+    app_key: tuple[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    isolated_state: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # The week as on 2026-10-14: three answered runs, the middle one
+    # published (its pull request merged), the newest never proposed. The
+    # first --weekly ever run, live, took the newest and proposed it again.
+    as_the_app(monkeypatch, github_api, app_key[0], tmp_path)
+    for _ in range(3):
+        week_ahead_servers(ollama, quantic_mcp, monkeypatch)
+        assert week_ahead(ollama, quantic_mcp, tmp_path / "out") == 0
+    assert main(["--pr", "2"]) == 0
+    github_api.pulls[100] = "merged"
+    capsys.readouterr()
+
+    assert weekly(ollama, quantic_mcp, tmp_path / "out") == 0
+
+    assert "run 2, 2026-W43's, has its pull request" in capsys.readouterr().err
+    assert [p for m, p, _, _ in github_api.requests if m == "POST"].count(
+        "/repos/fleveque/quantic/pulls"
+    ) == 1
+    assert [r.pull_request is not None for r in stored_runs(isolated_state)] == [
+        False,
+        True,
+        False,
+    ]
+
+
+@pytest.mark.usefixtures("on_wednesday")
+def test_weekly_steps_aside_while_the_gpu_is_in_use(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    isolated_state: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    week_ahead_servers(ollama, quantic_mcp, monkeypatch)
+    # nvidia-smi on 2026-10-14 with a game running.
+    playing = gpu.parse(nvidia_smi("game-gpu.csv"), nvidia_smi("game-apps.csv"))
+
+    assert weekly(ollama, quantic_mcp, tmp_path / "out", playing) == 3
+
+    assert (
+        "the GPU is in use: other programs hold 9518 MiB of 16376, more than 4096; "
+        "try again later" in capsys.readouterr().err
+    )
+    assert (ollama.bodies, stored_runs(isolated_state)) == ([], [])
+
+    # Later, with the GPU free, the retry writes the week.
+    assert weekly(ollama, quantic_mcp, tmp_path / "out") == 0
+    assert [r.state for r in stored_runs(isolated_state)] == [store.State.ANSWERED]
+
+
+@pytest.mark.usefixtures("on_wednesday")
+def test_weekly_resumes_the_weeks_run_rather_than_starting_another(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    isolated_state: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # The model reads the calendar and stops: the run fails in research.
+    research = [asks_for(("dividend_calendar", {"days": 11})), Reply(says("Done."))]
+    week_ahead_servers(ollama, quantic_mcp, monkeypatch, research=research)
+    assert weekly(ollama, quantic_mcp, tmp_path / "out") == 1
+
+    week_ahead_servers(
+        ollama, quantic_mcp, monkeypatch, research=[asks_for(*LOOKUPS), Reply(says("Done."))]
+    )
+    assert weekly(ollama, quantic_mcp, tmp_path / "out") == 0
+
+    assert "resuming run 1 in its research phase" in capsys.readouterr().err
+    [run] = stored_runs(isolated_state)
+    assert (run.id, run.state, len(run.posts)) == (1, store.State.ANSWERED, 7)
+
+
+@pytest.mark.usefixtures("on_wednesday")
+def test_weekly_without_a_github_app_writes_the_post_only(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.delenv("QUANTIC_AGENT_REPO", raising=False)
+    monkeypatch.delenv("QUANTIC_AGENT_GITHUB_APP_ID", raising=False)
+    week_ahead_servers(ollama, quantic_mcp, monkeypatch)
+
+    assert weekly(ollama, quantic_mcp, tmp_path / "out", usage=None) == 0
+
+    out, err = capsys.readouterr()
+    assert "no answer from nvidia-smi" in err
+    assert "no GitHub App configured" in err
+    assert (tmp_path / "out" / "2026" / "week-ahead-W43" / "en.md").exists()
+    # The post is in its files; under the timer it isn't printed into the journal too.
+    assert out == ""
+
+    assert weekly(ollama, quantic_mcp, tmp_path / "out", usage=None) == 0
+    assert "run 1, 2026-W43's, is written" in capsys.readouterr().err
+
+
+@pytest.mark.usefixtures("on_wednesday")
+@pytest.mark.parametrize(
+    ("state", "status", "message"),
+    [
+        (store.State.RUNNING, 1, "is still running, or was killed"),
+        (store.State.UNVERIFIED, 4, "kept figures in its prose and wasn't published"),
+    ],
+)
+def test_weekly_leaves_a_run_it_cant_carry_on_alone(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    tmp_path: Path,
+    isolated_state: Path,
+    capsys: pytest.CaptureFixture[str],
+    state: store.State,
+    status: int,
+    message: str,
+) -> None:
+    with store.Store(isolated_state) as db:
+        run_id = db.start_run(weekahead.KIND, "the week", "qwen3.5:9b")
+        if state is not store.State.RUNNING:
+            db.finish(run_id, state)
+
+    assert weekly(ollama, quantic_mcp, tmp_path / "out") == status
+
+    assert f"run 1, 2026-W43's, {message}" in capsys.readouterr().err
+    assert ollama.bodies == []

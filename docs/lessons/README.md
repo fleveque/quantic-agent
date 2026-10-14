@@ -24,6 +24,7 @@ Ruby that turned out wrong, and what changed from the Go version and why.
 | [10](10-a-memory-for-the-house-voice.md) | A memory for the house voice | 10 — retrieval: embeddings, brute-force cosine, style memory | [A memory for the house voice](https://claude.ai/artifact/X7S4oMKwVZt3gSCJGnox6V) | [Style memory, line by line](https://claude.ai/artifact/6SFcTdLKojwjeAts7cf1np) |
 | [11](11-seven-files-one-set-of-figures.md) | Seven files, one set of figures | 11 — the Week Ahead end to end, 7 locales, translation validator | [Seven files, one set of figures](https://claude.ai/artifact/VFJgaAxgiZx8YiwPFuFBgL) | [The Week Ahead, line by line](https://claude.ai/artifact/M1FoS3w2xAD3AehxYu7G2u) |
 | [12](12-a-merge-is-a-verdict.md) | A merge is a verdict | 12 — pull requests as a GitHub App, merges as verdicts | [A merge is a verdict](https://claude.ai/artifact/6rVThLvzeZV4REpF9v3ssU) | [Pull requests, line by line](https://claude.ai/artifact/G4oMqWLNDdTnkheWyzCysZ) |
+| [13](13-sunday-without-me.md) | Sunday, without me | 13 — the weekly job: a systemd timer, the GPU check, logs for the journal | [Sunday, without me](https://claude.ai/artifact/KafaQjeZnB6NYqNrfqxvZt) | [The weekly job, line by line](https://claude.ai/artifact/UC8pHu5WxBkz5tJ3hiJLwF) |
 
 Lessons tell the story of a milestone: what surprised me and why. Walkthroughs go through the code
 itself in reading order, the way a tech lead would with a new teammate. Formatted pages are built
