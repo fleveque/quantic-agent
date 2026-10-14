@@ -1063,16 +1063,21 @@ async def _weekly(args: argparse.Namespace) -> int:
 
 def _this_week(db: store.Store, week: weekahead.Week) -> store.Run | None:
     """The Week Ahead run that stands for week, newest first among: the runs
-    with a pull request, open, merged or closed (a week reviewed is done,
-    whatever the verdict), then the answered ones, then any. A run's week is
-    the one after the day it started, as for its post. The last fifty runs
-    are plenty: one a week, and the odd retry."""
+    with a pull request (a week reviewed is done, whatever the verdict), the
+    merged one first, then an open one, then a closed one; then the answered
+    runs; then any. A run's week is the one after the day it started, as for
+    its post. The last fifty runs are plenty: one a week, and the odd retry."""
     runs = [
         db.run(r.id)
         for r in db.runs(limit=50, kind=weekahead.KIND)
         if weekahead.week_after(r.started_at.astimezone().date()) == week
     ]
-    reviewed = [r for r in runs if r.pull_request is not None]
+    # sorted() is stable: within each state, the newest stays first.
+    rank = {"merged": 0, "open": 1, "closed": 2}
+    reviewed = sorted(
+        (r for r in runs if r.pull_request is not None),
+        key=lambda r: rank.get(r.pull_request.state if r.pull_request else "", 3),
+    )
     answered = [r for r in runs if r.state is store.State.ANSWERED]
     return next(iter(reviewed or answered or runs), None)
 

@@ -126,8 +126,6 @@ starting point here.
    git+https://github.com/fleveque/quantic-agent`. The author suggested Claude review a PR's
    translations and claims before merging; it did for quantic#492 (a review with suggested
    changes), not yet a standing decision. Quantic's `/insights` renders merged posts.
-   Small: `--weekly`'s "has its pull request" names the week's newest reviewed run (run 4's closed
-   #494 for W43), not the merged one.
 2. Ollama's truncation is invisible in its replies (only its log says `truncating input prompt`);
    detecting it from the agent is open.
 3. Seen in real runs, not caught: counts of a filtered subset ("four companies") are flagged though

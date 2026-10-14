@@ -1417,6 +1417,37 @@ def test_weekly_leaves_a_reviewed_week_alone_whichever_run_is_newest(
 
 
 @pytest.mark.usefixtures("on_wednesday")
+def test_weekly_names_the_published_run_not_a_newer_rejected_one(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    github_api: FakeGitHub,
+    app_key: tuple[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # Week 43 as it stood on 2026-10-14: run 3 published (#492, merged),
+    # then run 4 proposed by mistake (#494) and closed.
+    as_the_app(monkeypatch, github_api, app_key[0], tmp_path)
+    for _ in range(2):
+        week_ahead_servers(ollama, quantic_mcp, monkeypatch)
+        assert week_ahead(ollama, quantic_mcp, tmp_path / "out") == 0
+    assert main(["--pr", "1"]) == 0
+    github_api.pulls[100] = "merged"
+    assert main(["--sync"]) == 0
+    assert main(["--pr", "2"]) == 0
+    github_api.pulls[101] = "closed"
+    capsys.readouterr()
+
+    assert weekly(ollama, quantic_mcp, tmp_path / "out") == 0
+
+    assert (
+        "run 1, 2026-W43's, has its pull request: https://github.com/fleveque/quantic/pull/100"
+        in capsys.readouterr().err
+    )
+
+
+@pytest.mark.usefixtures("on_wednesday")
 def test_weekly_steps_aside_while_the_gpu_is_in_use(
     ollama: FakeOllama,
     quantic_mcp: FakeMCP,
