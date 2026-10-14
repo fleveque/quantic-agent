@@ -1,0 +1,13 @@
+# Sundays at 07:00 (the content plan's day: docs/content.md). Persistent: a
+# Sunday missed because the computer was off, or you weren't logged in, runs
+# at the next login.
+[Unit]
+Description=quantic-agent: every Sunday, next week's Dividend Week Ahead
+Documentation=https://github.com/fleveque/quantic-agent/blob/main/docs/target-machine.md
+
+[Timer]
+OnCalendar=Sun *-*-* 07:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

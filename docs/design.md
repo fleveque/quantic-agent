@@ -499,7 +499,7 @@ view was needed.
 | Tool schemas | Generated from Pydantic models | Single source of truth; the type *is* the schema. Go generated them from structs by reflection. |
 | Persistence | `sqlite3` | Standard library. |
 | GitHub | chosen at milestone 12 | Go used `go-github`. |
-| Logging | chosen at milestone 13 | Structured, and feeds N3. Go used `log/slog`. |
+| Logging | stdlib `logging`, to the journal | One logger to stderr: as before in a terminal; under systemd, the syslog priority and `key=value` fields ([decision 0015](decisions/0015-the-weekly-job.md)). Go used `log/slog`. |
 | Config | YAML + env, flags for overrides | Secrets via env only, never committed. |
 | Language and tools | Python 3.14, `uv`, `ruff`, `pyright` (strict), `pytest` | [Decision 0007](decisions/0007-continue-in-python.md). Strict type checking in CI stands in for Go's compiler. |
 | HTTP and validation | `httpx`, Pydantic | Decision 0007. Pydantic validates what crosses a boundary, where Go decoded into structs. |
@@ -572,10 +572,13 @@ refused Qwen3.5 outright with a `412: requires a newer version of Ollama`.
    worth publishing. Track human accept/reject rate per task kind and treat it as the metric that
    matters. A task kind below some accept rate is broken — the task, not the reviewer.
 4. **Idempotency.** Re-running after a crash must not produce a duplicate weekly digest. Natural key
-   per run (kind + period) and an upsert.
+   per run (kind + period) and an upsert. *(As built, milestone 13: `--weekly` finds the week's runs by the day each
+   started; a week with a pull request is done, a stopped run is resumed, and only a week with no
+   run starts one. No upsert: the key is found, not stored.)*
 5. **Scheduling.** Internal ticker in the daemon vs. systemd timers invoking a one-shot command. The
    one-shot model is simpler and more crash-tolerant; the daemon model makes the worker pool
-   meaningful. Probably both.
+   meaningful. Probably both. *(As built, milestone 13: a systemd user timer on Sundays invoking
+   `--weekly`, a one-shot command; retried on exit 3. [Decision 0015](decisions/0015-the-weekly-job.md).)*
 6. **Prompt storage.** Prompts are code and should be reviewed like code — versioned in the repo and shipped
    inside the package (Go used `embed`; Python reads package files with `importlib.resources`), not
    stored in the database. They must contain no Quantic-internal content (N4).

@@ -36,19 +36,22 @@ and Ollama stops working on it too.
 import argparse
 import asyncio
 import json
+import logging
 import os
 import signal
 import sys
-from collections.abc import Sequence
+from collections.abc import Coroutine, Sequence
 from datetime import date, datetime
 from importlib.metadata import version
 from pathlib import Path
-from typing import TextIO
+from typing import Any, TextIO
 
 from quantic_agent import (
     agent,
     github,
+    gpu,
     llm,
+    logs,
     memory,
     provenance,
     publish,
@@ -102,6 +105,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     raising SystemExit (2 for a mistake, 0 for the others). Every other status
     is returned.
     """
+    logs.setup()
     parser = argparse.ArgumentParser(
         prog="quantic-agent",
         description="Drafts data-grounded content for Quantic with a local model.",
@@ -156,6 +160,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         action="store_true",
         help="record what became of the agent's pull requests: merged approves, closed rejects",
     )
+    action.add_argument(
+        "--weekly",
+        action="store_true",
+        help="the scheduled job: record pull request verdicts (--sync), write next week's "
+        "Week Ahead unless it's written (resuming a run that stopped), and open its pull "
+        "request; exit 3, to be tried later, when other programs hold the GPU",
+    )
     action.add_argument("--runs", action="store_true", help="list recent research runs")
     action.add_argument(
         "--run",
@@ -183,6 +194,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         type=Path,
         default=os.environ.get("QUANTIC_AGENT_DB") or default_db_path(),
         help="the database of runs and tool calls (default: $QUANTIC_AGENT_DB, else %(default)s)",
+    )
+    parser.add_argument(
+        "--gpu-max-others",
+        type=int,
+        default=int(os.environ.get("QUANTIC_GPU_MAX_OTHERS") or gpu.DEFAULT_MAX_OTHERS),
+        metavar="MIB",
+        help="--weekly steps aside when programs other than Ollama hold more video memory "
+        "than this (default: $QUANTIC_GPU_MAX_OTHERS, else %(default)s)",
     )
     parser.add_argument(
         "--out",
@@ -242,13 +261,19 @@ def main(argv: Sequence[str] | None = None) -> int:
             except store.NotReviewableError as err:
                 _error(str(err))
                 return EXIT_FAILED
-        _error(f"run {args.reject} rejected")
+        _note(f"run {args.reject} rejected", run=args.reject, verdict="rejected")
         return EXIT_OK
     if args.pr is not None or args.sync:
         try:
             return asyncio.run(_github_task(args))
         except KeyboardInterrupt, asyncio.CancelledError:
-            _error("stopped; the request in flight was cancelled")
+            _warn("stopped; the request in flight was cancelled")
+            return EXIT_INTERRUPTED
+    if args.weekly:
+        try:
+            return asyncio.run(_weekly(args))
+        except KeyboardInterrupt, asyncio.CancelledError:
+            _warn("stopped; the request in flight was cancelled")
             return EXIT_INTERRUPTED
     wanted = (
         args.check,
@@ -269,7 +294,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         return asyncio.run(_run(args))
     except KeyboardInterrupt, asyncio.CancelledError:
-        _error("stopped; the request in flight was cancelled")
+        _warn("stopped; the request in flight was cancelled")
         return EXIT_INTERRUPTED
 
 
@@ -282,7 +307,7 @@ async def _run(args: argparse.Namespace) -> int:
             except store.NotResumableError as err:
                 _error(str(err))
                 return EXIT_FAILED
-            _error(
+            _note(
                 f"resuming run {run.id} in its {run.phase} phase, "
                 f"with {len(run.calls)} tool call(s) recorded"
             )
@@ -396,8 +421,28 @@ def _not_pulled(model: str) -> None:
     _error(f"{model} is not on this server. Pull it with: ollama pull {model}")
 
 
-def _error(message: str) -> None:
-    print(f"quantic-agent: {message}", file=sys.stderr)
+def _error(message: str, **values: Any) -> None:
+    """Something that failed, on stderr (logs): an error to the journal."""
+    logs.LOGGER.error(message, extra=logs.fields(**values))
+
+
+def _warn(message: str, **values: Any) -> None:
+    """Something a person should know about that isn't a failure."""
+    logs.LOGGER.warning(message, extra=logs.fields(**values))
+
+
+def _note(message: str, **values: Any) -> None:
+    """Progress: what was done."""
+    logs.LOGGER.info(message, extra=logs.fields(**values))
+
+
+def _outcome(run_id: int, state: store.State) -> None:
+    """How a run ended, at the level its state calls for."""
+    level = {
+        store.State.ANSWERED: logging.INFO,
+        store.State.FAILED: logging.ERROR,
+    }.get(state, logging.WARNING)
+    logs.LOGGER.log(level, f"run {run_id} {state}", extra=logs.fields(run=run_id, state=state))
 
 
 async def _check(client: llm.Client, base_url: str) -> int:
@@ -445,7 +490,7 @@ async def _approve(client: llm.Client, db: store.Store, args: argparse.Namespace
     except store.NotReviewableError as err:
         _error(str(err))
         return EXIT_FAILED
-    _error(f"run {run.id} approved: style memory now")
+    _note(f"run {run.id} approved: style memory now", run=run.id, verdict="approved")
     return EXIT_OK
 
 
@@ -476,7 +521,7 @@ def _pace() -> quantic.Pace:
     """The pace every MCP session in this process shares."""
 
     def on_wait(seconds: float) -> None:
-        _error(f"pacing: waiting {seconds:.1f}s to stay under Quantic's rate limit")
+        _note(f"pacing: waiting {seconds:.1f}s to stay under Quantic's rate limit")
 
     return quantic.Pace(on_wait=on_wait)
 
@@ -523,8 +568,8 @@ async def _research(
     label = f"run {run.id}: " if batch else ""
     options = llm.Options(num_ctx=args.num_ctx)
 
-    def say(message: str) -> None:
-        _error(label + message)
+    def say(message: str, level: int = logging.WARNING) -> None:
+        logs.LOGGER.log(level, label + message, extra=logs.fields(run=run.id))
 
     # The record's calls, continued in place by the research phase.
     gathered = agent.Research(calls=run.calls, tokens=run.tokens, exhausted=run.exhausted)
@@ -534,9 +579,9 @@ async def _research(
         state: store.State, error: str | None = None, draft: store.Draft | None = None
     ) -> None:
         db.finish(run.id, state, error, draft, tokens=gathered.tokens + written)
-        _error(f"run {run.id} {state}")
+        _outcome(run.id, state)
         if draft is None:
-            say(f"to carry on from where it stopped: quantic-agent --resume {run.id}")
+            say(f"to carry on from where it stopped: quantic-agent --resume {run.id}", logging.INFO)
 
     # "Today" is the day the run started, when its data was fetched, even for
     # a run resumed later: the answer describes that data.
@@ -582,7 +627,7 @@ async def _research(
     except agent.NothingWrittenError as err:
         written = err.tokens
         finish(store.State.FAILED, str(err))
-        say(str(err))
+        say(str(err), logging.ERROR)
         return EXIT_FAILED
     except (llm.LLMError, quantic.ToolServerError) as err:
         finish(store.State.FAILED, str(err))
@@ -597,7 +642,7 @@ async def _research(
         findings = _check_figures(run, draft.text, gathered.calls)
     except provenance.ProvenanceError as err:
         finish(store.State.FAILED, str(err))
-        say(str(err))
+        say(str(err), logging.ERROR)
         return EXIT_FAILED
     saved = store.Draft(content=draft.text, truncated=draft.truncated, findings=findings)
     if findings:
@@ -634,7 +679,7 @@ async def _research_phase(
 
 def _on_retry(label: str) -> quantic.OnRetry:
     def on_retry(method: str, retry: int, wait: float) -> None:
-        _error(f"{label}Quantic's rate limit; retry {retry} of {method} in {wait:.1f}s")
+        _warn(f"{label}Quantic's rate limit; retry {retry} of {method} in {wait:.1f}s")
 
     return on_retry
 
@@ -694,22 +739,22 @@ async def _week_ahead(
         posts: Sequence[store.Post] = (),
     ) -> None:
         db.finish(run.id, state, error, draft, tokens=gathered.tokens + spent, posts=posts)
-        _error(f"run {run.id} {state}")
+        _outcome(run.id, state)
         if draft is None:
-            _error(f"to carry on from where it stopped: quantic-agent --resume {run.id}")
+            _note(f"to carry on from where it stopped: quantic-agent --resume {run.id}")
 
     try:
         async with asyncio.timeout(args.timeout or None):
             if run.phase is store.Phase.RESEARCH:
                 await _research_phase(client, db, run, gathered, args, pace, options, "")
                 if not gathered.has_data:
-                    _error("research gathered no data (no tool call succeeded); nothing to write")
+                    _warn("research gathered no data (no tool call succeeded); nothing to write")
                     finish(store.State.NO_DATA, "research gathered no data")
                     return EXIT_NO_DATA
                 # Checked before code's own calls: a run that has to go back
                 # to research would replay them to the model on --resume.
                 if not weekahead.ex_dividends(week, gathered.calls):
-                    _error(f"no company goes ex-dividend from {week.start} to {week.end}")
+                    _warn(f"no company goes ex-dividend from {week.start} to {week.end}")
                     finish(store.State.NO_DATA, "no company goes ex-dividend that week")
                     return EXIT_NO_DATA
                 await _look_up(db, run, gathered, week, args, pace)
@@ -730,7 +775,7 @@ async def _week_ahead(
                 )
             written = await weekahead.write(client, week, data, options=options)
             spent += written.tokens
-            _error(f"prose written in {written.attempts} attempt(s)")
+            _note(f"prose written in {written.attempts} attempt(s)", attempts=written.attempts)
             translations: list[weekahead.Translation] = []
             if not written.findings:
                 for locale in weekahead.TRANSLATED:
@@ -797,9 +842,9 @@ async def _week_ahead(
         return EXIT_FAILED
     for post in posts:
         if post.ready:
-            _error(f"{post.locale}: {folder / (post.locale + '.md')}")
+            _note(f"{post.locale}: {folder / (post.locale + '.md')}", locale=post.locale)
         else:
-            _error(f"{post.locale}: held: {'; '.join(post.problems)}")
+            _warn(f"{post.locale}: held: {'; '.join(post.problems)}", locale=post.locale)
     return EXIT_OK if all(p.ready for p in posts) else EXIT_HELD
 
 
@@ -852,32 +897,38 @@ async def _github_task(args: argparse.Namespace) -> int:
     """--pr or --sync: the store and GitHub, no model."""
     cancel_on_sigterm()
     with store.Store(args.db) as db:
-        try:
-            async with asyncio.timeout(args.timeout or None):
-                if args.pr is not None:
-                    return await _open_pr(db, args)
-                return await _sync(db, args)
-        except SettingsError as err:
-            _error(str(err))
-            return EXIT_FAILED
-        except TimeoutError:
-            return _gave_up(args.timeout)
-        except github.UnavailableError as err:
-            _error(f"GitHub didn't answer: {err}")
-            return EXIT_UNAVAILABLE
-        except github.GitHubError as err:
-            _error(str(err))
-            return EXIT_FAILED
+        if args.pr is not None:
+            return await _with_github(args, _open_pr(db, args, args.pr))
+        return await _with_github(args, _sync(db, args))
 
 
-async def _open_pr(db: store.Store, args: argparse.Namespace) -> int:
+async def _with_github(args: argparse.Namespace, step: Coroutine[Any, Any, int]) -> int:
+    """Runs a step that talks to GitHub, within --timeout, and turns what
+    can go wrong into an exit status."""
+    try:
+        async with asyncio.timeout(args.timeout or None):
+            return await step
+    except SettingsError as err:
+        _error(str(err))
+        return EXIT_FAILED
+    except TimeoutError:
+        return _gave_up(args.timeout)
+    except github.UnavailableError as err:
+        _error(f"GitHub didn't answer: {err}")
+        return EXIT_UNAVAILABLE
+    except github.GitHubError as err:
+        _error(str(err))
+        return EXIT_FAILED
+
+
+async def _open_pr(db: store.Store, args: argparse.Namespace, run_id: int) -> int:
     """Opens a pull request with a Week Ahead run's ready files. One per run,
     and one open at a time per week: a second for the same week waits until
     the first is merged or closed, and --sync has seen it."""
     try:
-        run = db.run(args.pr)
+        run = db.run(run_id)
     except store.NotFoundError:
-        _error(f"there is no run {args.pr}")
+        _error(f"there is no run {run_id}")
         return EXIT_FAILED
     if run.pull_request is not None:
         _error(f"run {run.id} already has a pull request: {run.pull_request.url}")
@@ -908,7 +959,11 @@ async def _open_pr(db: store.Store, args: argparse.Namespace) -> int:
         ),
     )
     print(pr.html_url)
-    _error(f"run {run.id}: pull request #{pr.number}, {len(proposal.files)} file(s), for review")
+    _note(
+        f"run {run.id}: pull request #{pr.number}, {len(proposal.files)} file(s), for review",
+        run=run.id,
+        pull_request=pr.html_url,
+    )
     return EXIT_OK
 
 
@@ -936,6 +991,117 @@ async def _sync(db: store.Store, args: argparse.Namespace) -> int:
         for client in clients.values():
             await client.aclose()
     return EXIT_OK
+
+
+# ---- the scheduled job --------------------------------------------------------
+
+
+async def _weekly(args: argparse.Namespace) -> int:
+    """What the systemd timer runs every Sunday (docs/target-machine.md §8c),
+    and safe to run again at any time: it never writes a second post for a
+    week (design open question 4).
+
+    First, the verdicts on earlier pull requests (--sync). Then next week's
+    post: written already, it is left alone; stopped or failed, its run is
+    resumed; not started, a run starts. Writing needs the GPU, so it is the
+    only step that checks it, and steps aside with exit 3 when it's in use.
+    Last, an answered post with no pull request gets one. Without a GitHub
+    App configured, the post stays in --out.
+    """
+    cancel_on_sigterm()
+    publishing = bool(args.repo) and bool(os.environ.get("QUANTIC_AGENT_GITHUB_APP_ID"))
+    with store.Store(args.db) as db:
+        if publishing:
+            await _with_github(args, _sync(db, args))
+        else:
+            _warn(
+                "no GitHub App configured (QUANTIC_AGENT_REPO, QUANTIC_AGENT_GITHUB_APP_ID): "
+                "the post stays in --out"
+            )
+        week = weekahead.week_after(today())
+        run = _this_week(db, week)
+        status = EXIT_OK
+        if run is not None and run.pull_request is not None:
+            _note(
+                f"run {run.id}, {week.period}'s, has its pull request: {run.pull_request.url}",
+                run=run.id,
+                period=week.period,
+            )
+            return EXIT_OK
+        if run is not None and run.state is store.State.RUNNING:
+            _error(
+                f"run {run.id}, {week.period}'s, is still running, or was killed without "
+                "a chance to record it; nothing started",
+                run=run.id,
+                period=week.period,
+            )
+            return EXIT_FAILED
+        if run is not None and run.state is store.State.UNVERIFIED:
+            _warn(
+                f"run {run.id}, {week.period}'s, kept figures in its prose and wasn't "
+                "published; write it again with --week-ahead",
+                run=run.id,
+                period=week.period,
+            )
+            return EXIT_UNVERIFIED
+        if run is None or run.state in store.RESUMABLE:
+            if _gpu_busy(args):
+                return EXIT_UNAVAILABLE
+            status = await _write_week(db, args, run)
+            run = _this_week(db, week)
+        if run is None or run.state is not store.State.ANSWERED:
+            return status
+        if publishing:
+            opened = await _with_github(args, _open_pr(db, args, run.id))
+            status = status or opened
+        return status
+
+
+def _this_week(db: store.Store, week: weekahead.Week) -> store.Run | None:
+    """The Week Ahead run that stands for week, newest first among: the runs
+    with a pull request, open, merged or closed (a week reviewed is done,
+    whatever the verdict), then the answered ones, then any. A run's week is
+    the one after the day it started, as for its post. The last fifty runs
+    are plenty: one a week, and the odd retry."""
+    runs = [
+        db.run(r.id)
+        for r in db.runs(limit=50, kind=weekahead.KIND)
+        if weekahead.week_after(r.started_at.astimezone().date()) == week
+    ]
+    reviewed = [r for r in runs if r.pull_request is not None]
+    answered = [r for r in runs if r.state is store.State.ANSWERED]
+    return next(iter(reviewed or answered or runs), None)
+
+
+async def _write_week(db: store.Store, args: argparse.Namespace, run: store.Run | None) -> int:
+    """Writes the week's post: run resumed if given, else a new run."""
+    if run is not None:
+        try:
+            run = db.resume(run.id)
+        except store.NotResumableError as err:
+            _error(str(err))
+            return EXIT_FAILED
+        _note(f"resuming run {run.id} in its {run.phase} phase", run=run.id, phase=run.phase)
+    async with llm.Client(args.ollama, run.model if run else args.model) as client:
+        return await _week_ahead(client, db, args, _pace(), run=run)
+
+
+def _gpu_busy(args: argparse.Namespace) -> bool:
+    """Whether other programs hold more of the GPU than --gpu-max-others."""
+    found = gpu.usage()
+    if found is None:
+        _note("no answer from nvidia-smi: no GPU to share, as far as the agent can tell")
+        return False
+    values = {"others_mib": found.others, "total_mib": found.total, "ollama_mib": found.ollama}
+    if found.others > args.gpu_max_others:
+        _warn(
+            f"the GPU is in use: other programs hold {found.others} MiB of {found.total}, "
+            f"more than {args.gpu_max_others}; try again later",
+            **values,
+        )
+        return True
+    _note(f"the GPU is free enough: other programs hold {found.others} MiB", **values)
+    return False
 
 
 def _manifest(calls: Sequence[agent.Call]) -> provenance.Manifest:
@@ -1071,7 +1237,11 @@ def _trace(call: agent.Call, label: str = "") -> None:
     outcome = call.result if call.failed else f"{len(call.result)} bytes"
     ms = round(call.duration.total_seconds() * 1000)
     line = f"{label}tool {call.tool} {json.dumps(call.arguments)} → {outcome} ({ms}ms)"
-    print(line, file=sys.stderr)
+    values = logs.fields(bare=True, tool=call.tool, ms=ms, bytes=len(call.result))
+    if call.failed:
+        logs.LOGGER.warning(line, extra=values)
+    else:
+        logs.LOGGER.info(line, extra=values)
 
 
 async def _ask(client: llm.Client, prompt: str) -> int:
@@ -1082,7 +1252,10 @@ async def _ask(client: llm.Client, prompt: str) -> int:
     # The run line goes to stderr so that stdout stays pipeable.
     note = " · truncated: hit the token limit" if resp.truncated else ""
     ms = round(resp.eval_duration.total_seconds() * 1000)
-    print(f"{resp.model} · {resp.eval_count} tokens · {ms}ms{note}", file=sys.stderr)
+    logs.LOGGER.info(
+        f"{resp.model} · {resp.eval_count} tokens · {ms}ms{note}",
+        extra=logs.fields(bare=True, model=resp.model, tokens=resp.eval_count, ms=ms),
+    )
     return EXIT_OK
 
 

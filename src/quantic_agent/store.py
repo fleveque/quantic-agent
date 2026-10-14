@@ -454,9 +454,12 @@ class Store:
                 [(run_id, m.memory.run_id, m.score) for m in matches],
             )
 
-    def runs(self, limit: int = 20) -> list[Run]:
-        """The most recent runs, newest first, without their calls."""
-        return self._query("ORDER BY r.id DESC LIMIT ?", (limit,))
+    def runs(self, limit: int = 20, kind: str | None = None) -> list[Run]:
+        """The most recent runs, newest first, without their calls; only
+        kind's, if given."""
+        return self._query(
+            "WHERE ? IS NULL OR r.kind = ? ORDER BY r.id DESC LIMIT ?", (kind, kind, limit)
+        )
 
     def run(self, run_id: int) -> Run:
         """One run, with its calls in the order they were made, and its draft."""

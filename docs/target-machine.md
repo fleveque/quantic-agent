@@ -263,6 +263,48 @@ It's an ordinary SQLite file. Back it up by copying it while the agent isn't run
 `sqlite3 agent.db ".backup copy.db"` while it is). The tables are described in
 [design §3.7](design.md#37-storage).
 
+## 8c. Every Sunday, by itself
+
+`quantic-agent --weekly` is the whole week in one command, and safe to run any number of times:
+
+1. `--sync`: the verdicts on earlier pull requests.
+2. Next week's post. If a run for that week has a pull request (open, merged or closed), the week is
+   done. If one stopped or failed, it is resumed; if none exists, one starts. Only this step needs
+   the GPU, and it steps aside (exit 3) while other programs hold more than 4GB of video memory
+   (`--gpu-max-others`, `QUANTIC_GPU_MAX_OTHERS`), as a game does.
+3. `--pr` for the post, once it's answered. Merging is still yours.
+
+A systemd timer runs it on Sundays at 07:00. Install the agent itself first: the timer runs what
+`uv tool` installed from `main`, never your working copy, which may be on a branch.
+
+```sh
+uv tool install git+https://github.com/fleveque/quantic-agent   # → ~/.local/bin/quantic-agent
+mkdir -p ~/.config/quantic-agent
+cp .env.example ~/.config/quantic-agent/env    # fill it in: absolute paths, set QUANTIC_AGENT_OUT
+chmod 600 ~/.config/quantic-agent/env
+cp contrib/systemd/quantic-agent.{service,timer} ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now quantic-agent.timer
+```
+
+```sh
+systemctl --user list-timers quantic-agent          # when it runs next
+systemctl --user start quantic-agent                 # run it now
+journalctl --user -u quantic-agent -e                # what it did
+journalctl --user -u quantic-agent -p warning        # only what went wrong
+systemctl --user stop quantic-agent                  # stop a run: it resumes next time
+uv tool install --reinstall git+https://github.com/fleveque/quantic-agent   # after a merge
+```
+
+It is a *user* unit: it runs as you, while you're logged in. A Sunday missed because the computer
+was off runs at your next login (`Persistent=true`). Exit 3 (Ollama, Quantic or GitHub not
+answering, or the GPU in use) is retried every 30 minutes for up to 12 hours. Exits 4, 5 and 6 are
+outcomes to read, not failures. A run left `running` by a hard kill (`kill -9`, a power cut) blocks
+its week until you look: `quantic-agent --run N`, then `--week-ahead` for a fresh one.
+
+In the journal each line carries its level and, at the end, its fields (`run=4 state=answered`).
+In a terminal the agent prints as before.
+
 ## 9. Freeing the GPU
 
 The desktop is shared: sometimes something else needs most of the 16GB. From lightest to heaviest:
@@ -280,10 +322,10 @@ Unloading is usually enough. Ollama also unloads an idle model by itself after 5
 explicit `stop`. The server is `enabled`, so it comes back at boot; `sudo systemctl disable --now
 ollama` keeps it off until you `enable --now` it again.
 
-The agent is a one-shot command for now, so there is nothing to stop. Once it runs as a service
-(milestone 13) it gets its own unit, and the design requires that stopping it loses no work and that a
-stopped Ollama makes it wait rather than fail ([design §3.6](design.md#36-concurrency-model)).
-Part of that already exists. With Ollama stopped, `quantic-agent` exits with status 3 ("no model
+The agent runs as a user service on Sundays (section 8c): `systemctl --user stop quantic-agent`
+stops a run in progress, and the next start resumes it. Before it starts the model it checks the
+GPU and waits for it, and a stopped Ollama makes it wait rather than fail
+([design §3.6](design.md#36-concurrency-model)). With Ollama stopped, `quantic-agent` exits with status 3 ("no model
 server answering"): nothing was attempted, so the same command can simply be run again later.
 Ctrl-C or `SIGTERM` cancels the request in flight and exits with 130 (a second one ends the process
 at once), and saves the run so `quantic-agent --resume N` can carry it on (section 8). Ollama stops

@@ -1,0 +1,36 @@
+# The scheduled job (docs/target-machine.md §8c): quantic-agent --weekly,
+# started by quantic-agent.timer. A user unit: it runs as you, with your
+# Ollama and your files, while you are logged in.
+[Unit]
+Description=quantic-agent: next week's Dividend Week Ahead
+Documentation=https://github.com/fleveque/quantic-agent/blob/main/docs/target-machine.md
+# Retries (below) every half hour, for at most half a day.
+StartLimitIntervalSec=12h
+StartLimitBurst=25
+
+[Service]
+Type=oneshot
+# The installed agent (uv tool install), not a working copy: a branch you
+# have checked out is not what runs on Sunday.
+ExecStart=%h/.local/bin/quantic-agent --weekly
+# The settings, in .env.example's format; paths in it absolute.
+EnvironmentFile=%h/.config/quantic-agent/env
+# Not a terminal, so Python would buffer stdout (the post, --sync's verdicts)
+# and the journal would show it after stderr lines written later.
+Environment=PYTHONUNBUFFERED=1
+# A oneshot has no time limit by default (systemd.service(5)). The agent
+# bounds a run itself (--timeout, 600s); this is the backstop if it ever
+# hangs past that, with room for the pull request.
+TimeoutStartSec=20min
+# Outcomes for a person to read, not failures: 4 prose with figures, 5 nothing
+# to write about, 6 a translation held back.
+SuccessExitStatus=4 5 6
+# Exit 3 is "not now": Ollama, Quantic or GitHub not answering, or the GPU in
+# use. Exit 1 is a failure a retry wouldn't fix, 2 a usage mistake.
+Restart=on-failure
+RestartSec=30min
+RestartPreventExitStatus=1 2
+# systemctl --user stop sends SIGTERM: the agent cancels the model call,
+# records the run as interrupted (resumed next time) and exits 130.
+TimeoutStopSec=30s
+Nice=10
