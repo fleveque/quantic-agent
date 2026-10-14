@@ -134,3 +134,4 @@ twenty. I don't know yet why, and how to fix it is my decision: the prompt says 
 ---
 
 **Previous:** [Lesson 11 — Seven files, one set of figures](11-seven-files-one-set-of-figures.md)
+**Next:** [Lesson 13 — Sunday, without me](13-sunday-without-me.md)

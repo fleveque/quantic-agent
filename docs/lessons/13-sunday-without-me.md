@@ -6,7 +6,7 @@ and opens its pull request. It steps aside when I'm using the GPU, and running i
 nothing. It also says what it's doing in a form the system journal understands. The first time it
 ran against my real data, it opened a pull request it shouldn't have.
 
-*Also readable as a [formatted page](PAGE_URL), with a [code walkthrough](WALKTHROUGH_URL) of every
+*Also readable as a [formatted page](https://claude.ai/artifact/KafaQjeZnB6NYqNrfqxvZt), with a [code walkthrough](https://claude.ai/artifact/UC8pHu5WxBkz5tJ3hiJLwF) of every
 change the milestone made.*
 
 ---
