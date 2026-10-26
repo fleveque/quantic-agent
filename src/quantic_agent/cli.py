@@ -61,7 +61,7 @@ from quantic_agent import (
     weekahead,
     wording,
 )
-from quantic_agent.tools import DIVIDEND_CALENDAR, GET_STOCK
+from quantic_agent.tools import DIVIDEND_CALENDAR, GET_STOCK, Tool
 
 # Chosen by measurement on the agent's own tasks (decision 0005, update of
 # 2026-10-09): it finished 20 Week Aheads of 20 where qwen3.5:9b finished
@@ -686,9 +686,11 @@ async def _research_phase(
     pace: quantic.Pace,
     options: llm.Options,
     label: str,
+    tools: Sequence[Tool[Any]] = (DIVIDEND_CALENDAR, GET_STOCK),
 ) -> None:
-    """Lets the model call Quantic's tools, recording each call as it
-    completes, and carrying on from what gathered already holds."""
+    """Lets the model call Quantic's tools (all of them unless given),
+    recording each call as it completes, and carrying on from what gathered
+    already holds."""
 
     def on_call(seq: int, call: agent.Call) -> None:
         _trace(call, label)
@@ -696,7 +698,7 @@ async def _research_phase(
 
     async with quantic.Server(args.mcp, on_retry=_on_retry(label), pace=pace) as server:
         researcher = agent.Researcher(
-            model=client, server=server, tools=[DIVIDEND_CALENDAR, GET_STOCK], options=options
+            model=client, server=server, tools=list(tools), options=options
         )
         await researcher.research(run.input, gathered, on_call=on_call)
 
@@ -780,14 +782,17 @@ async def _week_ahead(
     try:
         async with asyncio.timeout(args.timeout or None):
             if run.phase is store.Phase.RESEARCH:
-                await _research_phase(client, db, run, gathered, args, pace, options, "")
+                # Only the calendar: code looks its companies up (weekahead.look_ups).
+                await _research_phase(
+                    client, db, run, gathered, args, pace, options, "", tools=[DIVIDEND_CALENDAR]
+                )
                 if not gathered.has_data:
                     _warn("research gathered no data (no tool call succeeded); nothing to write")
                     finish(store.State.NO_DATA, "research gathered no data")
                     return EXIT_NO_DATA
                 # Checked before code's own calls: a run that has to go back
                 # to research would replay them to the model on --resume.
-                if not weekahead.ex_dividends(week, gathered.calls):
+                if not weekahead.listed(week, gathered.calls):
                     _warn(f"no company goes ex-dividend from {week.start} to {week.end}")
                     finish(store.State.NO_DATA, "no company goes ex-dividend that week")
                     return EXIT_NO_DATA

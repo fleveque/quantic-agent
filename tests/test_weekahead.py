@@ -250,27 +250,32 @@ def captured(name: str) -> quantic.Result:
 
 
 @pytest.mark.anyio
-async def test_code_looks_up_the_weeks_earnings_and_changes() -> None:
+async def test_code_looks_up_the_weeks_companies_earnings_and_changes() -> None:
+    stocks = {"AAPL": "call-get-stock-aapl.sse", "IBE.MC": "call-get-stock-ibe.sse"}
     server = FakeServer(
         results={
+            "get_stock": lambda arguments: captured(stocks[arguments["symbol"]]),
             "earnings_calendar": captured("call-earnings-12.sse"),
             "dividend_changes": captured("call-changes-7.sse"),
         }
     )
-    gathered = calls(*GATHERED[:3])
+    # The model's research is only the calendar.
+    gathered = calls(GATHERED[0])
 
     await weekahead.look_up(server, NEXT, date(2026, 10, 14), gathered, gathered.append)
 
-    # Through Sunday the 25th, a day more for the server's UTC; seven days back.
+    # Each company of the week, in the calendar's order; then earnings through
+    # Sunday the 25th, a day more for the server's UTC; then seven days back.
     assert server.received == [
+        ("get_stock", {"symbol": "AAPL"}),
+        ("get_stock", {"symbol": "IBE.MC"}),
         ("earnings_calendar", {"days": 12}),
         ("dividend_changes", {"days": 7}),
     ]
-    assert [(c.tool, c.arguments, c.failed) for c in gathered[3:]] == [
-        ("earnings_calendar", {"days": 12}, False),
-        ("dividend_changes", {"days": 7}, False),
-    ]
-    assert len(weekahead.gather(NEXT, gathered).earnings) == 66
+    assert not any(c.failed for c in gathered)
+    data = weekahead.gather(NEXT, gathered)
+    assert [e.symbol for e in data.ex_dividends] == ["AAPL", "IBE.MC"]
+    assert len(data.earnings) == 66
 
     # Resumed, a call already made isn't made again.
     server.received.clear()
@@ -279,17 +284,40 @@ async def test_code_looks_up_the_weeks_earnings_and_changes() -> None:
 
 
 @pytest.mark.anyio
+async def test_a_company_already_looked_up_is_not_looked_up_again() -> None:
+    server = FakeServer(
+        results={
+            "get_stock": captured("call-get-stock-ibe.sse"),
+            "earnings_calendar": captured("call-earnings-12.sse"),
+            "dividend_changes": captured("call-changes-7.sse"),
+        }
+    )
+    # A run resumed after Apple's lookup: only Iberdrola is left.
+    gathered = calls(*GATHERED[:2])
+
+    await weekahead.look_up(server, NEXT, date(2026, 10, 14), gathered, gathered.append)
+
+    assert [name for name, _ in server.received] == [
+        "get_stock",
+        "earnings_calendar",
+        "dividend_changes",
+    ]
+    assert server.received[0] == ("get_stock", {"symbol": "IBE.MC"})
+
+
+@pytest.mark.anyio
 async def test_a_look_up_that_fails_is_recorded_then_raised() -> None:
     down = quantic.ToolServerUnavailableError("connection refused")
-    server = FakeServer(results={"earnings_calendar": down})
-    gathered: list[Call] = []
+    server = FakeServer(results={"get_stock": down})
+    gathered = calls(GATHERED[0])
 
     with pytest.raises(quantic.ToolServerUnavailableError):
         await weekahead.look_up(server, NEXT, date(2026, 10, 14), gathered, gathered.append)
 
-    [call] = gathered
-    assert (call.tool, call.failed, call.result) == (
-        "earnings_calendar",
+    call = gathered[-1]
+    assert (call.tool, call.arguments, call.failed, call.result) == (
+        "get_stock",
+        {"symbol": "AAPL"},
         True,
         "error: connection refused",
     )
@@ -573,7 +601,7 @@ def test_the_question_names_the_week_asked_for() -> None:
     w44 = weekahead.parse_week("2026-W44")
     assert weekahead.question(date(2026, 10, 26), w44) == (
         "Today is Monday 2026-10-26. Gather the data for the Dividend Week Ahead, "
-        "for the week from Monday 2026-10-26 to Sunday 2026-11-01: find every company "
-        "that goes ex-dividend in that week, and look up each one. "
-        "Sunday 2026-11-01 is 6 days from today."
+        "for the week from Monday 2026-10-26 to Sunday 2026-11-01: get the dividend "
+        "calendar that covers every day of that week. Each company in it is looked up for "
+        "you afterwards. Sunday 2026-11-01 is 6 days from today."
     )

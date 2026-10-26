@@ -726,9 +726,6 @@ def translated(locale: str) -> Reply:
     return prose({key: f"[{locale}] {text}" for key, text in ENGLISH.items()})
 
 
-LOOKUPS = (("get_stock", {"symbol": "AAPL"}), ("get_stock", {"symbol": "IBE.MC"}))
-
-
 def week_ahead_servers(
     ollama: FakeOllama,
     quantic_mcp: FakeMCP,
@@ -740,9 +737,9 @@ def week_ahead_servers(
 ) -> None:
     """Wednesday 2026-10-14, when the fixtures were captured from Quantic:
     the week after has Apple and Iberdrola in it. The model asks for the
-    calendar, then both companies at once, then stops; code looks up the
-    week's earnings and the dividend changes; the writer and the six
-    translators answer in turn."""
+    calendar, then stops; code looks up both companies, the week's earnings
+    and the dividend changes; the writer and the six translators answer in
+    turn."""
     monkeypatch.setattr(cli, "today", lambda: date(2026, 10, 14))
     quantic_mcp.tools.update(
         {
@@ -754,11 +751,7 @@ def week_ahead_servers(
         }
     )
     if research is None:
-        research = [
-            asks_for(("dividend_calendar", {"days": 11})),
-            asks_for(*LOOKUPS),
-            Reply(says("Done.")),
-        ]
+        research = [asks_for(("dividend_calendar", {"days": 11})), Reply(says("Done."))]
     locales = {loc: translated(loc) for loc in weekahead.TRANSLATED} | (translations or {})
     ollama.replies["/api/chat"] = [
         *research,
@@ -805,14 +798,17 @@ def test_week_ahead_writes_every_locale(
         store.State.ANSWERED,
         "Today is Wednesday 2026-10-14. "
         "Gather the data for the Dividend Week Ahead, for the week from Monday 2026-10-19 "
-        "to Sunday 2026-10-25: find every company that goes ex-dividend in that week, and "
-        "look up each one. Sunday 2026-10-25 is 11 days from today.",
+        "to Sunday 2026-10-25: get the dividend calendar that covers every day of that week. "
+        "Each company in it is looked up for you afterwards. "
+        "Sunday 2026-10-25 is 11 days from today.",
     )
-    # The two lookups ran at once, recorded in the order they finished; then
-    # code's own calls, after the model's.
+    # The model is offered the calendar only: code looks the companies up.
+    assert [t["function"]["name"] for t in ollama.bodies[0]["tools"]] == ["dividend_calendar"]
+    # The model's calendar, then code's calls: each company, in the
+    # calendar's order, then the earnings and the changes.
     calendar, *lookups, earnings, changes = [(c.tool, c.arguments) for c in run.calls]
     assert calendar == ("dividend_calendar", {"days": 11})
-    assert sorted(lookups, key=str) == [
+    assert lookups == [
         ("get_stock", {"symbol": "AAPL"}),
         ("get_stock", {"symbol": "IBE.MC"}),
     ]
@@ -834,7 +830,8 @@ def test_the_writer_and_translators_are_asked_for_the_prose_format(
     week_ahead_servers(ollama, quantic_mcp, monkeypatch)
     assert week_ahead(ollama, quantic_mcp, tmp_path) == 0
 
-    writer, *translators = ollama.bodies[3:]
+    # Research is two requests: the calendar, then the model saying it's done.
+    writer, *translators = ollama.bodies[2:]
     assert len(translators) == 6
     for body in [writer, *translators]:
         assert (body["format"], body["think"], body["options"]) == (
@@ -898,7 +895,7 @@ def test_prose_with_figures_publishes_nothing(
     assert week_ahead(ollama, quantic_mcp, tmp_path) == 4
 
     assert not (tmp_path / "2026").exists()
-    assert len(ollama.bodies) == 3 + 3  # research, then three writers; no translators
+    assert len(ollama.bodies) == 2 + 3  # research, then three writers; no translators
     assert "after 3 attempts the prose still has figures" in capsys.readouterr().err
     [run] = stored_runs(isolated_state)
     assert (run.state, run.posts) == (store.State.UNVERIFIED, [])
@@ -964,45 +961,31 @@ def test_a_week_not_fully_researched_fails_and_resumes(
     isolated_state: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    # The model reads the calendar and stops, without looking anyone up.
-    research = [asks_for(("dividend_calendar", {"days": 11})), Reply(says("Done."))]
+    # The model asks for a calendar that stops short of the week (6-15 Oct).
+    research = [asks_for(("dividend_calendar", {"days": 1})), Reply(says("Done."))]
     week_ahead_servers(ollama, quantic_mcp, monkeypatch, research=research)
+    quantic_mcp.tools["dividend_calendar"] = "call-dividend-calendar.sse"
 
     assert week_ahead(ollama, quantic_mcp, tmp_path) == 1
 
     err = capsys.readouterr().err
     assert (
-        "research didn't gather the whole week: not looked up with get_stock: AAPL, IBE.MC" in err
+        "research didn't gather the whole week: "
+        "no dividend_calendar call covers the week 2026-10-19 to 2026-10-25" in err
     )
     [run] = stored_runs(isolated_state)
     assert (run.state, run.phase) == (store.State.FAILED, store.Phase.RESEARCH)
 
-    # Resumed, the calendar is replayed rather than called, and the model
-    # looks the companies up. The week is the one after the day the run
-    # started, which the store took from the real clock: set it to Wednesday.
-    started_on_wednesday()
-    week_ahead_servers(
-        ollama, quantic_mcp, monkeypatch, research=[asks_for(*LOOKUPS), Reply(says("Done."))]
-    )
-    assert (
-        main(
-            [
-                "--ollama",
-                ollama.url,
-                "--mcp",
-                quantic_mcp.url,
-                "--resume",
-                "1",
-                "--out",
-                str(tmp_path),
-            ]
-        )
-        == 0
-    )
+    # Resumed, the short calendar is replayed rather than called, and the
+    # model asks for one that covers the week.
+    week_ahead_servers(ollama, quantic_mcp, monkeypatch)
+    resume = ["--ollama", ollama.url, "--mcp", quantic_mcp.url, "--resume", "1"]
+    assert main([*resume, "--out", str(tmp_path)]) == 0
 
     # Code's calls came once research was complete: not in the run that
     # stopped short, which would have replayed them to the model.
     assert [c["name"] for c in quantic_mcp.calls()] == [
+        "dividend_calendar",
         "dividend_calendar",
         "get_stock",
         "get_stock",
@@ -1027,8 +1010,8 @@ def test_a_week_with_no_companies_writes_nothing(
     monkeypatch.setattr(cli, "today", lambda: date(2026, 10, 19))
 
     assert week_ahead(ollama, quantic_mcp, tmp_path / "out") == 5
-    # Nothing to write about: code doesn't look up the week's earnings.
-    assert {c["name"] for c in quantic_mcp.calls()} == {"dividend_calendar", "get_stock"}
+    # Nothing to write about: code looks up nothing.
+    assert {c["name"] for c in quantic_mcp.calls()} == {"dividend_calendar"}
 
     assert "no company goes ex-dividend from 2026-10-26 to 2026-11-01" in capsys.readouterr().err
     assert not (tmp_path / "out").exists()
@@ -1597,13 +1580,18 @@ def test_weekly_resumes_the_weeks_run_rather_than_starting_another(
     isolated_state: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    # The model reads the calendar and stops: the run fails in research.
-    research = [asks_for(("dividend_calendar", {"days": 11})), Reply(says("Done."))]
+    # The model asks for a calendar too short for the week: the run fails in
+    # research.
+    research = [asks_for(("dividend_calendar", {"days": 1})), Reply(says("Done."))]
     week_ahead_servers(ollama, quantic_mcp, monkeypatch, research=research)
+    quantic_mcp.tools["dividend_calendar"] = "call-dividend-calendar.sse"
     assert weekly(ollama, quantic_mcp, tmp_path / "out") == 1
 
     week_ahead_servers(
-        ollama, quantic_mcp, monkeypatch, research=[asks_for(*LOOKUPS), Reply(says("Done."))]
+        ollama,
+        quantic_mcp,
+        monkeypatch,
+        research=[asks_for(("dividend_calendar", {"days": 11})), Reply(says("Done."))],
     )
     assert weekly(ollama, quantic_mcp, tmp_path / "out") == 0
 

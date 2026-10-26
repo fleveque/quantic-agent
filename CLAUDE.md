@@ -125,6 +125,11 @@ starting point here.
   (`runs.week_start`); `weekahead.week_of(run)` is the one place a run's week is read, and runs
   recorded before keep the week after their start date. Why: the W43 and W44 posts had dates
   Quantic's demo invented (quantic#506), and W44 had to be written on its own Monday.
+- **Code looks the companies up, 2026-10-26** (branch `code-looks-up`, ADR 0013's second update):
+  a Week Ahead's research offers the model only `dividend_calendar`; code calls `get_stock` for
+  each of the week's companies (`weekahead.look_ups`). With real ex-dates W44 has 31, more than
+  the call budget and the 32k context held. The author chose this; speed doesn't matter (minutes,
+  not hours). A larger `--num-ctx` (the 27B supports 262,144) is unmeasured.
 - **Tests never see the machine's settings** (2026-10-26): with the GitHub App's settings
   exported in the shell and its key at the default path, the `--weekly` tests that don't set up
   the fake GitHub opened a real pull request (quantic#507, closed). The autouse fixture now

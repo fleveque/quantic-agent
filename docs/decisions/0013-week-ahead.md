@@ -107,3 +107,28 @@ Consequences of the update:
   nightly. The first weeks will have few raises or cuts, or none.
 - Code's calls aren't the model's, but the audit can't tell them apart: `--run N` lists them with
   the rest, after the model's.
+
+## Update, 2026-10-26: code looks the companies up
+
+The calendar the weeks above were measured on held only Quantic's demo stocks, with ex-dates the
+demo invented (quantic#506): two to nine a week. With real dates, 2026-W44 has 31 companies. The
+model looked each one up, a `get_stock` of a few thousand tokens that stays in its context: 31 of
+them are more calls than research's budget (16) and more tokens than the context (32,768) holds.
+
+The author chose: **code looks the companies up**, as it already did the earnings and the changes.
+The model is offered only `dividend_calendar` and asked for one that covers the week; code then
+calls `get_stock` for each company in it (`weekahead.look_ups`), and a resumed run skips a company
+already looked up. Raising the budget and the context was the alternative: the 27B supports
+262,144 tokens, and speed doesn't matter for a weekly job, but 31 raw results in the model's
+context to rebuild a table code builds exactly gains nothing.
+
+Consequences:
+
+- A week can be incomplete in two ways only: a calendar too short, or a lookup that failed.
+- A dry run of 2026-W44 on 2026-10-26: 31 companies, 202 earnings reports, 79 dividend changes;
+  the calendar and 33 code calls; prose in 2 attempts; 2 min 36 s; no truncation in Ollama's log.
+  Its prose was right on everything checked but one: it called Royal Bank of Canada's growth
+  "slowed sharply" where the data says it fell 43.8% (itself likely wrong: RY is a USD listing of a
+  CAD payer).
+- Quantic's universe has foreign listings of the same company (Zoetis three times), so the data
+  block repeats them.

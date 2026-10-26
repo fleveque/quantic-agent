@@ -156,8 +156,9 @@ def question(today: date, week: Week | None = None) -> str:
     return (
         f"Today is {today:%A} {today.isoformat()}. Gather the data for the Dividend Week "
         f"Ahead, for the week from Monday {week.start.isoformat()} to Sunday "
-        f"{week.end.isoformat()}: find every company that goes ex-dividend in that week, "
-        f"and look up each one. Sunday {week.end.isoformat()} is {days} days from today."
+        f"{week.end.isoformat()}: get the dividend calendar that covers every day of that "
+        f"week. Each company in it is looked up for you afterwards. "
+        f"Sunday {week.end.isoformat()} is {days} days from today."
     )
 
 
@@ -349,24 +350,28 @@ def _covering[A: _Ahead](week: Week, calendars: Sequence[A], tool: str) -> A:
     return covering[-1]
 
 
-def ex_dividends(week: Week, calls: Sequence[Call]) -> list[ExDividend]:
-    """The companies going ex-dividend in week, from a run's successful
-    calls: the latest calendar that covers the whole week, and each listed
-    company's get_stock.
-
-    The model chose the calls, so it may have asked for too short a calendar
-    or skipped a company. Either raises IncompleteError: a post that quietly
-    left a company out would be wrong about the week.
-    """
+def listed(week: Week, calls: Sequence[Call]) -> list[_Listed]:
+    """The companies going ex-dividend in week, in the latest calendar that
+    covers the whole week. The model chose the calendar's length, so it may
+    have asked for too few days: IncompleteError."""
     calendar = _covering(
         week, _results(calls, DIVIDEND_CALENDAR.name, _Calendar), "dividend_calendar"
     )
+    return [s for s in calendar.stocks if week.start <= s.ex_dividend_date <= week.end]
+
+
+def ex_dividends(week: Week, calls: Sequence[Call]) -> list[ExDividend]:
+    """The week's companies (listed), each with its get_stock. Code makes
+    those lookups (look_up), but one can fail: a company missing is still
+    IncompleteError, since a post that quietly left it out would be wrong
+    about the week.
+    """
+    week_listed = listed(week, calls)
     stocks = {s.profile.symbol: s for s in _results(calls, GET_STOCK.name, _Stock)}
-    listed = [s for s in calendar.stocks if week.start <= s.ex_dividend_date <= week.end]
-    missing = [s.symbol for s in listed if s.symbol not in stocks]
+    missing = [s.symbol for s in week_listed if s.symbol not in stocks]
     if missing:
         raise IncompleteError(f"not looked up with get_stock: {', '.join(missing)}")
-    return [_row(s, stocks[s.symbol].dividend_profile or _DividendProfile()) for s in listed]
+    return [_row(s, stocks[s.symbol].dividend_profile or _DividendProfile()) for s in week_listed]
 
 
 def _row(listed: _Listed, profile: _DividendProfile) -> ExDividend:
@@ -395,17 +400,32 @@ def _row(listed: _Listed, profile: _DividendProfile) -> ExDividend:
 CHANGES_DAYS = 7
 
 
-def look_ups(week: Week, today: date) -> list[tuple[str, dict[str, Any]]]:
-    """The calls code makes for the week, with their arguments: earnings
-    through the week's Sunday, and the raises and cuts of the last
-    CHANGES_DAYS. The calendar counts from the server's day, which is UTC: a
-    day more than today's distance to Sunday covers the week when the
-    agent's date is a day ahead of it."""
+def look_ups(week: Week, today: date, calls: Sequence[Call]) -> list[tuple[str, dict[str, Any]]]:
+    """The calls code makes for the week, with their arguments: get_stock for
+    each of the week's companies (listed), earnings through the week's
+    Sunday, and the raises and cuts of the last CHANGES_DAYS. Those a run
+    already made are left out: a company already looked up (a get_stock
+    whose result is that company), or a tool already called successfully,
+    since a run resumed on another day would count its days differently.
+
+    Code, not the model, looks the companies up: each result is a few
+    thousand tokens, and a week of thirty companies (2026-W44) is more than
+    the model's context holds. The calendar counts from the server's day,
+    which is UTC: a day more than today's distance to Sunday covers the week
+    when the agent's date is a day ahead of it."""
     days = (week.end - today).days + 1
-    return [
+    looked_up = {s.profile.symbol for s in _results(calls, GET_STOCK.name, _Stock)}
+    made = {c.tool for c in calls if not c.failed}
+    stocks: list[tuple[str, dict[str, Any]]] = [
+        (GET_STOCK.name, {"symbol": s.symbol})
+        for s in listed(week, calls)
+        if s.symbol not in looked_up
+    ]
+    others: list[tuple[str, dict[str, Any]]] = [
         (EARNINGS_CALENDAR.name, {"days": days}),
         (DIVIDEND_CHANGES.name, {"days": CHANGES_DAYS}),
     ]
+    return stocks + [(name, arguments) for name, arguments in others if name not in made]
 
 
 async def look_up(
@@ -419,10 +439,8 @@ async def look_up(
     resumed run already made successfully. A failure no arguments can fix
     (the server down) is raised once its call is recorded; a tool's refusal
     is recorded, and gather then says what is missing."""
-    tools = {t.name: t for t in (EARNINGS_CALENDAR, DIVIDEND_CHANGES)}
-    for name, arguments in look_ups(week, today):
-        if any(c.tool == name and not c.failed for c in calls):
-            continue
+    tools = {t.name: t for t in (GET_STOCK, EARNINGS_CALENDAR, DIVIDEND_CHANGES)}
+    for name, arguments in look_ups(week, today, calls):
         tool = tools[name]
         start = time.monotonic()
         result, failed, error = await agent.call_tool(server, tool, tool.decode_args(arguments))
