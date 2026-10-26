@@ -1142,6 +1142,17 @@ def test_a_week_ahead_run_becomes_a_pull_request(
         "or cut(s) seen in the last 7 days."
     ) in body
     assert "Held back" not in body
+    # The X post, drafted by code from the same data, for the author to post.
+    assert (
+        "```text\n"
+        "Dividend Week Ahead, Oct 19 \N{EN DASH} Oct 25:\n\n"
+        "📅 2 companies go ex-dividend, incl. $AAPL\n"
+        "📊 66 earnings reports\n\n"
+        "Day by day, with safety reads 👇\n"
+        "quantic.finance/insights/2026/week-ahead-W43\n\n"
+        "#DividendInvesting #Dividends\n"
+        "```"
+    ) in body
     assert run.pull_request is not None
     assert (run.pull_request.number, run.pull_request.state, run.pull_request.period) == (
         100,
