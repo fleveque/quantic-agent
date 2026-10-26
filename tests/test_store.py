@@ -3,7 +3,7 @@ import sqlite3
 import subprocess
 import sys
 import threading
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from importlib.resources import as_file, files
 from pathlib import Path
 
@@ -115,7 +115,7 @@ def test_migrations_apply_once(tmp_path: Path) -> None:
 
 
 # The latest migration.
-HEAD = "0007"
+HEAD = "0008"
 
 
 def tables(path: Path) -> list[str]:
@@ -510,3 +510,11 @@ def test_corrections_are_all_or_nothing(tmp_path: Path) -> None:
         # Nothing kept, and the merge is still to read: the next sync tries again.
         assert db.run(run_id).corrections == []
         assert [pr.number for pr in db.unread_merges()] == [7]
+
+
+def test_a_run_keeps_the_week_it_was_asked_for(tmp_path: Path) -> None:
+    with open_store(tmp_path) as db:
+        asked = db.start_run("week_ahead", "q", "m", week_start=date(2026, 10, 26))
+        unasked = db.start_run("week_ahead", "q", "m")
+        assert db.run(asked).week_start == date(2026, 10, 26)
+        assert db.run(unasked).week_start is None

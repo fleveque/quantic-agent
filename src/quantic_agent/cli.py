@@ -206,6 +206,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         "than this (default: $QUANTIC_GPU_MAX_OTHERS, else %(default)s)",
     )
     parser.add_argument(
+        "--week",
+        type=_week,
+        metavar="YYYY-Www",
+        help="with --week-ahead: the week to write, such as 2026-W44, starting today or later "
+        "(default: next week)",
+    )
+    parser.add_argument(
         "--out",
         type=Path,
         default=os.environ.get("QUANTIC_AGENT_OUT") or "insights",
@@ -248,6 +255,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="give up on a run after this long; 0 for no limit (default: %(default)g)",
     )
     args = parser.parse_args(argv)
+    if args.week is not None:
+        if not args.week_ahead:
+            parser.error("--week goes with --week-ahead")
+        if not weekahead.can_write(args.week, today()):
+            parser.error(
+                f"{args.week.period} started on {args.week.start}: the calendar counts from "
+                "today, so its first days would be missing. A week starting today or later"
+            )
 
     # Reading the history needs neither the model nor Quantic.
     if args.runs:
@@ -359,6 +374,13 @@ def _gave_up(timeout: float) -> int:
         "half a minute to load, and a long generation longer."
     )
     return EXIT_FAILED
+
+
+def _week(text: str) -> weekahead.Week:
+    try:
+        return weekahead.parse_week(text)
+    except ValueError as err:
+        raise argparse.ArgumentTypeError(str(err)) from None
 
 
 def today() -> date:
@@ -724,13 +746,22 @@ async def _week_ahead(
     run fails in its research phase, to be resumed. The English prose must
     have no figures, or nothing is published. A translation that fails its
     check is held, and the rest are written."""
-    # The week after the day the run started, even for a run resumed later.
+    # The week asked for (--week), or else the week after today, recorded with
+    # the run, so that a run resumed later, its pull request and --weekly all
+    # read back the same week: weekahead.week_of.
     if run is None:
         started = today()
-        run = db.run(db.start_run(weekahead.KIND, weekahead.question(started), client.model))
-    else:
-        started = run.started_at.astimezone().date()
-    week = weekahead.week_after(started)
+        asked: weekahead.Week | None = getattr(args, "week", None)
+        week = asked or weekahead.week_after(started)
+        run = db.run(
+            db.start_run(
+                weekahead.KIND,
+                weekahead.question(started, week),
+                client.model,
+                week_start=week.start,
+            )
+        )
+    week = weekahead.week_of(run)
     options = llm.Options(num_ctx=args.num_ctx)
     gathered = agent.Research(calls=run.calls, tokens=run.tokens, exhausted=run.exhausted)
     spent = 0  # tokens the writer and the translators used
@@ -1101,12 +1132,10 @@ def _this_week(db: store.Store, week: weekahead.Week) -> store.Run | None:
     """The Week Ahead run that stands for week, newest first among: the runs
     with a pull request (a week reviewed is done, whatever the verdict), the
     merged one first, then an open one, then a closed one; then the answered
-    runs; then any. A run's week is the one after the day it started, as for
-    its post. The last fifty runs are plenty: one a week, and the odd retry."""
+    runs; then any. A run's week is its post's (weekahead.week_of). The last
+    fifty runs are plenty: one a week, and the odd retry."""
     runs = [
-        db.run(r.id)
-        for r in db.runs(limit=50, kind=weekahead.KIND)
-        if weekahead.week_after(r.started_at.astimezone().date()) == week
+        db.run(r.id) for r in db.runs(limit=50, kind=weekahead.KIND) if weekahead.week_of(r) == week
     ]
     # sorted() is stable: within each state, the newest stays first.
     rank = {"merged": 0, "open": 1, "closed": 2}

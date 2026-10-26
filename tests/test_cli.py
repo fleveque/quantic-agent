@@ -22,7 +22,7 @@ from conftest import (
     nvidia_smi,
 )
 
-from quantic_agent import cli, gpu, quantic, store, weekahead
+from quantic_agent import cli, gpu, publish, quantic, store, weekahead
 from quantic_agent.agent import Call
 from quantic_agent.cli import main
 
@@ -1303,8 +1303,12 @@ def test_sync_records_merges_as_approvals_and_closes_as_rejections(
         # Each run its own week, so each can have a pull request open.
         with sqlite3.connect(isolated_state) as db:
             db.execute(
-                "UPDATE runs SET started_at = ? WHERE id = (SELECT max(id) FROM runs)",
-                (f"{thursday.isoformat()}T12:00:00+00:00",),
+                "UPDATE runs SET started_at = ?, week_start = ? "
+                "WHERE id = (SELECT max(id) FROM runs)",
+                (
+                    f"{thursday.isoformat()}T12:00:00+00:00",
+                    weekahead.week_after(thursday).start.isoformat(),
+                ),
             )
     for run in ("1", "2", "3"):
         assert main(["--pr", run]) == 0
@@ -1650,9 +1654,14 @@ def test_weekly_leaves_a_run_it_cant_carry_on_alone(
     state: store.State,
     status: int,
     message: str,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    monkeypatch.setattr(cli, "today", lambda: date(2026, 10, 14))
     with store.Store(isolated_state) as db:
-        run_id = db.start_run(weekahead.KIND, "the week", "qwen3.5:9b")
+        # As the CLI records one: its week with it (W43, for the pinned 2026-10-14).
+        run_id = db.start_run(
+            weekahead.KIND, "the week", "qwen3.5:9b", week_start=date(2026, 10, 19)
+        )
         if state is not store.State.RUNNING:
             db.finish(run_id, state)
 
@@ -1660,3 +1669,60 @@ def test_weekly_leaves_a_run_it_cant_carry_on_alone(
 
     assert f"run 1, 2026-W43's, {message}" in capsys.readouterr().err
     assert ollama.bodies == []
+
+
+def test_week_ahead_writes_the_week_asked_for(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    isolated_state: Path,
+) -> None:
+    # The fixtures' week, written on its own Monday: left to itself, the run
+    # would be the week after, W44.
+    week_ahead_servers(ollama, quantic_mcp, monkeypatch)
+    monkeypatch.setattr(cli, "today", lambda: date(2026, 10, 19))
+
+    args = ["--ollama", ollama.url, "--mcp", quantic_mcp.url, "--week-ahead"]
+    assert main([*args, "--week", "2026-W43", "--out", str(tmp_path / "out")]) == 0
+
+    assert sorted(p.name for p in (tmp_path / "out" / "2026").iterdir()) == ["week-ahead-W43"]
+    [run] = stored_runs(isolated_state)
+    assert run.week_start == date(2026, 10, 19)
+    assert run.input.startswith(
+        "Today is Monday 2026-10-19. Gather the data for the Dividend Week Ahead, "
+        "for the week from Monday 2026-10-19 to Sunday 2026-10-25:"
+    )
+    assert publish.proposal(run, "priv/insights").period == "2026-W43"
+
+
+@pytest.mark.parametrize(
+    ("argv", "message"),
+    [
+        (["--week", "2026-W44"], "--week goes with --week-ahead"),
+        (["--week-ahead", "--week", "2026-W43"], "2026-W43 started on 2026-10-19"),
+        (["--week-ahead", "--week", "next"], "isn't an ISO week"),
+    ],
+)
+def test_a_week_that_cant_be_written_is_refused(
+    argv: list[str],
+    message: str,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(cli, "today", lambda: date(2026, 10, 26))
+
+    with pytest.raises(SystemExit) as exited:
+        main(argv)
+
+    assert exited.value.code == 2
+    assert message in capsys.readouterr().err
+
+
+def test_no_test_sees_the_machines_github_app(tmp_path: Path) -> None:
+    # quantic#507: with the App's settings exported and its key at the default
+    # path, --weekly tests published for real. The autouse fixture removes both.
+    assert not any(
+        name.startswith(("QUANTIC_AGENT_GITHUB", "QUANTIC_AGENT_REPO")) for name in os.environ
+    )
+    assert cli.default_key_path().is_relative_to(tmp_path)

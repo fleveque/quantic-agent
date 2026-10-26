@@ -39,7 +39,7 @@ def proposal(run: store.Run, repo_path: str) -> Proposal:
     ready = [p for p in run.posts if p.ready]
     if not any(p.locale == weekahead.SOURCE for p in ready):
         raise NotPublishableError(f"run {run.id} has no English post")
-    week = weekahead.week_after(run.started_at.astimezone().date())
+    week = weekahead.week_of(run)
     files = [github.File(path, p.content) for p, path in locations(run, repo_path)]
     locales = ", ".join(p.locale for p in ready)
     return Proposal(
@@ -57,7 +57,7 @@ def locations(run: store.Run, repo_path: str) -> list[tuple[store.Post, str]]:
     """Each ready post of a run, with its file's path in the repository:
     repo_path/<ISO year>/<slug>/<locale>.md. Where the pull request put
     them, and where --sync reads them back from once it's merged."""
-    week = weekahead.week_after(run.started_at.astimezone().date())
+    week = weekahead.week_of(run)
     folder = f"{repo_path.strip('/')}/{week.path}"
     return [(p, f"{folder}/{p.locale}.md") for p in run.posts if p.ready]
 

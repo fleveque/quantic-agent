@@ -6,6 +6,7 @@ defined here is available to every test by naming it as a parameter.
 
 import base64
 import json
+import os
 import select
 import socket
 import struct
@@ -34,7 +35,18 @@ def isolated_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     autouse: no test can forget it. The first version of milestone 7's tests
     had no such fixture, and the --research tests wrote three fake runs into
     the real ~/.local/state/quantic-agent, as Go's milestone 7 tests once did.
+
+    And none of the machine's own settings reach it. On 2026-10-26 the shell
+    running the tests exported the GitHub App's settings, and the App's key
+    sat at its default path: the --weekly tests that don't set up the fake
+    GitHub opened a real pull request (quantic#507) with test fixtures in it.
+    So every QUANTIC_* and OLLAMA_* variable goes, and the config directory,
+    where the key's default path is, is the test's own.
     """
+    for name in list(os.environ):
+        if name.startswith(("QUANTIC_", "OLLAMA_")):
+            monkeypatch.delenv(name)
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
     db = tmp_path / "state" / "agent.db"
     monkeypatch.setenv("QUANTIC_AGENT_DB", str(db))
     monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))

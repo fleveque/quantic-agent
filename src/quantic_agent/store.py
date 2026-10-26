@@ -16,7 +16,7 @@ import sqlite3
 from collections.abc import Callable, Generator, Sequence
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from enum import StrEnum
 from pathlib import Path
 from typing import Any, Self
@@ -156,6 +156,10 @@ class Run:
     started_at: datetime
     finished_at: datetime | None
     call_count: int
+    # A Week Ahead's week, its Monday; None for a run recorded before the week
+    # was (migration 0008), whose week is the one after started_at:
+    # weekahead.week_of.
+    week_start: date | None = None
     calls: list[Call] = field(default_factory=lambda: list[Call]())
     draft: Draft | None = None
     review: Review | None = None
@@ -231,11 +235,21 @@ class Store:
         the same order as time."""
         return self._now().astimezone(UTC).isoformat()
 
-    def start_run(self, kind: str, input: str, model: str) -> int:
-        """Records a run as running, and returns its id."""
+    def start_run(self, kind: str, input: str, model: str, week_start: date | None = None) -> int:
+        """Records a run as running, and returns its id. week_start is a Week
+        Ahead's Monday when it was asked for a week, rather than the one after
+        today."""
         cursor = self._db.execute(
-            "INSERT INTO runs (kind, input, model, state, started_at) VALUES (?, ?, ?, ?, ?)",
-            (kind, input, model, State.RUNNING, self._stamp()),
+            "INSERT INTO runs (kind, input, model, state, started_at, week_start) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (
+                kind,
+                input,
+                model,
+                State.RUNNING,
+                self._stamp(),
+                week_start.isoformat() if week_start else None,
+            ),
         )
         assert cursor.lastrowid is not None
         return cursor.lastrowid
@@ -588,7 +602,7 @@ class Store:
         rows = self._db.execute(
             "SELECT r.id, r.kind, r.input, r.model, r.state, r.phase, r.tokens, r.exhausted, "
             "r.error, r.started_at, r.finished_at, "
-            "(SELECT COUNT(*) FROM tool_calls c WHERE c.run_id = r.id) "
+            "(SELECT COUNT(*) FROM tool_calls c WHERE c.run_id = r.id), r.week_start "
             f"FROM runs r {tail}",
             params,
         )
@@ -606,6 +620,7 @@ class Store:
                 started_at=datetime.fromisoformat(started),
                 finished_at=datetime.fromisoformat(finished) if finished else None,
                 call_count=count,
+                week_start=date.fromisoformat(week) if week else None,
             )
             for (
                 id,
@@ -620,6 +635,7 @@ class Store:
                 started,
                 finished,
                 count,
+                week,
             ) in rows
         ]
 

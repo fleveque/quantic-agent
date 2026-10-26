@@ -22,10 +22,10 @@ import json
 import time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from importlib import resources
 from string import Template
-from typing import Any
+from typing import Any, Protocol
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
@@ -114,15 +114,44 @@ def week_after(today: date) -> Week:
     return Week(today + timedelta(days=7 - today.weekday()))
 
 
-def question(today: date) -> str:
+def parse_week(text: str) -> Week:
+    """The week an ISO week names, "2026-W44"; ValueError for anything else."""
+    year, sep, number = text.strip().upper().partition("-W")
+    if not sep or not year.isdigit() or not number.isdigit():
+        raise ValueError(f"{text!r} isn't an ISO week, such as 2026-W44")
+    return Week(date.fromisocalendar(int(year), int(number), 1))
+
+
+def can_write(week: Week, today: date) -> bool:
+    """Whether a post for week can be researched today. The calendar counts
+    from today, so a week whose Monday has passed would be missing its first
+    days while its post said Monday to Sunday."""
+    return week.start >= today
+
+
+class _Dated(Protocol):
+    started_at: datetime
+    week_start: date | None
+
+
+def week_of(run: _Dated) -> Week:
+    """A Week Ahead run's week, as recorded when it started. Runs recorded
+    before the week was (migration 0008) have none: theirs is the week after
+    the day they started, the rule they were written under."""
+    if run.week_start is not None:
+        return Week(run.week_start)
+    return week_after(run.started_at.astimezone().date())
+
+
+def question(today: date, week: Week | None = None) -> str:
     """What the research loop is asked, for the week after today. It says
     what today is: the calendar counts its days from today, and a model not
     told the date asked for seven of them, which from a Thursday stops short
     of the week's Sunday (docs/benchmarks/2026-10-08-week-ahead/). It also
     says how many days away that Sunday is: told the date but left to count,
     the model still asked for seven from a Friday (docs/benchmarks/
-    2026-10-09-pull-request/)."""
-    week = week_after(today)
+    2026-10-09-pull-request/). week is the week after today unless given."""
+    week = week or week_after(today)
     days = (week.end - today).days
     return (
         f"Today is {today:%A} {today.isoformat()}. Gather the data for the Dividend Week "
