@@ -119,6 +119,17 @@ starting point here.
   (`docs/benchmarks/2026-10-14-prose-checks/`): 22 of 60 baseline writings had such wording; with
   the check 60/60 published, 33/23/4 attempts, 13 s vs 9 s. Each measurement round found new
   wordings ("readers should note"): it's a list, not a meaning check. English only; lesson 15.
+- **`--week YYYY-Www`, 2026-10-26** (branch `week-option`, no lesson): `--week-ahead` for a
+  given week, starting today or later (the calendar counts from today, so a week already under
+  way would miss its first days). Migration 0008 records every new Week Ahead run's week
+  (`runs.week_start`); `weekahead.week_of(run)` is the one place a run's week is read, and runs
+  recorded before keep the week after their start date. Why: the W43 and W44 posts had dates
+  Quantic's demo invented (quantic#506), and W44 had to be written on its own Monday.
+- **Tests never see the machine's settings** (2026-10-26): with the GitHub App's settings
+  exported in the shell and its key at the default path, the `--weekly` tests that don't set up
+  the fake GitHub opened a real pull request (quantic#507, closed). The autouse fixture now
+  removes every `QUANTIC_*`/`OLLAMA_*` variable and points `XDG_CONFIG_HOME` at the test's own
+  directory. Before running tests with such a shell, check `tests/conftest.py` still does.
 - design.md keeps Go's "As built in Go" notes next to this repository's "As built" notes.
 - PRs are squash-merged, so a walkthrough built from a branch commit cites a SHA `main` won't have.
   After merge, rebuild the walkthrough page from the merge commit and republish the artifact. That

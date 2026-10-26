@@ -1,5 +1,6 @@
 import json
-from datetime import date
+from dataclasses import dataclass
+from datetime import UTC, date, datetime
 from typing import Any
 
 import pytest
@@ -533,3 +534,46 @@ def test_the_question_says_what_today_is() -> None:
 def test_the_question_says_how_far_away_sunday_is(today: date, days: int) -> None:
     # Told only the date, the model asked for 7 days from a Friday: 2 short.
     assert weekahead.question(today).endswith(f"Sunday 2026-10-18 is {days} days from today.")
+
+
+def test_an_iso_week_names_its_monday() -> None:
+    assert weekahead.parse_week("2026-W44") == weekahead.Week(date(2026, 10, 26))
+    assert weekahead.parse_week("2026-w44").period == "2026-W44"
+    # The ISO year: 2026-W53 starts in December, 2027-W01 may start in 2027.
+    assert weekahead.parse_week("2026-W53").start == date(2026, 12, 28)
+
+
+@pytest.mark.parametrize("text", ["2026-44", "W44", "2026-W54", "2026-Wx", ""])
+def test_anything_else_is_not_a_week(text: str) -> None:
+    with pytest.raises(ValueError, match=r"ISO week|week|year"):
+        weekahead.parse_week(text)
+
+
+def test_a_week_can_be_written_from_its_monday_but_not_after() -> None:
+    w44 = weekahead.parse_week("2026-W44")
+    assert weekahead.can_write(w44, date(2026, 10, 25))
+    assert weekahead.can_write(w44, date(2026, 10, 26))
+    # From Tuesday the calendar would miss Monday.
+    assert not weekahead.can_write(w44, date(2026, 10, 27))
+
+
+@dataclass
+class _Run:
+    started_at: datetime
+    week_start: date | None = None
+
+
+def test_a_runs_week_is_the_one_asked_for_or_else_the_week_after_it_started() -> None:
+    monday = datetime(2026, 10, 26, 9, 0, tzinfo=UTC)
+    assert weekahead.week_of(_Run(monday)).period == "2026-W45"
+    assert weekahead.week_of(_Run(monday, date(2026, 10, 26))).period == "2026-W44"
+
+
+def test_the_question_names_the_week_asked_for() -> None:
+    w44 = weekahead.parse_week("2026-W44")
+    assert weekahead.question(date(2026, 10, 26), w44) == (
+        "Today is Monday 2026-10-26. Gather the data for the Dividend Week Ahead, "
+        "for the week from Monday 2026-10-26 to Sunday 2026-11-01: find every company "
+        "that goes ex-dividend in that week, and look up each one. "
+        "Sunday 2026-11-01 is 6 days from today."
+    )
