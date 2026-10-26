@@ -135,6 +135,11 @@ starting point here.
   the fake GitHub opened a real pull request (quantic#507, closed). The autouse fixture now
   removes every `QUANTIC_*`/`OLLAMA_*` variable and points `XDG_CONFIG_HOME` at the test's own
   directory. Before running tests with such a shell, check `tests/conftest.py` still does.
+- **The X post draft, 2026-10-26** (branch `x-post-draft`, ADR 0018, no lesson): `xpost.draft`
+  builds the week's X post from the data block (a fixed template; cashtags for the two US listings
+  with the longest streaks; raises and cuts of 1% or more), `x_length` counts as X does (link 23,
+  emoji 2) and lines are dropped in order to fit 280. It goes in the pull request's description;
+  the author posts it. English, quantic.finance link.
 - design.md keeps Go's "As built in Go" notes next to this repository's "As built" notes.
 - PRs are squash-merged, so a walkthrough built from a branch commit cites a SHA `main` won't have.
   After merge, rebuild the walkthrough page from the merge commit and republish the artifact. That

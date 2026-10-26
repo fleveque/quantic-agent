@@ -7,7 +7,7 @@ wrote: what goes for review is exactly what was checked and recorded.
 
 from dataclasses import dataclass
 
-from quantic_agent import github, store, weekahead
+from quantic_agent import github, store, weekahead, xpost
 
 
 class NotPublishableError(Exception):
@@ -76,6 +76,8 @@ def _body(run: store.Run, week: weekahead.Week, files: list[github.File]) -> str
     held = [p for p in run.posts if not p.ready]
     held_lines = "\n".join(f"- **{p.locale}**: {'; '.join(p.problems)}" for p in held)
     held_section = f"\n**Held back, not in this pull request:**\n\n{held_lines}\n" if held else ""
+    x_post = xpost.draft(week, weekahead.WeekData.model_validate(data))
+    x_length = xpost.x_length(x_post, (f"{xpost.SITE}/insights/{week.path}",))
     return f"""\
 The Dividend Week Ahead for Monday {week.start} to Sunday {week.end}, written by \
 quantic-agent (run {run.id}, `{run.model}`).
@@ -106,6 +108,14 @@ it leans towards advice. That is this review.
 **Also in the data block:** {len(data["earnings"])} earnings report(s) in the week, \
 {len(data["dividend_changes"])} dividend raise(s) or cut(s) seen in the last \
 {weekahead.CHANGES_DAYS} days.
+
+**Draft X post** ({x_length}/{xpost.LIMIT} as X counts), written by code from the data \
+block above. The agent doesn't post it: copy it, edit it if you like, and post it yourself. \
+If you change the data before merging, check its counts.
+
+```text
+{x_post}
+```
 
 `quantic-agent --run {run.id}` shows the tool calls behind it, on the machine that wrote it.
 """
