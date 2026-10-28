@@ -1,0 +1,115 @@
+{
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "seed": 3,
+ "facts": {
+  "company": "Nike",
+  "ticker": "NKE",
+  "current_yield_pct": 4.37,
+  "yield_avg_5y_pct": 1.41,
+  "yield_high_5y_pct": 2.33,
+  "yield_low_5y_pct": 0.73,
+  "current_yield_times_5y_average": 3.1,
+  "current_yield_times_5y_high": 1.88,
+  "streak_years": 23,
+  "dividend_growth_5y_pct": 10.3,
+  "dividend_first_year_in_quantic_history": 2014,
+  "dividend_per_share_first_year": 0.48,
+  "dividend_last_full_year": 2025,
+  "dividend_per_share_last_full_year": 1.6,
+  "years_from_first_to_last_year": 11,
+  "dividend_multiple_first_to_last_year": 3.33,
+  "payment_frequency": "quarterly",
+  "pays_in": [
+   "March",
+   "June",
+   "September",
+   "December"
+  ],
+  "next_payment_month": "December",
+  "quantic_dividend_history_starts": 2014,
+  "dividend_vs_its_5y_average_dividend": 1.21,
+  "why_the_yield_is_high": "The yield is above its 5-year average mostly because the share price fell: the annual dividend is only dividend_vs_its_5y_average_dividend times its 5-year average, while the yield is current_yield_times_5y_average times its 5-year average.",
+  "next_earnings_date": "2026-12-17",
+  "next_earnings_date_is_estimated": true,
+  "sector": "Consumer Cyclical",
+  "sector_yield_ranking": {
+   "selection": "Consumer Cyclical companies in Quantic's screener with a dividend streak of at least min_streak_years",
+   "min_streak_years": 20,
+   "companies": 4,
+   "nike_rank_by_current_yield": 1,
+   "others": {
+    "Best Buy": 3.9,
+    "Genuine Parts": 3.49,
+    "Lowe's": 2.52
+   }
+  },
+  "safety": "safe",
+  "last_known_price": 37.56,
+  "last_known_price_as_of": "2026-10-28",
+  "price_high_monthly_5y": 169.24,
+  "price_currency": "USD (write prices with $)",
+  "price_below_5y_high_pct": 77.8
+ },
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 7.6,
+   "posts": [
+    {
+     "text": "📊 $NKE yield is 4.37%, over 3 times its 5-year average.\n\nThe price fell to $37.56, lifting yield while the dividend grew modestly.",
+     "problems": [
+      "figure not in the data: '3'"
+     ]
+    },
+    {
+     "text": "💵 Nike pays $1.60 annually, up from $0.48 in 2014.\n\nQuantic labels safety as safe despite the yield spiking to 4.37%.",
+     "problems": [
+      "the cashtag $NKE must appear exactly once"
+     ]
+    },
+    {
+     "text": "👟 Nike has raised dividends for 23 straight years.\n\nYield sits at 4.37%, roughly double its 5-year high.",
+     "problems": [
+      "the cashtag $NKE must appear exactly once"
+     ]
+    },
+    {
+     "text": "📉 The stock is down 77.8% from its 5-year high.\n\nThis push the $NKE yield to 4.37%, well above recent levels.",
+     "problems": []
+    },
+    {
+     "text": "🧾 Quantic tracks Nike’s 23-year dividend streak.\n\nThe 4.37% yield is 3.1 times the 5-year average.",
+     "problems": [
+      "the cashtag $NKE must appear exactly once"
+     ]
+    }
+   ]
+  },
+  {
+   "attempt": 2,
+   "seconds": 8.0,
+   "posts": [
+    {
+     "text": "📊 $NKE yield is 4.37%, 3.1 times its 5-year average.\n\nThe price fell to $37.56, lifting yield while the dividend grew modestly.",
+     "problems": []
+    },
+    {
+     "text": "💵 Nike pays $1.60 annually, up from $0.48 in 2014.\n\nQuantic labels safety as safe despite the $NKE yield spiking to 4.37%.",
+     "problems": []
+    },
+    {
+     "text": "👟 Nike has raised dividends for 23 straight years.\n\nThe $NKE yield sits at 4.37%, roughly double its 5-year high.",
+     "problems": []
+    },
+    {
+     "text": "📉 The stock is down 77.8% from its 5-year high.\n\nThis push the $NKE yield to 4.37%, well above recent levels.",
+     "problems": []
+    },
+    {
+     "text": "🧾 Quantic tracks Nike’s 23-year dividend streak.\n\nThe $NKE yield is 3.1 times its 5-year average.",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

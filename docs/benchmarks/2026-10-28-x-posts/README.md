@@ -157,6 +157,28 @@ unstated; each has the same kind of fix, the answer given as a fact (`next_payme
 the history starts). The version I'd post as written, run 1's third: "The 4.37% yield on $NKE is
 more than triple the 5-year average, sitting well above the 2.33% high from that period 📊".
 
+- **`4-hook-and-why/`**: two paragraphs, the hook and one sentence that explains or balances it;
+  emojis only at the start of a paragraph (checked); new facts stated by code so the model
+  needn't infer them: `next_payment_month` (December), where Quantic's dividend history starts,
+  the annual dividend against its 5-year average (1.21 times, from a rate of $1.64 and the
+  2021–2025 average), and `why_the_yield_is_high`, the only cause the model may give. That cause
+  holds either way it's measured: the price is about 83% of the yield's rise against the 5-year
+  average dividend, 57% against 5-year compound growth. Run 1's first attempt put emojis at the
+  ends of sentences in all 5 versions; every final version opens its paragraphs with them. Of 15
+  final versions, 6 I'd post as written (run 1's first: "👟 Nike ($NKE) yields 4.37%, well above
+  its 5-year average of 1.41%. 📉 The share price is the main driver, as the annual dividend is
+  only 1.21 times its 5-year average."), 3 are correct and bland, and 6 have a fault no check
+  sees: "reported earnings on 2026-12-17" (estimated, in the future), "trades at $37.56" (the last
+  known price as current), "the dividend stays near its 5-year mean" and "remains stable" (it is
+  1.21 times), "This 23-year streak of increases supports the current yield" (the cause reversed,
+  1 in 15 against 2 in 14 before), "safe despite the $NKE yield spiking", "This push the $NKE
+  yield".
+
+What the author posted on X from these rounds ([the post](https://x.com/quantic_es/status/2115408459311219055)), written by Claude from the facts, not by the agent: "📊 The
+4.37% yield on $NKE is more than triple its 5-year average, and well above the 2.33% high from
+that period. Much of that comes from the share price, 77.8% below its 5-year high, while the
+dividend has now risen 23 years in a row." with the link to Nike's page.
+
 ## The prompts
 
 Every writer's system message is `agent.SYSTEM_PROMPT`, and the facts come first in the user message. The rules after them, rounds 1 and 2 (`DEFS` only in round 2), with the posts as JSON through Ollama's `format`:
@@ -325,4 +347,38 @@ Reply as JSON: {{"posts": ["...", "...", "...", "...", "..."]}}"""
 
 ```
 re.compile(r"\b(?:income potential|significant|impressive|remarkable|juicy|stunning|massive|huge|solid|strong|eye-catching)\b", re.I)
+```
+
+Nike, `4-hook-and-why/`, with the same spam rules and checks plus emojis only at the start of a paragraph:
+
+```
+f"""Today is Wednesday {TODAY}. Write 5 alternative versions of one X (Twitter) post about Nike for Quantic, a dividend data site,
+from the data below. Code adds the link to Nike's page on Quantic on its own line after the post: don't write a link.
+
+Write it like a person who follows dividend stocks, not like a data feed. Each version has two short paragraphs:
+1. The hook: one sentence with the most striking figure or contrast.
+2. One sentence that explains or balances it, using why_the_yield_is_high, the price, or the record of raises. Never explain
+   anything the data doesn't state: why_the_yield_is_high is the only cause you may give.
+- 140 to 240 characters in all. Plain words: "5-year average", never "5y", "avg", "DPS" or "x" for times.
+- Include the cashtag $NKE once, as part of a sentence. No selling language ("income potential", "impressive", "significant").
+- One or two emojis, only at the very start of a paragraph, never at the end of a sentence, only from: {" ".join(EMOJI)}.
+- Make the 5 versions open with different hooks, not rewordings of one.
+- Use "estimated" with the earnings date and "last known" with the price. 2014 is where Quantic's dividend history starts, not the streak.
+
+For example, about another company (made up, not data): "📈 Northwind ($NWND) now yields 3.2%, above anything it paid in the last five years.
+
+Most of that is the share price, while the dividend has risen every year since 2009." — a story, not a list like "Yield: 3.2%. Streak: 17. 📈💰".
+
+Never look like spam: no exclamation marks, no words in capitals, no hashtags, no "BREAKING", no questions to the reader,
+no teasers ("here's why", "you won't believe", "the numbers tell a story").
+
+Accuracy:
+- Every figure and date comes from the data, as the data gives it.
+- streak_years = consecutive years of dividend increases. safety = Quantic's dividend safety label.
+- last_known_price is the last price Quantic saw, on last_known_price_as_of: don't call it current or live; price_high_monthly_5y is the
+  highest monthly price in the last 5 years.
+- Describe what the data shows. No advice: never suggest buying, selling or holding, or that something is cheap, a bargain, an
+  opportunity, undervalued or a dip. Never address the reader ("you", "your", "investors", "readers").
+
+Reply as JSON: {{"posts": ["...", "...", "...", "...", "..."]}}"""
 ```
