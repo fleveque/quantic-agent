@@ -41,7 +41,7 @@ import os
 import signal
 import sys
 from collections.abc import Coroutine, Sequence
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from importlib.metadata import version
 from pathlib import Path
 from typing import Any, TextIO
@@ -49,6 +49,7 @@ from typing import Any, TextIO
 from quantic_agent import (
     agent,
     corrections,
+    daily,
     github,
     gpu,
     llm,
@@ -169,6 +170,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         "Week Ahead unless it's written (resuming a run that stopped), and open its pull "
         "request; exit 3, to be tried later, when other programs hold the GPU",
     )
+    action.add_argument(
+        "--daily",
+        action="store_true",
+        help="the weekday job: record what was posted from earlier issues (--sync), draft "
+        "today's X posts unless they're drafted, and open their issue for review; exit 3, to "
+        "be tried later, when other programs hold the GPU",
+    )
     action.add_argument("--runs", action="store_true", help="list recent research runs")
     action.add_argument(
         "--run",
@@ -286,9 +294,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         except KeyboardInterrupt, asyncio.CancelledError:
             _warn("stopped; the request in flight was cancelled")
             return EXIT_INTERRUPTED
-    if args.weekly:
+    if args.weekly or args.daily:
         try:
-            return asyncio.run(_weekly(args))
+            return asyncio.run(_weekly(args) if args.weekly else _daily(args))
         except KeyboardInterrupt, asyncio.CancelledError:
             _warn("stopped; the request in flight was cancelled")
             return EXIT_INTERRUPTED
@@ -1015,8 +1023,9 @@ async def _sync(db: store.Store, args: argparse.Namespace) -> int:
     it. A merge approves its run and a close rejects it, which is the accept
     rate of design open question 3."""
     waiting = db.open_pull_requests()
-    if not waiting and not db.unread_merges():
-        print("no open pull requests")
+    issues = db.open_issues()
+    if not waiting and not issues and not db.unread_merges():
+        print("no open pull requests or issues")
         return EXIT_OK
     clients: dict[str, github.Client] = {}
 
@@ -1037,10 +1046,25 @@ async def _sync(db: store.Store, args: argparse.Namespace) -> int:
         # Merged just now, or before this version could read them.
         for pr in db.unread_merges():
             await _read_corrections(db, client(pr.repo), pr, args.repo_path)
+        for issue in issues:
+            await _read_ticks(db, client(issue.repo), issue)
     finally:
         for gh in clients.values():
             await gh.aclose()
     return EXIT_OK
+
+
+async def _read_ticks(db: store.Store, gh: github.Client, issue: store.Issue) -> None:
+    """Records which versions in a daily issue are ticked as posted, and
+    whether it was closed (milestone 16)."""
+    now = await gh.issue(issue.number)
+    for p in db.record_ticks(issue.run_id, daily.ticks(now.body or "")):
+        print(f"run {issue.run_id}: {p.symbol} version {p.version} posted")
+    if now.state == "closed":
+        db.close_issue(issue.run_id)
+        print(f"run {issue.run_id}: {issue.url} closed")
+    else:
+        print(f"run {issue.run_id}: {issue.url} still open")
 
 
 async def _read_corrections(
@@ -1165,6 +1189,188 @@ async def _write_week(db: store.Store, args: argparse.Namespace, run: store.Run 
         return await _week_ahead(client, db, args, _pace(), run=run, show=False)
 
 
+async def _daily(args: argparse.Namespace) -> int:
+    """What the weekday timer runs (docs/target-machine.md §8d), and safe to
+    run again at any time: it never drafts a second batch for a day.
+
+    First, what was posted from earlier issues (--sync). Then today's posts:
+    drafted already, they are left alone, whatever came of them; stopped or
+    failed, a new run drafts them, since a day's data is cheap to fetch
+    again. Drafting needs the GPU, so it is the only step that checks it,
+    and steps aside with exit 3 when it's in use. Last, drafted posts with
+    no issue get one. Without a GitHub App configured, the issue's text is
+    printed instead.
+    """
+    cancel_on_sigterm()
+    publishing = bool(args.repo) and bool(os.environ.get("QUANTIC_AGENT_GITHUB_APP_ID"))
+    day = today()
+    with store.Store(args.db) as db:
+        if publishing:
+            await _with_github(args, _sync(db, args))
+        else:
+            _warn(
+                "no GitHub App configured (QUANTIC_AGENT_REPO, QUANTIC_AGENT_GITHUB_APP_ID): "
+                "the posts are printed, not opened as an issue"
+            )
+        run = _todays(db, day)
+        if run is not None and run.issue is not None:
+            _note(f"run {run.id}, {day}'s posts, has its issue: {run.issue.url}", run=run.id)
+            return EXIT_OK
+        if run is not None and run.state is store.State.RUNNING:
+            _error(
+                f"run {run.id}, {day}'s posts, is still running, or was killed without a "
+                "chance to record it; nothing started",
+                run=run.id,
+            )
+            return EXIT_FAILED
+        if run is not None and run.state is store.State.NO_DATA:
+            _note(f"run {run.id}: nothing to post about on {day}", run=run.id)
+            return EXIT_NO_DATA
+        if run is not None and run.state is store.State.UNVERIFIED:
+            _warn(f"run {run.id}: no version passed its checks on {day}", run=run.id)
+            return EXIT_UNVERIFIED
+        status = EXIT_OK
+        if run is None or run.state is not store.State.ANSWERED:
+            if _gpu_busy(args):
+                return EXIT_UNAVAILABLE
+            status = await _draft_posts(db, args, day)
+            run = _todays(db, day)
+            if run is None or run.state is not store.State.ANSWERED:
+                return status
+        if publishing:
+            opened = await _with_github(args, _open_issue(db, args, run.id))
+            return status or opened
+        if run.draft is not None:
+            print(run.draft.content)
+        return status
+
+
+def _todays(db: store.Store, day: date) -> store.Run | None:
+    """The daily run that stands for day: the newest answered one started
+    that day, else the newest one. A day's runs are a few at most."""
+    runs = [
+        db.run(r.id)
+        for r in db.runs(limit=20, kind=daily.KIND)
+        if r.started_at.astimezone().date() == day
+    ]
+    answered = [r for r in runs if r.state is store.State.ANSWERED]
+    return next(iter(answered or runs), None)
+
+
+async def _draft_posts(db: store.Store, args: argparse.Namespace, day: date) -> int:
+    """Drafts day's posts in a new run (daily): the data gathered and the
+    companies chosen and looked up by code, each call recorded; the facts
+    checked against the calls; then each company's versions written and
+    checked. Recorded with the run: every version, proposed or held, and the
+    issue's text as its draft."""
+    async with llm.Client(args.ollama, args.model) as client:
+        run_id = db.start_run(daily.KIND, f"X posts for {day.isoformat()}", client.model)
+        calls: list[agent.Call] = []
+        spent = 0
+
+        def record(call: agent.Call) -> None:
+            db.record_call(run_id, len(calls), call)
+            calls.append(call)
+            _trace(call, "")
+
+        def finish(
+            state: store.State,
+            error: str | None = None,
+            draft: store.Draft | None = None,
+            proposals: Sequence[store.Proposal] = (),
+        ) -> None:
+            db.finish(run_id, state, error, draft, tokens=spent, proposals=proposals)
+            _outcome(run_id, state)
+
+        options = llm.Options(num_ctx=args.num_ctx)
+        written: list[daily.Written] = []
+        try:
+            async with asyncio.timeout(args.timeout or None):
+                async with quantic.Server(args.mcp, on_retry=_on_retry(""), pace=_pace()) as server:
+                    await daily.gather(server, record)
+                    # From the day being drafted, at local midnight: not the clock.
+                    start = day - timedelta(days=daily.REPEAT_DAYS)
+                    since = datetime.combine(start, datetime.min.time()).astimezone()
+                    chosen = daily.candidates(calls, day, db.proposed_since(since))
+                    accepted, rejected = await daily.look_up(server, chosen, record)
+                if not accepted:
+                    _warn(f"no company to post about on {day}")
+                    finish(store.State.NO_DATA, "no company to post about")
+                    return EXIT_NO_DATA
+                found = [daily.facts(candidate, stock, day) for candidate, stock in accepted]
+                # Copied by code from the tool results, so this finds nothing
+                # unless that code is wrong.
+                unsourced = [
+                    f"{f.symbol}: {d}"
+                    for f in found
+                    for d in provenance.check_data(f.copied, _manifest(calls))
+                ]
+                if unsourced:
+                    raise provenance.ProvenanceError(
+                        f"data no tool returned: {', '.join(unsourced)}"
+                    )
+                for f in found:
+                    w = await daily.write(client, f, day, options=options)
+                    spent += w.tokens
+                    written.append(w)
+                    _note(
+                        f"{f.symbol}: {len(w.ready)} version(s) proposed in {w.attempts} "
+                        "attempt(s)",
+                        symbol=f.symbol,
+                        proposed=len(w.ready),
+                    )
+        except asyncio.CancelledError:
+            finish(store.State.INTERRUPTED)
+            raise
+        except TimeoutError:
+            finish(store.State.FAILED, f"gave up after {args.timeout:g}s")
+            return _gave_up(args.timeout)
+        except daily.NotPostsError as err:
+            spent += err.tokens
+            finish(store.State.FAILED, str(err))
+            _error(str(err))
+            return EXIT_FAILED
+        except (daily.IncompleteError, provenance.ProvenanceError) as err:
+            finish(store.State.FAILED, str(err))
+            _error(str(err))
+            return EXIT_FAILED
+        except (llm.LLMError, quantic.ToolServerError) as err:
+            finish(store.State.FAILED, str(err))
+            return _fail(err, args)
+    proposals = [
+        store.Proposal(
+            w.facts.symbol, w.facts.angle.value, i, v.text, w.facts.as_json(), v.problems
+        )
+        for w in written
+        for i, v in enumerate(w.versions, 1)
+    ]
+    body = daily.issue_body(day, run_id, written, rejected)
+    draft = store.Draft(content=body, truncated=False, findings=[])
+    if not any(w.ready for w in written):
+        finish(store.State.UNVERIFIED, draft=draft, proposals=proposals)
+        return EXIT_UNVERIFIED
+    finish(store.State.ANSWERED, draft=draft, proposals=proposals)
+    return EXIT_OK
+
+
+async def _open_issue(db: store.Store, args: argparse.Namespace, run_id: int) -> int:
+    """Opens the issue with a daily run's proposed posts, for the author."""
+    run = db.run(run_id)
+    if run.issue is not None:
+        _error(f"run {run.id} already has an issue: {run.issue.url}")
+        return EXIT_FAILED
+    if run.draft is None:
+        _error(f"run {run.id} has no posts")
+        return EXIT_FAILED
+    day = run.started_at.astimezone().date()
+    async with github_client(args.repo) as gh:
+        opened = await gh.open_issue(daily.title(day), run.draft.content)
+    db.record_issue(run.id, store.Issue(args.repo, opened.number, opened.html_url, "open"))
+    print(opened.html_url)
+    _note(f"run {run.id}: issue #{opened.number}, for review", run=run.id, issue=opened.html_url)
+    return EXIT_OK
+
+
 def _gpu_busy(args: argparse.Namespace) -> bool:
     """Whether other programs hold more of the GPU than --gpu-max-others."""
     found = gpu.usage()
@@ -1261,6 +1467,8 @@ def _show_run(db: store.Store, run_id: int) -> int:
         print(f"call {i}: {call.tool} {json.dumps(call.arguments)} → {outcome}")
     if run.kind == weekahead.KIND:
         return _show_post(run)
+    if run.kind == daily.KIND:
+        return _show_daily(run)
     if run.draft is None:
         return EXIT_OK
     print(f"\n{run.draft.content}\n")
@@ -1295,7 +1503,9 @@ def _show_post(run: store.Run) -> int:
     )
     text = "\n\n".join(sections.values())
     figures = provenance.no_figures(text)
-    phrases = wording.check(text)
+    data: dict[str, list[dict[str, Any]]] = front.get("data") or {}
+    named = [row["name"] for rows in data.values() for row in rows if "name" in row]
+    phrases = wording.check(text, names=named)
     if not unsourced and not figures and not phrases:
         print(
             "provenance, re-checked now: every value in the data traces to a stored tool "
@@ -1308,6 +1518,44 @@ def _show_post(run: store.Run) -> int:
         print(f"a figure in the prose: {figure}")
     for phrase in phrases:
         print(f"wording the post can't use: {phrase}")
+    return EXIT_UNVERIFIED
+
+
+def _show_daily(run: store.Run) -> int:
+    """A daily run's posts: its issue, each version and whether it was
+    proposed and posted, the issue's text, and each proposed version
+    re-checked: its facts' copied values against the stored tool results,
+    and its text against its facts, as on the day it was written."""
+    if run.issue is not None:
+        print(f"issue: {run.issue.url} ({run.issue.state})")
+    day = run.started_at.astimezone().date()
+    found: list[str] = []
+    manifest = _manifest(run.calls)
+    for p in run.proposals:
+        posted = f" · posted {p.posted_at:%Y-%m-%d}" if p.posted_at else ""
+        print(f"{p.symbol} version {p.version}: {'proposed' if p.ready else 'held'}{posted}")
+        if not p.ready:
+            continue
+        facts = daily.Facts.from_json(p.facts)
+        found += [
+            f"{p.symbol}: no tool returned {d}"
+            for d in provenance.check_data(facts.copied, manifest)
+        ]
+        found += [
+            f"{p.symbol} version {p.version}: {x}" for x in daily.check_version(p.text, facts, day)
+        ]
+    if run.draft is not None:
+        print(f"\n{run.draft.content}")
+    if not run.proposals:
+        return EXIT_OK
+    if not found:
+        print(
+            "provenance, re-checked now: every copied value traces to a stored tool result, "
+            "and every proposed version passes its checks"
+        )
+        return EXIT_OK
+    for line in dict.fromkeys(found):
+        print(line)
     return EXIT_UNVERIFIED
 
 

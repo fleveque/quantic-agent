@@ -1402,7 +1402,7 @@ def test_a_merge_synced_before_corrections_were_read_is_read_next_time(
     # Read once: the next sync has nothing to ask GitHub.
     asked = len(github_api.requests)
     assert main(["--sync"]) == 0
-    assert capsys.readouterr().out == "no open pull requests\n"
+    assert capsys.readouterr().out == "no open pull requests or issues\n"
     assert github_api.requests[asked:] == []
     assert main(["--run", "1"]) == 0
     assert f"published as written (read at {merge_commit(100)[:7]})" in capsys.readouterr().out
@@ -1725,3 +1725,289 @@ def test_no_test_sees_the_machines_github_app(tmp_path: Path) -> None:
         name.startswith(("QUANTIC_AGENT_GITHUB", "QUANTIC_AGENT_REPO")) for name in os.environ
     )
     assert cli.default_key_path().is_relative_to(tmp_path)
+
+
+# ---- the daily X posts (milestone 16) -----------------------------------------------
+
+# Versions that pass their checks, for the day's three companies as the
+# fixtures captured on Wednesday 2026-10-28 choose them: BAE's raise, Realty
+# Income's ex-dividend, Nike's yield.
+VERSIONS = {
+    "BA.L": [
+        "📈 BAE Systems raised its annual rate 5.6% to 0.38 GBP, seen on Oct 25.",
+        "📊 BAE Systems has raised its dividend for 21 years in a row.",
+        "💵 BAE Systems' new annual rate of 0.38 GBP was seen on Oct 25.",
+    ],
+    "O": [
+        "📅 Realty Income ($O) goes ex-dividend on Friday, Oct 30.",
+        "💵 Realty Income ($O) yields 5.74%, 1.14 times its 5-year average.",
+        "📊 Realty Income ($O) has raised its dividend for 28 years.",
+    ],
+    "NKE": [
+        "📉 Nike ($NKE) yields 4.37%, 3.1 times its 5-year average.\n\n👟 Mostly because the "
+        "share price fell.",
+        "👟 Nike ($NKE) has raised its dividend for 23 years.\n\n💵 Its yield is 4.37%.",
+        "📊 Nike ($NKE) yields 4.37%, above its 5-year high of 2.33%.",
+    ],
+}
+
+
+def versions(*texts: str) -> Reply:
+    return Reply(says(json.dumps({"versions": list(texts)})))
+
+
+def daily_servers(
+    ollama: FakeOllama, quantic_mcp: FakeMCP, writer: list[Reply] | None = None
+) -> None:
+    quantic_mcp.tools.update(
+        {
+            "dividend_changes": "call-changes-3.sse",
+            "dividend_calendar": "call-calendar-3.sse",
+            "screen_stocks": "call-screen-safe-streak.sse",
+        }
+        | {
+            f"get_stock:{s}": f"call-get-stock-{s.lower().replace('.', '-')}.sse"
+            for s in (
+                "A17U.SI",
+                "ITRK.L",
+                "WDC",
+                "BRX",
+                "BA.L",
+                "1052.HK",
+                "EPR",
+                "O",
+                "NKE",
+                "DPZ",
+            )
+        }
+    )
+    ollama.replies["/api/chat"] = writer or [versions(*VERSIONS[s]) for s in ("BA.L", "O", "NKE")]
+
+
+@pytest.fixture
+def on_the_28th(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Wednesday 2026-10-28, the fixtures' day, at 07:30 local time: the
+    agent's today and every store's clock."""
+    monkeypatch.setattr(cli, "today", lambda: date(2026, 10, 28))
+    init = store.Store.__init__
+    morning = datetime(2026, 10, 28, 7, 30).astimezone()
+
+    def at_morning(
+        self: store.Store, path: Path | str, *, now: Callable[[], datetime] | None = None
+    ) -> None:
+        init(self, path, now=now or (lambda: morning))
+
+    monkeypatch.setattr(store.Store, "__init__", at_morning)
+
+
+def run_daily(ollama: FakeOllama, quantic_mcp: FakeMCP, usage: gpu.Usage | None = FREE) -> int:
+    with patch.object(gpu, "usage", lambda: usage):
+        return main(["--ollama", ollama.url, "--mcp", quantic_mcp.url, "--daily"])
+
+
+@pytest.mark.usefixtures("on_the_28th")
+def test_daily_drafts_the_days_posts_and_opens_their_issue_once(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    github_api: FakeGitHub,
+    app_key: tuple[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    isolated_state: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    as_the_app(monkeypatch, github_api, app_key[0], tmp_path)
+    daily_servers(ollama, quantic_mcp)
+
+    assert run_daily(ollama, quantic_mcp) == 0
+
+    out, err = capsys.readouterr()
+    assert out.endswith("https://github.com/fleveque/quantic/issues/200\n")
+    assert "NKE: 3 version(s) proposed in 1 attempt(s)" in err
+    [run] = stored_runs(isolated_state)
+    assert (run.kind, run.state, run.input) == (
+        "daily_posts",
+        store.State.ANSWERED,
+        "X posts for 2026-10-28",
+    )
+    # Code's calls, every one recorded: the day's three, then each angle's
+    # companies until one is accepted.
+    assert [(c.tool, c.arguments) for c in run.calls][:3] == [
+        ("dividend_changes", {"days": 3}),
+        ("dividend_calendar", {"days": 5}),
+        ("screen_stocks", {"min_streak": 10, "safety": "safe", "type": "equity"}),
+    ]
+    assert [c.arguments["symbol"] for c in run.calls[3:]] == [
+        "A17U.SI",
+        "ITRK.L",
+        "WDC",
+        "BRX",
+        "BA.L",
+        "1052.HK",
+        "EPR",
+        "O",
+        "NKE",
+    ]
+    assert [(p.symbol, p.version, p.text) for p in run.proposals] == [
+        (s, i, text) for s in ("BA.L", "O", "NKE") for i, text in enumerate(VERSIONS[s], 1)
+    ]
+    issue = github_api.issues[200]
+    assert issue["title"] == "X posts for Wednesday 2026-10-28"
+    assert run.draft is not None
+    assert issue["body"] == run.draft.content
+    assert run.issue == store.Issue(
+        "fleveque/quantic", 200, "https://github.com/fleveque/quantic/issues/200", "open", 1
+    )
+    models, tools = len(ollama.bodies), len(quantic_mcp.calls())
+
+    # Again, as a retry or a second timer would: nothing drafted, no second issue.
+    assert run_daily(ollama, quantic_mcp) == 0
+
+    assert "run 1, 2026-10-28's posts, has its issue" in capsys.readouterr().err
+    assert (len(ollama.bodies), len(quantic_mcp.calls())) == (models, tools)
+    assert len(github_api.issues) == 1
+
+
+@pytest.mark.usefixtures("on_the_28th")
+def test_sync_records_what_was_posted_from_an_issue_and_its_closing(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    github_api: FakeGitHub,
+    app_key: tuple[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    isolated_state: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    as_the_app(monkeypatch, github_api, app_key[0], tmp_path)
+    daily_servers(ollama, quantic_mcp)
+    assert run_daily(ollama, quantic_mcp) == 0
+    capsys.readouterr()
+    # The author posts Nike's second version, ticks it, and closes the issue.
+    issue = github_api.issues[200]
+    issue["body"] = issue["body"].replace(
+        "- [ ] posted NKE version 2", "- [x] posted NKE version 2"
+    )
+    issue["state"] = "closed"
+
+    assert main(["--sync"]) == 0
+
+    out = capsys.readouterr().out
+    assert "run 1: NKE version 2 posted\n" in out
+    assert "run 1: https://github.com/fleveque/quantic/issues/200 closed\n" in out
+    [run] = stored_runs(isolated_state)
+    assert [(p.symbol, p.version) for p in run.proposals if p.posted_at] == [("NKE", 2)]
+    assert run.issue is not None
+    assert run.issue.state == "closed"
+    # Nothing on GitHub was edited: one issue created, the rest reads.
+    assert [m for m, p, _, _ in github_api.requests if "/issues" in p] == ["POST", "GET"]
+
+
+@pytest.mark.usefixtures("on_the_28th")
+def test_daily_without_the_app_prints_the_issue(
+    ollama: FakeOllama, quantic_mcp: FakeMCP, capsys: pytest.CaptureFixture[str]
+) -> None:
+    daily_servers(ollama, quantic_mcp)
+
+    assert run_daily(ollama, quantic_mcp) == 0
+
+    out, err = capsys.readouterr()
+    assert "the posts are printed, not opened as an issue" in err
+    assert "## Nike, Inc. (NKE): its yield against its own history" in out
+    assert "- [ ] posted O version 1\n\n```text\n📅 Realty Income ($O) goes ex-dividend" in out
+
+
+@pytest.mark.usefixtures("on_the_28th")
+def test_daily_steps_aside_while_the_gpu_is_in_use(
+    ollama: FakeOllama, quantic_mcp: FakeMCP, isolated_state: Path
+) -> None:
+    daily_servers(ollama, quantic_mcp)
+    busy = gpu.Usage(used=12000, total=16376, ollama=0)
+
+    assert run_daily(ollama, quantic_mcp, busy) == 3
+
+    assert stored_runs(isolated_state) == []
+    assert quantic_mcp.calls() == []
+
+
+@pytest.mark.usefixtures("on_the_28th")
+def test_a_company_proposed_lately_isnt_proposed_again(
+    ollama: FakeOllama, quantic_mcp: FakeMCP, isolated_state: Path
+) -> None:
+    # Nike was proposed on Monday: Wednesday's yield is Domino's.
+    monday = datetime(2026, 10, 26, 7, 30).astimezone()
+    with store.Store(isolated_state, now=lambda: monday) as db:
+        run_id = db.start_run("daily_posts", "X posts for 2026-10-26", "m")
+        facts: dict[str, Any] = {
+            "angle": "yield",
+            "symbol": "NKE",
+            "name": "Nike, Inc.",
+            "copied": {},
+            "derived": {},
+        }
+        db.finish(
+            run_id,
+            store.State.ANSWERED,
+            draft=store.Draft("…", False, []),
+            proposals=[store.Proposal("NKE", "yield", 1, "…", facts)],
+        )
+    dominos = [
+        "📈 Domino's ($DPZ) yields 2.55%, 2.06 times its 5-year average.",
+        "📊 Domino's ($DPZ) has raised its dividend for 12 years.",
+        "💵 Domino's ($DPZ) yields 2.55%.",
+    ]
+    daily_servers(
+        ollama,
+        quantic_mcp,
+        [versions(*VERSIONS["BA.L"]), versions(*VERSIONS["O"]), versions(*dominos)],
+    )
+
+    assert run_daily(ollama, quantic_mcp) == 0
+
+    run = stored_runs(isolated_state)[0]
+    assert [c.arguments["symbol"] for c in run.calls if c.tool == "get_stock"][-2:] == ["O", "DPZ"]
+    assert {p.symbol for p in run.proposals} == {"BA.L", "O", "DPZ"}
+
+
+@pytest.mark.usefixtures("on_the_28th")
+def test_when_no_version_passes_nothing_is_proposed(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    github_api: FakeGitHub,
+    app_key: tuple[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    isolated_state: Path,
+) -> None:
+    as_the_app(monkeypatch, github_api, app_key[0], tmp_path)
+    daily_servers(ollama, quantic_mcp, [versions("Buy Nike now!")])
+
+    assert run_daily(ollama, quantic_mcp) == 4
+
+    [run] = stored_runs(isolated_state)
+    assert run.state is store.State.UNVERIFIED
+    assert run.proposals
+    assert not any(p.ready for p in run.proposals)
+    assert github_api.issues == {}
+    # The day is done: run again, it says so, and drafts nothing new.
+    assert run_daily(ollama, quantic_mcp) == 4
+    assert len(stored_runs(isolated_state)) == 1
+
+
+@pytest.mark.usefixtures("on_the_28th")
+def test_run_shows_a_daily_run_and_rechecks_it(
+    ollama: FakeOllama, quantic_mcp: FakeMCP, capsys: pytest.CaptureFixture[str]
+) -> None:
+    daily_servers(ollama, quantic_mcp)
+    assert run_daily(ollama, quantic_mcp) == 0
+    capsys.readouterr()
+
+    assert main(["--run", "1"]) == 0
+
+    out = capsys.readouterr().out
+    assert "NKE version 3: proposed\n" in out
+    assert 'call 3: get_stock {"symbol": "A17U.SI"}' in out
+    assert out.rstrip().endswith(
+        "provenance, re-checked now: every copied value traces to a stored tool result, "
+        "and every proposed version passes its checks"
+    )

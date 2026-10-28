@@ -20,6 +20,7 @@ rule names is never published.
 """
 
 import re
+from collections.abc import Collection, Sequence
 from dataclasses import dataclass
 
 from quantic_agent.provenance import Finding, Kind
@@ -98,14 +99,39 @@ RULES = (
 )
 
 
-def check(text: str) -> list[Finding]:
-    """Every phrase in text that a rule names, in the order they appear."""
+def check(text: str, *, names: Sequence[str] = (), allow: Collection[str] = ()) -> list[Finding]:
+    """Every phrase in text that a rule names, in the order they appear.
+
+    names are the companies the text is about: a rule's word inside one is
+    the company's name, not advice ("Best Buy", 2026-10-28). allow is words a
+    rule names that this text may use, in lower case: an X post about a
+    company's yield needs "price", which the Week Ahead's prose doesn't."""
+    masked = _masked(text, names)
     found = [
         Finding(text=m.group(), offset=m.start(), kind=Kind.PHRASE, value=rule.name)
         for rule in RULES
-        for m in rule.pattern.finditer(text)
+        for m in rule.pattern.finditer(masked)
+        if m.group().lower() not in allow
     ]
     return sorted(found, key=lambda f: f.offset)
+
+
+def _masked(text: str, names: Sequence[str]) -> str:
+    """text with each company's name blanked out, keeping every offset. A
+    name is written shorter than Quantic stores it ("Best Buy" for "Best Buy
+    Co., Inc."), so each one's leading words are tried, longest first, down
+    to its first word."""
+    for name in names:
+        words = re.findall(r"[\w'\u2019&-]+", name)
+        for n in range(len(words), 0, -1):
+            short = " ".join(words[:n])
+            if len(short) < 3:
+                break
+            pattern = re.compile(rf"\b{re.escape(short)}\b", re.IGNORECASE)
+            if pattern.search(text):
+                text = pattern.sub(lambda m: " " * len(m.group()), text)
+                break
+    return text
 
 
 def instructions(findings: list[Finding]) -> list[str]:

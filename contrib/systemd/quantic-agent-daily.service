@@ -1,0 +1,25 @@
+# The weekday job (docs/target-machine.md §8d): quantic-agent --daily, started
+# by quantic-agent-daily.timer. A user unit, like quantic-agent.service.
+[Unit]
+Description=quantic-agent: today's X posts, drafted for review
+Documentation=https://github.com/fleveque/quantic-agent/blob/main/docs/target-machine.md
+# Retries (below) every half hour, for at most half a day.
+StartLimitIntervalSec=12h
+StartLimitBurst=25
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/quantic-agent --daily
+EnvironmentFile=%h/.config/quantic-agent/env
+Environment=PYTHONUNBUFFERED=1
+# The agent bounds a run itself (--timeout, 600s); this is the backstop.
+TimeoutStartSec=20min
+# Outcomes to read, not failures: 4 no version passed its checks, 5 nothing
+# to post about today.
+SuccessExitStatus=4 5
+# Exit 3 is "not now": Ollama, Quantic or GitHub not answering, or the GPU in use.
+Restart=on-failure
+RestartSec=30min
+RestartPreventExitStatus=1 2
+TimeoutStopSec=30s
+Nice=10

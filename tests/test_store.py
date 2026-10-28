@@ -6,6 +6,7 @@ import threading
 from datetime import UTC, date, datetime, timedelta
 from importlib.resources import as_file, files
 from pathlib import Path
+from typing import Any
 
 import pytest
 import sqlalchemy
@@ -105,7 +106,9 @@ def test_migrations_apply_once(tmp_path: Path) -> None:
         "drafts",
         "embeddings",
         "examples",
+        "issues",
         "posts",
+        "proposals",
         "pull_requests",
         "reviews",
         "runs",
@@ -115,7 +118,7 @@ def test_migrations_apply_once(tmp_path: Path) -> None:
 
 
 # The latest migration.
-HEAD = "0008"
+HEAD = "0009"
 
 
 def tables(path: Path) -> list[str]:
@@ -518,3 +521,79 @@ def test_a_run_keeps_the_week_it_was_asked_for(tmp_path: Path) -> None:
         unasked = db.start_run("week_ahead", "q", "m")
         assert db.run(asked).week_start == date(2026, 10, 26)
         assert db.run(unasked).week_start is None
+
+
+# ---- daily X posts (milestone 16) ------------------------------------------------
+
+FACTS: dict[str, Any] = {
+    "angle": "yield",
+    "symbol": "NKE",
+    "name": "Nike, Inc.",
+    "copied": {},
+    "derived": {},
+}
+
+
+def daily_run(db: Store, *versions: tuple[str, int, list[str]]) -> int:
+    """A daily run that proposed versions, as (symbol, number, problems)."""
+    run_id = db.start_run("daily_posts", "X posts for 2026-10-28", "m")
+    db.finish(
+        run_id,
+        State.ANSWERED,
+        draft=Draft("the issue's text", False, []),
+        proposals=[
+            store.Proposal(symbol, "yield", n, f"{symbol} {n}", FACTS, problems)
+            for symbol, n, problems in versions
+        ],
+    )
+    return run_id
+
+
+def test_a_daily_runs_versions_and_issue_round_trip(tmp_path: Path) -> None:
+    with open_store(tmp_path) as db:
+        run_id = daily_run(db, ("NKE", 1, []), ("NKE", 2, ["held"]))
+        db.record_issue(run_id, store.Issue("o/r", 200, "https://x/200", "open"))
+
+        run = db.run(run_id)
+        assert [(p.symbol, p.version, p.ready, p.facts) for p in run.proposals] == [
+            ("NKE", 1, True, FACTS),
+            ("NKE", 2, False, FACTS),
+        ]
+        assert run.issue == store.Issue("o/r", 200, "https://x/200", "open", run_id)
+        assert db.open_issues() == [run.issue]
+        with pytest.raises(sqlite3.IntegrityError, match="UNIQUE"):
+            db.record_issue(run_id, store.Issue("o/r", 201, "https://x/201", "open"))
+
+
+def test_ticks_mirror_the_issue(tmp_path: Path) -> None:
+    with open_store(tmp_path) as db:
+        run_id = daily_run(db, ("NKE", 1, []), ("NKE", 2, []), ("NKE", 3, ["held"]))
+
+        # A held version can't be posted: the issue never showed it.
+        newly = db.record_ticks(run_id, {("NKE", 2), ("NKE", 3)})
+        assert [(p.symbol, p.version) for p in newly] == [("NKE", 2)]
+        assert db.record_ticks(run_id, {("NKE", 2)}) == []  # seen already
+
+        db.record_ticks(run_id, set())  # unticked
+        assert [p.posted_at for p in db.run(run_id).proposals] == [None, None, None]
+
+
+def test_an_issue_closes_once(tmp_path: Path) -> None:
+    with open_store(tmp_path) as db:
+        run_id = daily_run(db, ("NKE", 1, []))
+        db.record_issue(run_id, store.Issue("o/r", 200, "https://x/200", "open"))
+        db.close_issue(run_id)
+        assert db.open_issues() == []
+        assert db.run(run_id).issue == store.Issue("o/r", 200, "https://x/200", "closed", run_id)
+        with pytest.raises(NotFoundError, match="no open issue"):
+            db.close_issue(run_id)
+
+
+def test_a_company_proposed_lately_is_known(tmp_path: Path) -> None:
+    now = datetime(2026, 10, 28, 7, 0, tzinfo=UTC)
+    clock = {"now": now - timedelta(days=8)}
+    with Store(tmp_path / "agent.db", now=lambda: clock["now"]) as db:
+        daily_run(db, ("O", 1, []))  # eight days ago
+        clock["now"] = now - timedelta(days=1)
+        daily_run(db, ("NKE", 1, []), ("BA.L", 1, ["held"]))  # yesterday, BA.L held
+        assert db.proposed_since(now - timedelta(days=7)) == {"NKE"}

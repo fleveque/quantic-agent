@@ -140,6 +140,23 @@ starting point here.
   with the longest streaks; raises and cuts of 1% or more), `x_length` counts as X does (link 23,
   emoji 2) and lines are dropped in order to fit 280. It goes in the pull request's description;
   the author posts it. English, quantic.finance link.
+- **The X posts experiment, 2026-10-28** (#26, `docs/benchmarks/2026-10-28-x-posts/`): code
+  gathering facts beats the model researching; field meanings in the writer's prompt took wrong
+  claims from 19/95 posts to 2/96; a 27B verifier caught 9/11 major errors given the post's own
+  facts, 0 given all of them. The author posted a Claude-written Nike post on X (@quantic_es).
+- **Milestone 16** (branch `m16-daily-posts`, ADR 0019): `--daily`, weekdays 07:30 (its own units,
+  `contrib/systemd/quantic-agent-daily.*`). `quantic_agent/daily.py`: code makes the day's calls
+  (`dividend_changes` 3, `dividend_calendar` 5, one `screen_stocks`), picks one company per angle
+  (change, ex-dividend, yield) not proposed in 7 days, looks up until one is accepted (a cut next to
+  a running streak is rejected as contradictory data), computes facts (copied, checked by
+  `check_data`; derived, incl. `why_the_yield_is_high` when the price explains most), units guard
+  (BAE: pounds vs pence). The model writes 3 versions per company; `check_version` traces figures to
+  the company's own facts and checks wording (names masked, "price" allowed), causes, "trades at",
+  glued units, emojis at paragraph starts, cashtag, length with the link. One issue a day on Quantic
+  (create and read only; Issues: write on the App, the author must add it); `--sync` reads the ticks.
+  Migration 0009 (`proposals`, `issues`). `wording.check(names=, allow=)` fixes "Best Buy" as
+  advice in the Week Ahead too. Project skill `.claude/skills/review-posts/`. First real run: 51 s,
+  BAE, Realty Income, Nike, 8 versions.
 - design.md keeps Go's "As built in Go" notes next to this repository's "As built" notes.
 - PRs are squash-merged, so a walkthrough built from a branch commit cites a SHA `main` won't have.
   After merge, rebuild the walkthrough page from the merge commit and republish the artifact. That
@@ -154,6 +171,13 @@ starting point here.
   top-level Python block; marker text can't contain `]` or `|`.
 
 ## Next, in order
+
+0. **Milestone 16's App permission**: add Issues: Read and write to `quantic-agent-fleveque` and
+   accept it on the installation, reinstall after merging, enable `quantic-agent-daily.timer`
+   (runbook §8d). Data issues for Quantic from the experiment, not yet filed: streaks capped at 29,
+   rounding recorded as cuts, deep cuts labelled safe, duplicate listings disagreeing, Kings list
+   with 12- and 29-year streaks, `get_stock_research`/`compare_stocks` refusing anonymous calls
+   with a wrong message, London listings mixing pounds and pence.
 
 1. **Installed and on, 2026-10-14**: `uv tool install` from `main` after #18's merge;
    `~/.config/quantic-agent/env` (App ID, `QUANTIC_AGENT_REPO`, `QUANTIC_AGENT_OUT=~/insights`,

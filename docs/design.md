@@ -501,6 +501,16 @@ under `priv/insights/<ISO year>/<slug>/` (`<slug>/` until 2026-10-14) and opens 
 `--sync` records a merge as the run's approval and a close as its rejection. The review queue is the pull requests themselves: no HTTP
 view was needed.
 
+**As built (milestone 16, [`daily.py`](../src/quantic_agent/daily.py),
+[decision 0019](decisions/0019-daily-x-posts.md)).** Daily X posts go out as **issues**, the use
+this section kept for data-QA findings: one a weekday on the Quantic repository, with up to three
+companies and three checked versions of each, the facts they were written from, and the companies
+looked up and left out with why (the data-QA findings arrive there too). The App gained Issues
+write; its client only creates an issue and reads it back. The author posts on X and ticks what
+they posted; `--sync` records the ticks. Research is code's, not the model's: the experiment
+(docs/benchmarks/2026-10-28-x-posts/) measured the model as a writer of facts, not a finder of
+them.
+
 ## 4. Stack
 
 | Concern | Choice | Reasoning |

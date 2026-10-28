@@ -218,8 +218,9 @@ once by hand:
 1. GitHub → Settings → Developer settings → GitHub Apps → **New GitHub App**.
    - Name: anything not taken, such as `quantic-agent-<you>`. Homepage: this repository's URL.
    - Webhook: untick **Active**.
-   - Repository permissions: **Contents: Read and write**, **Pull requests: Read and write**
-     (Metadata: read-only is added by itself). Nothing else.
+   - Repository permissions: **Contents: Read and write**, **Pull requests: Read and write**,
+     **Issues: Read and write** (for `--daily`, §8d) (Metadata: read-only is added by itself).
+     Nothing else.
    - Where can this GitHub App be installed: **Only on this account**.
 2. Create it, and note its **App ID**.
 3. **Generate a private key**. It downloads a `.pem` file. Move it and make it yours alone:
@@ -310,6 +311,42 @@ its week until you look: `quantic-agent --run N`, then `--week-ahead` for a fres
 
 In the journal each line carries its level and, at the end, its fields (`run=4 state=answered`).
 In a terminal the agent prints as before.
+
+## 8d. Every weekday: X posts to pick from
+
+`quantic-agent --daily` drafts the day's X posts and opens them as one issue on the Quantic
+repository, for you to pick from, post on X yourself, and tick
+([decision 0019](decisions/0019-daily-x-posts.md)). Safe to run any number of times:
+
+1. `--sync`: pull request verdicts, and for each open daily issue, the versions you ticked as posted
+   and whether you closed it.
+2. Today's posts, unless today has a run already. Code gathers the day's data and picks up to one
+   company per angle (a dividend change, an ex-dividend, a yield against its own history), none
+   proposed in the last 7 days; the model writes three versions of each, every one checked. This is
+   the step that needs the GPU (about a minute), and it steps aside like `--weekly`'s.
+3. The issue, titled "X posts for Wednesday 2026-10-28". Without the App configured, its text is
+   printed instead.
+
+The App needs **Issues: Read and write** (§8b). An App created before milestone 16 doesn't have it:
+on the App's settings page, **Permissions & events** → Repository permissions → Issues → Read and
+write → Save; then accept the new permission on the installation (Settings → Applications →
+Installed GitHub Apps, or the e-mail GitHub sends). Until then `--daily` drafts the posts and fails
+at the issue with a 403 (exit 1, not retried); the run is kept, and running `--daily` again the same
+day, once the permission is accepted, opens its issue. A later day drafts its own.
+
+Its timer runs Monday to Friday at 07:30:
+
+```sh
+cp contrib/systemd/quantic-agent-daily.{service,timer} ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now quantic-agent-daily.timer
+journalctl --user -u quantic-agent-daily -e
+```
+
+To review an issue before posting, ask Claude Code in this repository: "review today's posts issue"
+(the `review-posts` skill). It reads the issue, checks each version against its facts, and
+recommends one per company; it comments on the issue only if you ask. Exits 4 (no version passed
+its checks) and 5 (nothing to post about) are outcomes, not failures.
 
 ## 9. Freeing the GPU
 

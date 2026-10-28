@@ -17,7 +17,8 @@ tool call; nothing ships without a human.
 > `--week-ahead` writes the Dividend Week Ahead in seven locales into a folder: data from the tools,
 > prose with no figures in it, each translation checked. `--pr N` opens a pull request with a post's
 > files on Quantic's repository, as a GitHub App, and `--sync` records merges as approvals; the agent
-> never merges. The agent was first built in Go, up to milestone 8:
+> never merges. `--daily` drafts each weekday's X posts, checked, into an issue for the author to
+> pick from and post. The agent was first built in Go, up to milestone 8:
 > [quantic-agent-go](https://github.com/fleveque/quantic-agent-go), now archived. It continues here
 > in Python, chosen for what comes next: retrieval, document handling, model evaluation and
 > experimenting with local models ([decision 0007](docs/decisions/0007-continue-in-python.md)).
@@ -122,6 +123,7 @@ uv run quantic-agent --approve N             # a reviewed answer becomes style m
 uv run quantic-agent --week-ahead --out DIR  # next week's post, one file per locale
 uv run quantic-agent --pr N                  # a pull request with run N's post, for review
 uv run quantic-agent --sync                  # merged pull requests approve, closed ones reject
+uv run quantic-agent --daily                 # today's X posts, as an issue to pick from and tick
 uv run quantic-bench                         # tokens/second and GPU residency per model
 uv run quantic-evaltools                     # how reliably each model calls tools
 uv run quantic-evalrecall                    # how well each embedding model finds an example

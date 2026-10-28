@@ -350,6 +350,9 @@ class FakeGitHub:
     refs: dict[str, str] = field(default_factory=lambda: dict[str, str]())
     pulls: dict[int, str] = field(default_factory=lambda: dict[int, str]())
     branches: dict[int, dict[str, str]] = field(default_factory=lambda: dict[int, dict[str, str]]())
+    # Issues by number: their title, body and state, which a test edits as
+    # the author would (ticking a box, closing it).
+    issues: dict[int, dict[str, str]] = field(default_factory=lambda: dict[int, dict[str, str]]())
     requests: list[tuple[str, str, Any, str]] = field(
         default_factory=lambda: list[tuple[str, str, Any, str]]()
     )
@@ -493,6 +496,19 @@ def github_api(app_key: tuple[str, str]) -> Iterator[FakeGitHub]:
                 if number not in fake.pulls:
                     return 404, github_fixture("not-found.json")
                 return 200, self._pull(number, "agent/x")
+            if method == "POST" and rest == "issues":
+                number = 200 + len(fake.issues)
+                fake.issues[number] = {
+                    "title": body["title"],
+                    "body": body["body"],
+                    "state": "open",
+                }
+                return 201, self._issue(number)
+            if method == "GET" and rest.startswith("issues/"):
+                number = int(rest.removeprefix("issues/"))
+                if number not in fake.issues:
+                    return 404, github_fixture("not-found.json")
+                return 200, self._issue(number)
             if method == "GET" and rest.startswith("contents/"):
                 url = urlsplit(rest)
                 path = unquote(url.path.removeprefix("contents/"))
@@ -512,6 +528,16 @@ def github_api(app_key: tuple[str, str]) -> Iterator[FakeGitHub]:
                 )
                 return 200, reply
             return 404, github_fixture("not-found.json")
+
+        def _issue(self, number: int) -> dict[str, Any]:
+            # issue.json is fleveque/quantic-agent#26 as the issues API returned it
+            # on 2026-10-28, its pull_request and draft keys removed: an issue's
+            # reply has the same shape, without them.
+            reply = github_fixture("issue.json")
+            reply["number"] = number
+            reply["html_url"] = f"https://github.com/{fake.repo}/issues/{number}"
+            reply |= fake.issues[number]
+            return reply
 
         def _pull(self, number: int, head: str) -> dict[str, Any]:
             reply = github_fixture("pull-merged.json")

@@ -1,4 +1,5 @@
-"""Pull requests on GitHub, opened as a GitHub App (decision 0014).
+"""Pull requests and issues on GitHub, opened as a GitHub App (decisions 0014
+and 0019).
 
 The agent publishes nothing (design N2): it commits a post's files to a new
 branch and opens a pull request, and a person merges it or not. On the
@@ -12,6 +13,10 @@ too. So this client is written so it can't change an existing branch:
 - there is no method that updates a ref, deletes one, merges, or writes
   files through the contents API. It reads files through it: what a merged
   pull request published (milestone 14).
+
+Issues follow the same rule: the client creates one (the day's X posts,
+milestone 16) and reads it back, ticks and all. It never edits, closes or
+comments on one: what happens to an issue is the author's.
 
 Quantic's deploy workflow refuses a push to main by a bot, so a change to
 this module that broke the rule still wouldn't deploy.
@@ -116,6 +121,16 @@ class PullRequest(BaseModel):
     @property
     def merged(self) -> bool:
         return self.merged_at is not None
+
+
+class Issue(BaseModel):
+    """An issue, as far as the agent needs it."""
+
+    number: int
+    html_url: str
+    state: str  # "open" or "closed"
+    title: str
+    body: str | None = None  # GitHub sends null for an empty body
 
 
 class _Object(BaseModel):
@@ -243,6 +258,16 @@ class Client:
             "POST", "pulls", {"title": title, "head": branch, "base": base, "body": body}
         )
         return _validated(PullRequest, pull)
+
+    async def open_issue(self, title: str, body: str) -> Issue:
+        """Opens an issue. One request, and the only issue write: the client
+        has no method that edits or closes one."""
+        return _validated(Issue, await self._call("POST", "issues", {"title": title, "body": body}))
+
+    async def issue(self, number: int) -> Issue:
+        """An issue as it stands now: its state, and its body with the
+        author's ticks."""
+        return _validated(Issue, await self._call("GET", f"issues/{number}"))
 
     async def pull_request(self, number: int) -> PullRequest:
         """A pull request as it stands now."""

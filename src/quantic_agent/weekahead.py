@@ -591,18 +591,26 @@ async def write(
         resp = await model.chat(messages, think=False, format=PROSE_FORMAT, options=options)
         tokens += resp.prompt_eval_count + resp.eval_count
         prose = _prose(resp, tokens)
-        findings = check_prose(prose)
+        findings = check_prose(prose, names(data))
         if not findings or attempt == attempts:
             return Written(prose, findings, attempt, tokens)
         messages += [resp.message, llm.Message(role="user", content=_again(findings))]
     raise AssertionError("unreachable: the last attempt returns")
 
 
-def check_prose(prose: Prose) -> list[provenance.Finding]:
+def check_prose(prose: Prose, names: Sequence[str] = ()) -> list[provenance.Finding]:
     """What the English prose mustn't have, in the order it's written: any
-    figure, and any phrase a wording rule names."""
+    figure, and any phrase a wording rule names outside the companies' names
+    (names: Best Buy is a company, not advice)."""
     text = prose.text()
-    return sorted(provenance.no_figures(text) + wording.check(text), key=lambda f: f.offset)
+    phrases = wording.check(text, names=names)
+    return sorted(provenance.no_figures(text) + phrases, key=lambda f: f.offset)
+
+
+def names(data: WeekData) -> list[str]:
+    """Every company the post names, as Quantic has them."""
+    rows = (*data.ex_dividends, *data.earnings, *data.dividend_changes)
+    return list(dict.fromkeys(row.name for row in rows))
 
 
 def _again(findings: list[provenance.Finding]) -> str:
