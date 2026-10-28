@@ -113,4 +113,4 @@ still open.
 
 ---
 
-**Previous:** [Lesson 14 — What I changed before merging](14-what-i-changed-before-merging.md)
+**Previous:** [Lesson 14 — What I changed before merging](14-what-i-changed-before-merging.md) · **Next:** [Lesson 16 — A shortlist every morning](16-a-shortlist-every-morning.md)

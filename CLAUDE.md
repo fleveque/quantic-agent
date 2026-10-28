@@ -156,7 +156,7 @@ starting point here.
   (create and read only; Issues: write on the App, the author must add it); `--sync` reads the ticks.
   Migration 0009 (`proposals`, `issues`). `wording.check(names=, allow=)` fixes "Best Buy" as
   advice in the Week Ahead too. Project skill `.claude/skills/review-posts/`. First real run: 51 s,
-  BAE, Realty Income, Nike, 8 versions.
+  BAE, Realty Income, Nike, 8 versions; lesson 16.
 - design.md keeps Go's "As built in Go" notes next to this repository's "As built" notes.
 - PRs are squash-merged, so a walkthrough built from a branch commit cites a SHA `main` won't have.
   After merge, rebuild the walkthrough page from the merge commit and republish the artifact. That
