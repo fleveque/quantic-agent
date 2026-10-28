@@ -1,0 +1,149 @@
+{
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "seed": 34,
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 17.0,
+   "posts": [
+    {
+     "facts": [
+      8
+     ],
+     "text": "PAX Global slashed its HKD-denominated dividend by 75.8%, cutting the annual rate from HK$0.33 to HK$0.08.",
+     "link": "https://quantic.finance/stocks/0327.HK",
+     "problems": []
+    },
+    {
+     "facts": [
+      1
+     ],
+     "text": "CapLand Ascendas REIT increased its SGD-denominated dividend by 36.4%, lifting the annual rate from S$0.11 to S$0.15.",
+     "link": "https://quantic.finance/stocks/REPX",
+     "problems": [
+      "the post doesn't name the company of fact 1 (Riley Exploration Permian, Inc.): fix the ids or the text",
+      "figure not in the data: '36.4%'"
+     ]
+    },
+    {
+     "facts": [
+      46
+     ],
+     "text": "Nike yields 4.37%, 3.1 times its 5-year average of 1.41%, after 23 consecutive years of dividend increases.",
+     "link": "https://quantic.finance/stocks/NKE",
+     "problems": []
+    },
+    {
+     "facts": [
+      37
+     ],
+     "text": "Dick's Sporting Goods posted a 31.1% annual dividend growth rate over the last five years.",
+     "link": "https://quantic.finance/stocks/DKS",
+     "problems": []
+    },
+    {
+     "facts": [
+      24
+     ],
+     "text": "$TXN goes ex-dividend Oct 30. The company has raised its dividend for 22 straight years, now paying $6.08 annually.",
+     "link": "https://quantic.finance/stocks/TXN",
+     "problems": []
+    },
+    {
+     "facts": [
+      45
+     ],
+     "text": "Lowe's has increased its dividend for 28 consecutive years. It currently yields 2.52%, well above its 5-year average of 1.81%.",
+     "link": "https://quantic.finance/stocks/LOW",
+     "problems": []
+    },
+    {
+     "facts": [
+      0
+     ],
+     "text": "Intertek reduced its GBP-denominated dividend by 34.5%, lowering the annual rate from £1.65 to £1.08.",
+     "link": "https://quantic.finance/stocks/ITRK.L",
+     "problems": []
+    },
+    {
+     "facts": [
+      15
+     ],
+     "text": "Texas Instruments raised its annual dividend from $5.68 to $6.08, a 7.0% increase, extending its streak to 22 years.",
+     "link": "https://quantic.finance/stocks/TXN",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 2,
+   "seconds": 16.6,
+   "posts": [
+    {
+     "facts": [
+      8
+     ],
+     "text": "PAX Global cut its dividend by 75.8%, lowering the annual rate from HK$0.33 to HK$0.08.",
+     "link": "https://quantic.finance/stocks/0327.HK",
+     "problems": []
+    },
+    {
+     "facts": [
+      2
+     ],
+     "text": "CapLand Ascendas REIT raised its dividend by 36.4%, lifting the annual rate from S$0.11 to S$0.15.",
+     "link": "https://quantic.finance/stocks/A17U.SI",
+     "problems": []
+    },
+    {
+     "facts": [
+      46
+     ],
+     "text": "Nike yields 4.37%, 3.1 times its 5-year average of 1.41%, after 23 consecutive years of dividend increases.",
+     "link": "https://quantic.finance/stocks/NKE",
+     "problems": []
+    },
+    {
+     "facts": [
+      37
+     ],
+     "text": "Dick's Sporting Goods posted a 31.1% annual dividend growth rate over the last five years.",
+     "link": "https://quantic.finance/stocks/DKS",
+     "problems": []
+    },
+    {
+     "facts": [
+      24
+     ],
+     "text": "$TXN goes ex-dividend Oct 30. The company has raised its dividend for 22 straight years, now paying $6.08 annually.",
+     "link": "https://quantic.finance/stocks/TXN",
+     "problems": []
+    },
+    {
+     "facts": [
+      45
+     ],
+     "text": "Lowe's has increased its dividend for 28 consecutive years. It currently yields 2.52%, well above its 5-year average of 1.81%.",
+     "link": "https://quantic.finance/stocks/LOW",
+     "problems": []
+    },
+    {
+     "facts": [
+      0
+     ],
+     "text": "Intertek reduced its dividend by 34.5%, lowering the annual rate from £1.65 to £1.08.",
+     "link": "https://quantic.finance/stocks/ITRK.L",
+     "problems": []
+    },
+    {
+     "facts": [
+      15
+     ],
+     "text": "Texas Instruments raised its annual dividend from $5.68 to $6.08, a 7.0% increase, extending its streak to 22 years.",
+     "link": "https://quantic.finance/stocks/TXN",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

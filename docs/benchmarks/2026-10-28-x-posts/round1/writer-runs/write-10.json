@@ -1,0 +1,134 @@
+{
+ "mode": "facts",
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 27.3,
+   "prompt_tokens": 6926,
+   "posts": [
+    {
+     "facts": [
+      "DKS"
+     ],
+     "text": "$DKS has increased its dividend for 11 consecutive years. The company posted a 5-year dividend growth rate of 31.1%, with a 5-year average yield of 2.2%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "LOW"
+     ],
+     "text": "$LOW\u2019s current yield is 2.52%, which is 1.39 times its own 5-year average of 1.81%. The company has maintained a dividend streak of 28 years.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "O"
+     ],
+     "text": "$O goes ex-dividend on Oct 30. The annual rate is 3.26 USD, resulting in a yield of 5.74%. The company has a 28-year dividend streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "DEO"
+     ],
+     "text": "$DEO reduced its annual dividend rate from 3.32 to 2.0 USD, a 39.8% decrease. The company\u2019s streak of consecutive increases is now 0 years.",
+     "problems": [
+      "figure not in the data: '39.8%'"
+     ]
+    },
+    {
+     "facts": [
+      "MSFT"
+     ],
+     "text": "$MSFT raised its annual dividend by 7.7% to 3.92 USD. The company has a 15-year streak of increases and a 5-year growth rate of 10.2%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "NKE"
+     ],
+     "text": "$NKE yield is 4.37%, which is 3.1 times its 5-year average of 1.41%. The company has a 23-year streak of dividend increases.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "DPZ"
+     ],
+     "text": "$DPZ shows a 5-year dividend growth rate of 17.4% and a 12-year streak of increases. The 5-year average yield is 1.24%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "REPX"
+     ],
+     "text": "$REPX raised its annual dividend by 5.0% to 1.68 USD. The 5-year average yield is 4.72%, and the company has a 4-year streak of increases.",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 2,
+   "seconds": 22.6,
+   "prompt_tokens": 7554,
+   "posts": [
+    {
+     "facts": [
+      "DKS"
+     ],
+     "text": "$DKS has increased its dividend for 11 consecutive years. The company posted a 5-year dividend growth rate of 31.1%, with a 5-year average yield of 2.2%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "LOW"
+     ],
+     "text": "$LOW\u2019s current yield is 2.52%, which is 1.39 times its own 5-year average of 1.81%. The company has maintained a dividend streak of 28 years.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "O"
+     ],
+     "text": "$O goes ex-dividend on Oct 30. The annual rate is 3.26 USD, resulting in a yield of 5.74%. The company has a 28-year dividend streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "DEO"
+     ],
+     "text": "$DEO cut its annual dividend from 3.32 to 2.0 USD. The company\u2019s streak of consecutive increases is now 0 years, with a 5-year average yield of 2.75%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "MSFT"
+     ],
+     "text": "$MSFT raised its annual dividend by 7.7% to 3.92 USD. The company has a 15-year streak of increases and a 5-year growth rate of 10.2%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "NKE"
+     ],
+     "text": "$NKE yield is 4.37%, which is 3.1 times its 5-year average of 1.41%. The company has a 23-year streak of dividend increases.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "DPZ"
+     ],
+     "text": "$DPZ shows a 5-year dividend growth rate of 17.4% and a 12-year streak of increases. The 5-year average yield is 1.24%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "REPX"
+     ],
+     "text": "$REPX raised its annual dividend by 5.0% to 1.68 USD. The 5-year average yield is 4.72%, and the company has a 4-year streak of increases.",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

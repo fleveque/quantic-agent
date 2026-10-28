@@ -1,0 +1,202 @@
+{
+ "mode": "facts",
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 29.9,
+   "prompt_tokens": 7158,
+   "posts": [
+    {
+     "facts": [
+      "NI"
+     ],
+     "text": "NiSource ($NI) goes ex-dividend on Oct 30 with a pay date of Nov 20. The annual rate is $1.20, yielding 2.75% currently. The company is labeled 'watch' with a 14-year dividend growth streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "WST"
+     ],
+     "text": "West Pharmaceutical Services ($WST) dividend increased from $0.88 to $1.04 (18.2% increase), seen on Oct 23. The company has a 28-year streak of increases and is labeled 'safe'.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "ZTS"
+     ],
+     "text": "Zoetis ($ZTS) dividend growth over 5 years is 20.1%. The current yield is 2.71% compared to a 5-year average yield of 0.89%. The company is labeled 'watch' with a 12-year streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "MSFT"
+     ],
+     "text": "Microsoft ($MSFT) dividend rose from $3.64 to $3.92, a 7.7% increase seen on Oct 16. The company is labeled 'safe' with a 15-year dividend growth streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "0327.HK"
+     ],
+     "text": "PAX GLOBAL (0327.HK) annual dividend decreased from 0.33 HKD to 0.08 HKD, a 75.8% cut seen on Oct 23. Despite the cut, the company is labeled 'safe'.",
+     "problems": [
+      "figure not in the data: '0327'",
+      "figure not in the data: '75.8%'"
+     ]
+    },
+    {
+     "facts": [
+      "O"
+     ],
+     "text": "Realty Income ($O) pays a monthly dividend of $3.26 annually, yielding 5.74%. The ex-dividend date is Oct 30 and the pay date is Nov 13. The company has a 28-year growth streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "DEO"
+     ],
+     "text": "Diageo ($DEO) dividend was cut from $3.32 to $2.00, a 39.8% decrease seen on Oct 17. The company is labeled 'safe' and has no current streak of dividend increases.",
+     "problems": [
+      "figure not in the data: '39.8%'"
+     ]
+    },
+    {
+     "facts": [
+      "CLX"
+     ],
+     "text": "Clorox ($CLX) goes ex-dividend today, Oct 28, with a pay date of Nov 13. The annual rate is $5.00, yielding 5.72%. The company is labeled 'at_risk' with a 23-year streak.",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 2,
+   "seconds": 25.2,
+   "prompt_tokens": 7877,
+   "posts": [
+    {
+     "facts": [
+      22
+     ],
+     "text": "NiSource ($NI) goes ex-dividend on Oct 30 with a pay date of Nov 20. The annual rate is $1.20, yielding 2.75% currently. The company is labeled 'watch' with a 14-year dividend growth streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      6
+     ],
+     "text": "West Pharmaceutical Services ($WST) dividend increased from $0.88 to $1.04, a 18.2% change seen on Oct 23. The company has a 28-year streak of increases and is labeled 'safe'.",
+     "problems": []
+    },
+    {
+     "facts": [
+      25
+     ],
+     "text": "Zoetis ($ZTS) shows 20.1% dividend growth over 5 years. The current yield is 2.71% compared to a 5-year average yield of 0.89%. The company is labeled 'watch' with a 12-year streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      16
+     ],
+     "text": "Microsoft ($MSFT) dividend rose from $3.64 to $3.92, a 7.7% increase seen on Oct 16. The company is labeled 'safe' with a 15-year dividend growth streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      8
+     ],
+     "text": "PAX GLOBAL (0327.HK) annual dividend changed from 0.33 HKD to 0.08 HKD. This -75.8% change was seen on Oct 23. The company is labeled 'safe' with a 6-year dividend streak.",
+     "problems": [
+      "figure not in the data: '0327'"
+     ]
+    },
+    {
+     "facts": [
+      19
+     ],
+     "text": "Realty Income ($O) pays a monthly dividend of $3.26 annually, yielding 5.74%. The ex-dividend date is Oct 30 and the pay date is Nov 13. The company has a 28-year growth streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      13
+     ],
+     "text": "Diageo ($DEO) dividend changed from $3.32 to $2.00, a -39.8% change seen on Oct 17. The company is labeled 'safe' and has a streak of 0 years of dividend increases.",
+     "problems": []
+    },
+    {
+     "facts": [
+      18
+     ],
+     "text": "Clorox ($CLX) goes ex-dividend today, Oct 28, with a pay date of Nov 13. The annual rate is $5.00, yielding 5.72%. The company is labeled 'at_risk' with a 23-year dividend streak.",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 3,
+   "seconds": 26.6,
+   "prompt_tokens": 8572,
+   "posts": [
+    {
+     "facts": [
+      "NI"
+     ],
+     "text": "NiSource ($NI) goes ex-dividend on Oct 30 with a pay date of Nov 20. The annual rate is $1.20, yielding 2.75% currently. The company is labeled 'watch' with a 14-year dividend growth streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "WST"
+     ],
+     "text": "West Pharmaceutical Services ($WST) dividend increased from $0.88 to $1.04 (18.2% change), seen on Oct 23. The company has a 28-year streak of increases and is labeled 'safe'.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "ZTS"
+     ],
+     "text": "Zoetis ($ZTS) shows 20.1% dividend growth over 5 years. The current yield is 2.71% compared to a 5-year average yield of 0.89%. The company is labeled 'watch' with a 12-year streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "MSFT"
+     ],
+     "text": "Microsoft ($MSFT) dividend rose from $3.64 to $3.92, a 7.7% increase seen on Oct 16. The company is labeled 'safe' with a 15-year dividend growth streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "0327.HK"
+     ],
+     "text": "PAX GLOBAL dividend changed from 0.33 HKD to 0.08 HKD, a -75.8% change seen on Oct 23. The company is labeled 'safe' with a 6-year dividend streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "O"
+     ],
+     "text": "Realty Income ($O) pays a monthly dividend of $3.26 annually, yielding 5.74%. The ex-dividend date is Oct 30 and the pay date is Nov 13. The company has a 28-year growth streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "DEO"
+     ],
+     "text": "Diageo ($DEO) dividend changed from $3.32 to $2.00, a -39.8% change seen on Oct 17. The company is labeled 'safe' and has a streak of 0 years of dividend increases.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "CLX"
+     ],
+     "text": "Clorox ($CLX) goes ex-dividend today, Oct 28, with a pay date of Nov 13. The annual rate is $5.00, yielding 5.72%. The company is labeled 'at_risk' with a 23-year dividend streak.",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

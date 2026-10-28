@@ -1,0 +1,136 @@
+{
+ "mode": "facts",
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 31.7,
+   "prompt_tokens": 7158,
+   "posts": [
+    {
+     "facts": [
+      "3"
+     ],
+     "text": "$WDC's annual dividend rate rose 16.7% to $0.70, seen on 2026-10-26. The company's 5-year dividend growth is -23.3% and its current safety label is at_risk.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "6"
+     ],
+     "text": "$WST raised its annual dividend from $0.88 to $1.04, a change of 18.2%, seen on 2026-10-23. It holds a 28-year streak of dividend increases and a safe safety label.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "0"
+     ],
+     "text": "$ITRK.L's dividend was cut by 34.5% to 1.08 GBP, seen on 2026-10-28. The company has a 3-year streak of increases and a safe safety label.",
+     "problems": [
+      "figure not in the data: '34.5%'"
+     ]
+    },
+    {
+     "facts": [
+      "9"
+     ],
+     "text": "$ALWN.AT increased its annual dividend by 40.0% to 0.70 EUR, seen on 2026-10-23. It has a 1-year streak of increases and a watch safety label.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "13"
+     ],
+     "text": "$DEO reduced its annual dividend by 39.8% to $2.00, seen on 2026-10-17. The company has a 0-year streak of increases and a safe safety label.",
+     "problems": [
+      "figure not in the data: '39.8%'"
+     ]
+    },
+    {
+     "facts": [
+      "19"
+     ],
+     "text": "$O has an ex-dividend date of 2026-10-30 with a pay date of 2026-11-13. It offers a current yield of 5.74% and pays monthly.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "25"
+     ],
+     "text": "$ZTS has an ex-dividend date of 2026-10-30. Its current yield is 2.71%, with a 12-year streak of dividend increases and a watch safety label.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "35"
+     ],
+     "text": "The Technology sector snapshot shows 62 companies. The median 5-year average yield is 1.27% and the median 5-year dividend growth is 9.0%.",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 2,
+   "seconds": 28.0,
+   "prompt_tokens": 7862,
+   "posts": [
+    {
+     "facts": [
+      3
+     ],
+     "text": "Western Digital Corporation (WDC) annual rate changed from 0.6 to 0.7 USD, a change of 16.7%, seen on 2026-10-26. 5y dividend growth is -23.3% and safety is at_risk.",
+     "problems": []
+    },
+    {
+     "facts": [
+      6
+     ],
+     "text": "West Pharmaceutical Services (WST) rate moved from 0.88 to 1.04 USD, a 18.2% change, seen on 2026-10-23. It has a 28-year streak and safe safety label.",
+     "problems": []
+    },
+    {
+     "facts": [
+      0
+     ],
+     "text": "INTERTEK GROUP PLC (ITRK.L) annual rate changed from 1.65 to 1.08 GBP, a change of -34.5%, seen on 2026-10-28. It has a 3-year streak and safe safety label.",
+     "problems": []
+    },
+    {
+     "facts": [
+      9
+     ],
+     "text": "Allwyn AG (ALWN.AT) rate moved from 0.5 to 0.7 EUR, a 40.0% change, seen on 2026-10-23. It has a 1-year streak and watch safety label.",
+     "problems": []
+    },
+    {
+     "facts": [
+      13
+     ],
+     "text": "Diageo plc (DEO) annual rate changed from 3.32 to 2.0 USD, a change of -39.8%, seen on 2026-10-17. It has a 0-year streak and safe safety label.",
+     "problems": []
+    },
+    {
+     "facts": [
+      19
+     ],
+     "text": "Realty Income Corporation (O) ex-dividend date is 2026-10-30. Current yield is 5.74%, pay date is 2026-11-13, frequency is monthly, and safety is safe.",
+     "problems": []
+    },
+    {
+     "facts": [
+      25
+     ],
+     "text": "Zoetis Inc. (ZTS) ex-dividend date is 2026-10-30. Current yield is 2.71%, it has a 12-year streak, and its safety label is watch.",
+     "problems": []
+    },
+    {
+     "facts": [
+      35
+     ],
+     "text": "Technology sector snapshot: 62 companies. Median 5-year average yield is 1.27% and median 5-year dividend growth is 9.0%.",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

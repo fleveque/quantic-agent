@@ -1,0 +1,135 @@
+{
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "seed": 1,
+ "facts": {
+  "company": "Nike",
+  "ticker": "NKE",
+  "current_yield_pct": 4.37,
+  "yield_avg_5y_pct": 1.41,
+  "yield_high_5y_pct": 2.33,
+  "yield_low_5y_pct": 0.73,
+  "current_yield_times_5y_average": 3.1,
+  "current_yield_times_5y_high": 1.88,
+  "streak_years": 23,
+  "dividend_growth_5y_pct": 10.3,
+  "dividend_growth_last_12_months_pct": 3.8,
+  "dividend_first_year": 2014,
+  "dividend_per_share_first_year": 0.48,
+  "dividend_last_full_year": 2025,
+  "dividend_per_share_last_full_year": 1.6,
+  "dividend_multiple_first_to_last_year": 3.33,
+  "payment_frequency": "quarterly",
+  "pays_in": [
+   "March",
+   "June",
+   "September",
+   "December"
+  ],
+  "next_earnings_date": "2026-12-17",
+  "next_earnings_date_is_estimated": true,
+  "sector": "Consumer Cyclical",
+  "sector_yield_ranking": {
+   "selection": "Consumer Cyclical companies in Quantic's screener with a dividend streak of 20+ years",
+   "companies": 4,
+   "nike_rank_by_current_yield": 1,
+   "others": {
+    "Best Buy": 3.9,
+    "Genuine Parts": 3.49,
+    "Lowe's": 2.52
+   }
+  },
+  "safety": "safe",
+  "last_known_price": 37.56,
+  "last_known_price_as_of": "2026-10-28",
+  "price_high_monthly_5y": 169.24,
+  "price_below_5y_high_pct": 77.8
+ },
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 7.1,
+   "posts": [
+    {
+     "text": "Nike's 23-year streak of dividend hikes now yields 4.37%, triple its five-year average. 💰📈 $NKE",
+     "problems": []
+    },
+    {
+     "text": "With a 4.37% yield, Nike tops Consumer Cyclical peers with 20+ year streaks. 👟🏆 $NKE",
+     "problems": [
+      "figure not in the data: '20'",
+      "one or two emojis from the list, found: 👟🏆"
+     ]
+    },
+    {
+     "text": "Nike pays quarterly, and its last known price sits 78% below its five-year high. 📉👟 $NKE",
+     "problems": [
+      "figure not in the data: '78%'",
+      "wording (market): 'price'"
+     ]
+    },
+    {
+     "text": "Nike's next earnings date is estimated for December 17, 2026. 📅👟 $NKE",
+     "problems": []
+    },
+    {
+     "text": "Since 2014, Nike has multiplied its dividend by 3.33 times while maintaining safety. 📊💵 $NKE",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 2,
+   "seconds": 7.2,
+   "posts": [
+    {
+     "text": "Nike has raised its dividend for 23 consecutive years, yielding 4.37% today. 💰📈 $NKE",
+     "problems": []
+    },
+    {
+     "text": "Nike leads Consumer Cyclical companies with 23+ year streaks by yield at 4.37%. 👟📊 $NKE",
+     "problems": []
+    },
+    {
+     "text": "Nike's last known price of 37.56 is far below its 5-year monthly high of 169.24. 📉👟 $NKE",
+     "problems": [
+      "wording (market): 'price'"
+     ]
+    },
+    {
+     "text": "Nike's next earnings date is estimated for December 17, 2026. 📅🔍 $NKE",
+     "problems": []
+    },
+    {
+     "text": "Nike's dividend grew to 1.60 dollars from 0.48 dollars over the last 12 years. 📈💵 $NKE",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 3,
+   "seconds": 6.4,
+   "posts": [
+    {
+     "text": "Nike has raised its dividend for 23 consecutive years, yielding 4.37% today. 💰📈 $NKE",
+     "problems": []
+    },
+    {
+     "text": "Nike leads Consumer Cyclical peers with 23+ year streaks by yield at 4.37%. 👟📊 $NKE",
+     "problems": []
+    },
+    {
+     "text": "Nike shares traded at 37.56, well below the 169.24 five-year monthly high. 📉👟 $NKE",
+     "problems": []
+    },
+    {
+     "text": "Nike's next earnings date is estimated for December 17, 2026. 📅🔍 $NKE",
+     "problems": []
+    },
+    {
+     "text": "Nike's dividend grew to 1.60 dollars from 0.48 dollars over the last 12 years. 📈💵 $NKE",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

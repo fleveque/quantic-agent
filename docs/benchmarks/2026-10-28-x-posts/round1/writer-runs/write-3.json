@@ -1,0 +1,202 @@
+{
+ "mode": "facts",
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 30.6,
+   "prompt_tokens": 6926,
+   "posts": [
+    {
+     "facts": [
+      "id:3"
+     ],
+     "text": "Western Digital ($WDC) raised its annual dividend from $0.60 to $0.70, a 16.7% increase seen on Oct 26. The company is flagged as 'at_risk' with a 5-year dividend growth of -23.3%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "id:13"
+     ],
+     "text": "Diageo ($DEO) cut its annual dividend by 39.8% from $3.32 to $2.00, seen on Oct 17. Despite the cut, the safety rating remains 'safe' with a 5-year growth of 2.6%.",
+     "problems": [
+      "figure not in the data: '39.8%'"
+     ]
+    },
+    {
+     "facts": [
+      "id:18"
+     ],
+     "text": "The Clorox Company ($CLX) goes ex-dividend on Oct 28. It has a 23-year streak and a 5.72% yield, but is rated 'at_risk' with 5-year growth of 2.5%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "id:46"
+     ],
+     "text": "Nike ($NKE) currently yields 4.37%, which is 3.1 times its own 5-year average yield of 1.41%. The company has a 23-year dividend streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "id:26"
+     ],
+     "text": "In the Basic Materials sector, 21 of 39 companies are rated 'safe', 6 are 'watch', and 12 are 'at_risk'. The median 5-year dividend growth is 5.9%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "id:8"
+     ],
+     "text": "PAX GLOBAL (0327.HK) cut its HKD annual dividend by 75.8% from 0.33 to 0.08, seen on Oct 23. It maintains a 'safe' rating despite the significant reduction.",
+     "problems": [
+      "figure not in the data: '0327'",
+      "figure not in the data: '75.8%'"
+     ]
+    },
+    {
+     "facts": [
+      "id:19"
+     ],
+     "text": "Realty Income ($O) goes ex-dividend on Oct 30. With a 28-year streak and a 5.74% yield, it is rated 'safe' and pays monthly dividends.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "id:37"
+     ],
+     "text": "Dick's Sporting Goods ($DKS) shows the highest 5-year dividend growth at 31.1%. It has an 11-year streak and is currently rated 'safe'.",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 2,
+   "seconds": 26.0,
+   "prompt_tokens": 7665,
+   "posts": [
+    {
+     "facts": [
+      "id:3"
+     ],
+     "text": "Western Digital ($WDC) raised its annual dividend from $0.60 to $0.70, a 16.7% increase seen on Oct 26. The company is flagged as 'at_risk' with a 5-year dividend growth of -23.3%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "id:13"
+     ],
+     "text": "Diageo ($DEO) cut its annual dividend from $3.32 to $2.00, a change of -39.8% seen on Oct 17. Despite the cut, the safety rating remains 'safe' with 5-year growth of 2.6%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "id:18"
+     ],
+     "text": "The Clorox Company ($CLX) goes ex-dividend on Oct 28. It has a 23-year streak and a 5.72% yield, but is rated 'at_risk' with 5-year growth of 2.5%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "id:46"
+     ],
+     "text": "Nike ($NKE) currently yields 4.37%, which is 3.1 times its own 5-year average yield of 1.41%. The company has a 23-year dividend streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "id:26"
+     ],
+     "text": "In the Basic Materials sector, 21 of 39 companies are rated 'safe', 6 are 'watch', and 12 are 'at_risk'. The median 5-year dividend growth is 5.9%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "id:8"
+     ],
+     "text": "PAX GLOBAL (0327.HK) cut its HKD annual dividend from 0.33 to 0.08, a change of -75.8% seen on Oct 23. It maintains a 'safe' rating despite the significant reduction.",
+     "problems": [
+      "figure not in the data: '0327'"
+     ]
+    },
+    {
+     "facts": [
+      "id:19"
+     ],
+     "text": "Realty Income ($O) goes ex-dividend on Oct 30. With a 28-year streak and a 5.74% yield, it is rated 'safe' and pays monthly dividends.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "id:37"
+     ],
+     "text": "Dick's Sporting Goods ($DKS) shows the highest 5-year dividend growth at 31.1%. It has an 11-year streak and is currently rated 'safe'.",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 3,
+   "seconds": 26.1,
+   "prompt_tokens": 8378,
+   "posts": [
+    {
+     "facts": [
+      "id:3"
+     ],
+     "text": "Western Digital ($WDC) raised its annual dividend from $0.60 to $0.70, a 16.7% increase seen on Oct 26. The company is flagged as 'at_risk' with a 5-year dividend growth of -23.3%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "id:13"
+     ],
+     "text": "Diageo ($DEO) cut its annual dividend from $3.32 to $2.00, a change of -39.8% seen on Oct 17. Despite the cut, the safety rating remains 'safe' with 5-year growth of 2.6%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "id:18"
+     ],
+     "text": "The Clorox Company ($CLX) goes ex-dividend on Oct 28. It has a 23-year streak and a 5.72% yield, but is rated 'at_risk' with 5-year growth of 2.5%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "id:46"
+     ],
+     "text": "Nike ($NKE) currently yields 4.37%, which is 3.1 times its own 5-year average yield of 1.41%. The company has a 23-year dividend streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "id:26"
+     ],
+     "text": "In the Basic Materials sector, 21 of 39 companies are rated 'safe', 6 are 'watch', and 12 are 'at_risk'. The median 5-year dividend growth is 5.9%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "id:8"
+     ],
+     "text": "PAX GLOBAL cut its HKD annual dividend from 0.33 to 0.08, a change of -75.8% seen on Oct 23. It maintains a 'safe' rating despite the significant reduction.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "id:19"
+     ],
+     "text": "Realty Income ($O) goes ex-dividend on Oct 30. With a 28-year streak and a 5.74% yield, it is rated 'safe' and pays monthly dividends.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "id:37"
+     ],
+     "text": "Dick's Sporting Goods ($DKS) shows the highest 5-year dividend growth at 31.1%. It has an 11-year streak and is currently rated 'safe'.",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,816 @@
+[
+ {
+  "id": "s1p1",
+  "flagged": true,
+  "unsupported": [
+   {
+    "claim": "Interintek Group PLC (ITRK.L) cut its annual dividend from 1.65 to 1.08 GBP",
+    "supported": false,
+    "why": "The company name in the data is 'INTERTEK GROUP PLC ORD 1P', not 'Interintek Group PLC'. The rates and currency match, but the name is incorrect."
+   }
+  ],
+  "data_inconsistent": "",
+  "seconds": 12.5
+ },
+ {
+  "id": "s1p2",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 11.0
+ },
+ {
+  "id": "s1p3",
+  "flagged": true,
+  "unsupported": [
+   {
+    "claim": "noted on Oct 17",
+    "supported": false,
+    "why": "The data field seen_on is 2026-10-17, which is defined as 'the day Quantic first saw the new rate, not the announcement date'. The post claims it was 'noted' on that date, which implies the event or announcement occurred then, contradicting the specific definition of the field provided in the instructions."
+   }
+  ],
+  "data_inconsistent": "",
+  "seconds": 13.7
+ },
+ {
+  "id": "s1p4",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 11.0
+ },
+ {
+  "id": "s1p5",
+  "flagged": true,
+  "unsupported": [
+   {
+    "claim": "noted on Oct 16",
+    "supported": false,
+    "why": "The data field 'seen_on' is defined as 'the day Quantic first saw the new rate, not the announcement date'. The post claims the change was 'noted' on that date, which implies the event or announcement occurred then, but the data only confirms Quantic saw it then. More critically, the prompt defines 'seen_on' specifically to distinguish it from the announcement date, so attributing the 'note' (implying the event's public record or announcement) to that date is an interpretation not directly supported by the field's definition which restricts it to Quantic's observation."
+   }
+  ],
+  "data_inconsistent": "",
+  "seconds": 15.5
+ },
+ {
+  "id": "s1p6",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 12.4
+ },
+ {
+  "id": "s1p7",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 9.1
+ },
+ {
+  "id": "s1p8",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.8
+ },
+ {
+  "id": "s2p1",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 10.1
+ },
+ {
+  "id": "s2p2",
+  "flagged": true,
+  "unsupported": [
+   {
+    "claim": "on Oct 16",
+    "supported": false,
+    "why": "The data field 'seen_on' is defined as 'the day Quantic first saw the new rate, not the announcement date'. The post implies this is the date of the raise/announcement, which is an interpretation not supported by the data definition."
+   },
+   {
+    "claim": "brings the current yield to 0.80 percent",
+    "supported": false,
+    "why": "The data field is 'yield_avg_5y_pct' (5-year average yield), not 'current yield'. The post misidentifies the metric."
+   }
+  ],
+  "data_inconsistent": "",
+  "seconds": 12.8
+ },
+ {
+  "id": "s2p3",
+  "flagged": true,
+  "unsupported": [
+   {
+    "claim": "after a 3-year payment streak",
+    "supported": false,
+    "why": "The data field 'streak_years' is 3, which represents consecutive years of dividend *increases*. The post describes it as a 'payment streak', which is a different concept (payments vs. increases). Furthermore, the post implies the streak existed *before* the cut, but the field definition states it is the streak 'up to now' (0 = no current streak). Since the dividend was cut, the streak of *increases* is broken or no longer active in the context of growth, but more importantly, the label 'payment streak' is not supported by the field definition 'consecutive years of dividend increases'. A 'payment streak' usually implies just paying the dividend, whereas the data tracks *growth*. The post mischaracterizes the specific metric provided."
+   }
+  ],
+  "data_inconsistent": "",
+  "seconds": 13.3
+ },
+ {
+  "id": "s2p4",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 7.5
+ },
+ {
+  "id": "s2p5",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.5
+ },
+ {
+  "id": "s2p6",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 12.0
+ },
+ {
+  "id": "s2p7",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.5
+ },
+ {
+  "id": "s2p8",
+  "flagged": true,
+  "unsupported": [
+   {
+    "claim": "The cut happened on Oct 23",
+    "supported": false,
+    "why": "The field 'seen_on' is defined as 'the day Quantic first saw the new rate, not the announcement date'. The post claims the cut happened on this date, which contradicts the field definition provided."
+   }
+  ],
+  "data_inconsistent": "The data lists streak_years as 6 (consecutive years of dividend increases) while simultaneously showing a dividend cut (change_pct: -75.8). A current streak of increases is logically inconsistent with a recent cut, unless the streak refers to a past period that has now been broken, but the field definition 'up to now' implies the streak is currently active, which contradicts the 'cut' kind.",
+  "seconds": 13.6
+ },
+ {
+  "id": "s3p1",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 11.6
+ },
+ {
+  "id": "s3p2",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 44.6
+ },
+ {
+  "id": "s3p3",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 13.8
+ },
+ {
+  "id": "s3p4",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.1
+ },
+ {
+  "id": "s3p5",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 7.5
+ },
+ {
+  "id": "s3p6",
+  "flagged": true,
+  "unsupported": [
+   {
+    "claim": "despite the significant reduction",
+    "supported": false,
+    "why": "The phrase 'despite' implies a causal or contrasting relationship between the safety rating and the reduction that is not stated in the data. The data lists the safety label and the cut as separate fields without explaining the relationship. Additionally, 'significant' is a subjective descriptor not present in the data, although the percentage is large, the specific interpretation of 'despite' is not supported by the raw data fields."
+   }
+  ],
+  "data_inconsistent": "",
+  "seconds": 12.5
+ },
+ {
+  "id": "s3p7",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 10.8
+ },
+ {
+  "id": "s3p8",
+  "flagged": true,
+  "unsupported": [
+   {
+    "claim": "Dick's Sporting Goods ($DKS) shows the highest 5-year dividend growth at 31.1%.",
+    "supported": false,
+    "why": "The data confirms the 5-year dividend growth is 31.1%, but it does not state that this is the 'highest' growth rate among any group of stocks. The data only contains information for DKS, so a comparative claim of 'highest' is not supported by the provided data."
+   }
+  ],
+  "data_inconsistent": "",
+  "seconds": 8.6
+ },
+ {
+  "id": "s4p2",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.6
+ },
+ {
+  "id": "s4p3",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 6.0
+ },
+ {
+  "id": "s4p4",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 10.7
+ },
+ {
+  "id": "s4p5",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 6.5
+ },
+ {
+  "id": "s4p6",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 7.2
+ },
+ {
+  "id": "s4p7",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 7.4
+ },
+ {
+  "id": "s4p8",
+  "flagged": true,
+  "unsupported": [
+   {
+    "claim": "Median yield is 2.73%",
+    "supported": false,
+    "why": "The data field is 'median_yield_avg_5y_pct' with a value of 2.73. The post omits the 'avg_5y' qualifier, implying a current median yield, which is not what the data states. The data specifies it is the average over 5 years."
+   }
+  ],
+  "data_inconsistent": "",
+  "seconds": 10.7
+ },
+ {
+  "id": "s5p1",
+  "flagged": true,
+  "unsupported": [
+   {
+    "claim": "a notable shift for the consumer staples name",
+    "supported": false,
+    "why": "The data does not contain any information regarding whether the yield change is 'notable' or a 'shift'. This is an interpretation/opinion not present in the data. Additionally, while the sector is 'Consumer Defensive', the data does not explicitly label it as 'consumer staples' (though they are often synonymous, the specific descriptor 'notable shift' is the primary unsupported element)."
+   }
+  ],
+  "data_inconsistent": "",
+  "seconds": 13.3
+ },
+ {
+  "id": "s5p2",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 9.6
+ },
+ {
+  "id": "s5p3",
+  "flagged": true,
+  "unsupported": [
+   {
+    "claim": "The company has maintained its dividend for 23 consecutive years",
+    "supported": false,
+    "why": "The data field 'streak_years' is defined as 'consecutive years of dividend increases'. The post claims 'maintained its dividend', which is a different concept (payout vs. growth). While a 23-year increase streak implies the dividend was paid, the specific claim of 'maintaining' (often implying stability or just payment without growth) is not directly stated; more importantly, the field specifically tracks *increases*, not just maintenance. However, in financial contexts, 'maintained' is often used loosely. Let's look closer. The definition says 'consecutive years of dividend increases'. The post says 'maintained its dividend'. A company can maintain a dividend (pay it) without increasing it. The data proves it *increased* it for 23 years. Does 'maintained' support 'increased'? No, 'maintained' is weaker or different. But usually, if you increase it, you have maintained it. However, strict interpretation: The data states 'increases'. The post states 'maintained'. Is 'maintained' supported by 'increases'? Yes, logically. But is it *directly* stated? No. The field is specifically about *growth*. The post omits the growth aspect and claims maintenance. Given the strict instruction 'A claim is supported only if the data states it directly', the data states 'increases', not 'maintained'. Furthermore, 'maintained' often implies no cut, which is true, but the specific metric is growth. Let's look at the 'why' for unsupported claims in similar tasks. Usually, if the data says 'increases' and the post says 'maintained', it's considered a misrepresentation of the specific metric or at least not directly stated. However, a stronger argument is that 'maintained' is ambiguous. Let's look at the 'streak_years' definition again: 'consecutive years of dividend increases'. The post says 'maintained its dividend'. This is a semantic shift. The data supports 'increased its dividend for 23 years'. It does not directly state 'maintained'. In strict fact-checking, substituting 'increased' with 'maintained' loses the specific information provided by the data. Therefore, it is not directly supported."
+   }
+  ],
+  "data_inconsistent": "",
+  "seconds": 23.7
+ },
+ {
+  "id": "s5p4",
+  "flagged": true,
+  "unsupported": [
+   {
+    "claim": "The company maintains a 6-year dividend growth streak",
+    "supported": false,
+    "why": "The data defines streak_years as 'consecutive years of dividend increases up to now'. The data shows a dividend cut (kind: 'cut') occurred recently (seen_on 2026-10-23). A cut breaks a streak of increases. Therefore, the company does not maintain a current streak of increases; the streak is broken by the cut. The field value 6 likely refers to the streak *before* the cut or is inconsistent with the 'cut' kind if interpreted as a current active streak of increases. Given the definition 'up to now' and the fact that the latest event is a cut, the streak of *increases* is 0 or broken. The post claims it 'maintains' the streak, which contradicts the fact that the dividend was just cut."
+   }
+  ],
+  "data_inconsistent": "The data lists 'streak_years': 6 while also listing 'kind': 'cut'. The field definition states streak_years is 'consecutive years of dividend increases up to now'. A dividend cut breaks a streak of increases. Therefore, if the cut is the most recent event (seen_on 2026-10-23), the current streak of increases should be 0, not 6. The data contains a contradiction between the 'cut' event and the non-zero 'streak_years' value if interpreted as a current active streak of increases.",
+  "seconds": 18.9
+ },
+ {
+  "id": "s5p5",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 10.8
+ },
+ {
+  "id": "s5p6",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 11.4
+ },
+ {
+  "id": "s5p7",
+  "flagged": true,
+  "unsupported": [
+   {
+    "claim": "reflecting the current dividend level relative to history",
+    "supported": false,
+    "why": "The data provides the yield and the average yield, but it does not provide an explanation or interpretation for why the yield is below the average (e.g., stock price appreciation vs. dividend growth). This is an interpretation not stated in the data."
+   }
+  ],
+  "data_inconsistent": "",
+  "seconds": 12.3
+ },
+ {
+  "id": "s5p8",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 10.3
+ },
+ {
+  "id": "s6p1",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 12.8
+ },
+ {
+  "id": "s6p2",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.4
+ },
+ {
+  "id": "s6p3",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 7.6
+ },
+ {
+  "id": "s6p4",
+  "flagged": true,
+  "unsupported": [
+   {
+    "claim": "The 5-year dividend growth was previously 2.6%",
+    "supported": false,
+    "why": "The data field dividend_growth_5y_pct is 2.6, but the field definition describes it as the '5-year annual growth rate of the dividend' (a current metric), not a 'previously' value. The word 'previously' implies a past state that is not described in the data, and the data does not indicate that this specific metric has changed or is historical in the context of the cut."
+   }
+  ],
+  "data_inconsistent": "",
+  "seconds": 12.1
+ },
+ {
+  "id": "s6p5",
+  "flagged": true,
+  "unsupported": [
+   {
+    "claim": "Financial Services leads the screener with 117 companies tracked.",
+    "supported": false,
+    "why": "The data states there are 117 companies in the Financial Services sector snapshot, but it does not provide data for other sectors to determine if Financial Services 'leads' (i.e., has the highest count) among all sectors."
+   }
+  ],
+  "data_inconsistent": "",
+  "seconds": 9.7
+ },
+ {
+  "id": "s6p6",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 7.7
+ },
+ {
+  "id": "s6p7",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 10.3
+ },
+ {
+  "id": "s6p8",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 7.6
+ },
+ {
+  "id": "s7p1",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 15.6
+ },
+ {
+  "id": "s7p2",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 9.1
+ },
+ {
+  "id": "s7p3",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.7
+ },
+ {
+  "id": "s7p4",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.0
+ },
+ {
+  "id": "s7p5",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 9.7
+ },
+ {
+  "id": "s7p6",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.3
+ },
+ {
+  "id": "s7p7",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 10.5
+ },
+ {
+  "id": "s7p8",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 10.2
+ },
+ {
+  "id": "s8p1",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 13.9
+ },
+ {
+  "id": "s8p2",
+  "flagged": true,
+  "unsupported": [
+   {
+    "claim": "The change was recorded on Oct 17.",
+    "supported": false,
+    "why": "The field 'seen_on' is defined as 'the day Quantic first saw the new rate, not the announcement date'. The post claims the change was 'recorded' on that date, which implies the official record or announcement date, contradicting the specific definition provided for 'seen_on'."
+   }
+  ],
+  "data_inconsistent": "",
+  "seconds": 9.4
+ },
+ {
+  "id": "s8p3",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 6.5
+ },
+ {
+  "id": "s8p4",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.2
+ },
+ {
+  "id": "s8p5",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 11.8
+ },
+ {
+  "id": "s8p6",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 9.0
+ },
+ {
+  "id": "s8p7",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 11.8
+ },
+ {
+  "id": "s8p8",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 13.4
+ },
+ {
+  "id": "s9p1",
+  "flagged": true,
+  "unsupported": [
+   {
+    "claim": "Each has maintained dividends for over 10 years",
+    "supported": false,
+    "why": "The data provides 'streak_years' (12 for DPZ, 23 for NKE), which indicates consecutive years of dividend *increases*, not necessarily the total duration of dividend maintenance. While a 12-year increase streak implies at least 12 years of dividends, the term 'maintained dividends' is broader and not explicitly defined by the 'streak_years' field alone in the context of total history. More critically, the prompt defines 'streak_years' as 'consecutive years of dividend increases up to now'. A company could have paid dividends for 50 years but only increased them for 12. Therefore, the data does not directly support the claim that they have 'maintained' dividends for over 10 years in the sense of total duration, only that they have *increased* them for that duration. However, usually 'maintained' implies continuity. Let's look closer. If streak is 12, they have paid for at least 12 years. So 'over 10 years' is technically true based on the streak. BUT, the field definition says 'streak_years = consecutive years of dividend increases'. It does not say 'years paying dividends'. A company could start paying in year 1, increase in year 2...12. That is 12 years of increases. Did they maintain dividends for over 10 years? Yes. Is it supported? The data says they increased for 12 years. This implies they paid for at least 12 years. So the claim 'maintained dividends for over 10 years' is logically entailed by 'increased dividends for 12 years'. However, strict interpretation: Does the data *state* they maintained dividends? No, it states they increased them. 'Maintained' is a weaker condition than 'increased'. If you increase, you maintain. So it is supported. Wait, let's re-read the prompt's strictness: 'A claim is supported only if the data states it directly'. The data states 'streak_years': 12. It does not state 'years_maintained'. It states 'consecutive years of dividend increases'. While logically true, is it a direct statement? The prompt asks to check if the data states it directly. The data does not contain a field for 'years maintained'. It contains 'streak_years' for increases. Therefore, strictly speaking, the data does not *directly* state the duration of maintenance, only the duration of increases. In financial contexts, these are often conflated, but under strict logical constraints of the prompt ('data states it directly'), this is an inference. Let's look at the 'why' for similar tasks. Usually, if the data says 'streak_years: 12', claiming 'paid for 12 years' is an inference. Claiming 'paid for over 10 years' is also an inference. The prompt says 'an interpretation... is NOT supported'. Interpreting 'streak of increases' as 'duration of maintenance' is an interpretation. Therefore, it is not supported."
+   }
+  ],
+  "data_inconsistent": "",
+  "seconds": 34.5
+ },
+ {
+  "id": "s9p2",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 7.8
+ },
+ {
+  "id": "s9p3",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 13.8
+ },
+ {
+  "id": "s9p4",
+  "flagged": true,
+  "unsupported": [
+   {
+    "claim": "Three utilities posted dividend raises this month",
+    "supported": false,
+    "why": "The data shows only two companies (AEP and ED) with 'kind': 'raise'. NiSource is listed as 'ex_dividend_soon', not a raise. Therefore, only two utilities posted raises, not three."
+   }
+  ],
+  "data_inconsistent": "",
+  "seconds": 10.8
+ },
+ {
+  "id": "s9p5",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.3
+ },
+ {
+  "id": "s9p6",
+  "flagged": true,
+  "unsupported": [
+   {
+    "claim": "It has maintained the dividend for 21 consecutive years",
+    "supported": false,
+    "why": "The data field 'streak_years' is defined as 'consecutive years of dividend increases up to now'. The post claims 'maintained the dividend', which is a different concept (persistence vs. growth). While the number 21 matches, the description 'maintained' is not supported by the definition of 'increases'. Furthermore, 'maintained' could imply no cuts, but the specific metric provided is about increases. Strictly speaking, the data supports 'increased for 21 years', not just 'maintained'. However, in financial contexts, 'maintained' is often used loosely. Let's look closer. The prompt says 'a description the data doesn't give is NOT supported'. The data gives 'streak_years' = 21. The definition is 'consecutive years of dividend increases'. The post says 'maintained the dividend'. These are not identical. 'Maintained' usually means it didn't cut, but it could have stayed flat. 'Increases' means it went up. Therefore, the specific claim of 'maintained' is not directly supported by the 'increases' metric, although it is a weaker claim. However, usually, if a company increases for 21 years, it has also maintained it. But the prompt is strict: 'supported only if the data states it directly'. The data states 'increases'. The post states 'maintained'. Is 'maintained' a direct statement? No. Is it an interpretation? Yes. Therefore, it is not supported."
+   }
+  ],
+  "data_inconsistent": "",
+  "seconds": 18.4
+ },
+ {
+  "id": "s9p7",
+  "flagged": true,
+  "unsupported": [
+   {
+    "claim": "The move brings its 5-year dividend growth to 10.2%",
+    "supported": false,
+    "why": "The data lists 'dividend_growth_5y_pct': 10.2, but it does not state that the recent dividend raise *caused* or *brought* the 5-year growth rate to this level. The 5-year growth rate is a historical metric calculated over the past five years, not a direct result of a single recent change. The phrase 'The move brings...' implies a causal relationship or a new state resulting from the action, which is an interpretation not supported by the raw data fields."
+   }
+  ],
+  "data_inconsistent": "",
+  "seconds": 11.4
+ },
+ {
+  "id": "s9p8",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.1
+ },
+ {
+  "id": "s10p1",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 9.0
+ },
+ {
+  "id": "s10p2",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.8
+ },
+ {
+  "id": "s10p3",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 11.3
+ },
+ {
+  "id": "s10p4",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 7.8
+ },
+ {
+  "id": "s10p5",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 7.8
+ },
+ {
+  "id": "s10p6",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.1
+ },
+ {
+  "id": "s10p7",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.0
+ },
+ {
+  "id": "s10p8",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.4
+ },
+ {
+  "id": "s11p1",
+  "flagged": true,
+  "unsupported": [
+   {
+    "claim": "The company has maintained a 23-year streak of payments.",
+    "supported": false,
+    "why": "The data field 'streak_years' is 23, but the field definition specifies this represents 'consecutive years of dividend increases', not just 'payments'. A streak of payments is a different metric than a streak of increases."
+   }
+  ],
+  "data_inconsistent": "",
+  "seconds": 8.7
+ },
+ {
+  "id": "s11p2",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 10.3
+ },
+ {
+  "id": "s11p3",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 10.2
+ },
+ {
+  "id": "s11p4",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 10.0
+ },
+ {
+  "id": "s11p5",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 10.4
+ },
+ {
+  "id": "s11p6",
+  "flagged": true,
+  "unsupported": [
+   {
+    "claim": "The company has a 28-year streak of payments.",
+    "supported": false,
+    "why": "The data field 'streak_years' is 28, but the field definition specifies this represents 'consecutive years of dividend increases', not 'payments'. The post misinterprets the metric."
+   }
+  ],
+  "data_inconsistent": "",
+  "seconds": 9.7
+ },
+ {
+  "id": "s11p7",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 9.8
+ },
+ {
+  "id": "s11p8",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.8
+ },
+ {
+  "id": "s12p1",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 12.5
+ },
+ {
+  "id": "s12p2",
+  "flagged": true,
+  "unsupported": [
+   {
+    "claim": "Riley Exploration Permian raised its annual dividend from $1.60 to $1.68 on Oct 27.",
+    "supported": false,
+    "why": "The data states that 'seen_on' is the day Quantic first saw the new rate, not the announcement date. The post claims the raise happened 'on Oct 27', which contradicts the field definition provided in the prompt."
+   }
+  ],
+  "data_inconsistent": "",
+  "seconds": 8.5
+ },
+ {
+  "id": "s12p3",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.3
+ },
+ {
+  "id": "s12p4",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 9.2
+ },
+ {
+  "id": "s12p5",
+  "flagged": true,
+  "unsupported": [
+   {
+    "claim": "The reduction happened on Oct 17",
+    "supported": false,
+    "why": "The field 'seen_on' is defined as 'the day Quantic first saw the new rate, not the announcement date'. The post claims the reduction happened on this date, which contradicts the field definition provided in the prompt."
+   }
+  ],
+  "data_inconsistent": "",
+  "seconds": 8.9
+ },
+ {
+  "id": "s12p6",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 12.6
+ },
+ {
+  "id": "s12p7",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.5
+ },
+ {
+  "id": "s12p8",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 9.1
+ }
+]

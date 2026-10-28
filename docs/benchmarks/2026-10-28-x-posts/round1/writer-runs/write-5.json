@@ -1,0 +1,139 @@
+{
+ "mode": "facts",
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 24.4,
+   "prompt_tokens": 6926,
+   "posts": [
+    {
+     "facts": [
+      "CLX"
+     ],
+     "text": "$CLX goes ex-dividend today with a 23-year payout streak. The 5.72% yield sits well above its 5-year average of 3.21%, a notable shift for the consumer staples name.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "DEO"
+     ],
+     "text": "$DEO lowered its annual dividend from 3.32 to 2.00 USD, a 39.8% cut announced in October. The data classifies the safety of the current payout as safe.",
+     "problems": [
+      "figure not in the data: '39.8%'"
+     ]
+    },
+    {
+     "facts": [
+      "NKE"
+     ],
+     "text": "$NKE shows a current yield of 4.37%, more than 3 times its 5-year average of 1.41%. The company has maintained its dividend for 23 consecutive years.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "0327.HK"
+     ],
+     "text": "PAX Global (0327.HK) cut its HKD-denominated dividend by 75.8% in October 2026. Despite the reduction, the company maintains a 6-year dividend growth streak.",
+     "problems": [
+      "figure not in the data: '0327'",
+      "figure not in the data: '75.8%'"
+     ]
+    },
+    {
+     "facts": [
+      "DKS"
+     ],
+     "text": "$DKS appears as a fast grower with 5-year dividend growth of 31.1%. Its current yield of 3.53% is 1.6 times its 5-year average yield of 2.2%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "PSX"
+     ],
+     "text": "$PSX raised its annual dividend rate from 5.08 to 5.32 USD. The energy sector company has a 4-year streak and a 5-year yield average of 3.99%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "TXN"
+     ],
+     "text": "$TXN goes ex-dividend on Oct 30 with a 22-year streak. The 1.97% yield is slightly below its 5-year average of 2.71%, reflecting recent price action.",
+     "problems": [
+      "wording (market): 'price'"
+     ]
+    },
+    {
+     "facts": [
+      "LOW"
+     ],
+     "text": "$LOW combines a 28-year payout streak with 5-year dividend growth of 16.4%. The current yield of 2.52% is 1.39 times its 5-year average of 1.81%.",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 2,
+   "seconds": 19.9,
+   "prompt_tokens": 7516,
+   "posts": [
+    {
+     "facts": [
+      "CLX"
+     ],
+     "text": "$CLX goes ex-dividend today with a 23-year payout streak. The 5.72% yield is well above its 5-year average of 3.21%, a notable shift for the consumer staples name.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "DEO"
+     ],
+     "text": "$DEO reduced its annual dividend from 3.32 to 2.00 USD, a change of -39.8%. The data classifies the safety of the current payout as safe despite the cut.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "NKE"
+     ],
+     "text": "$NKE shows a current yield of 4.37%, more than 3 times its 5-year average of 1.41%. The company has maintained its dividend for 23 consecutive years.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "0327.HK"
+     ],
+     "text": "PAX Global cut its HKD-denominated dividend from 0.33 to 0.08, a change of -75.8%. The company maintains a 6-year dividend growth streak in the Industrials sector.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "DKS"
+     ],
+     "text": "$DKS appears as a fast grower with 5-year dividend growth of 31.1%. Its current yield of 3.53% is 1.6 times its 5-year average yield of 2.2%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "PSX"
+     ],
+     "text": "$PSX raised its annual dividend rate from 5.08 to 5.32 USD, a 4.7% increase. The energy sector company has a 4-year streak and a 5-year yield average of 3.99%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "TXN"
+     ],
+     "text": "$TXN goes ex-dividend on Oct 30 with a 22-year streak. The 1.97% yield is below its 5-year average of 2.71%, reflecting the current dividend level relative to history.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "LOW"
+     ],
+     "text": "$LOW combines a 28-year payout streak with 5-year dividend growth of 16.4%. The current yield of 2.52% is 1.39 times its 5-year average of 1.81%.",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,206 @@
+{
+ "mode": "facts",
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 33.1,
+   "prompt_tokens": 7158,
+   "posts": [
+    {
+     "facts": [
+      "53",
+      "52"
+     ],
+     "text": "MarketAxess (MKTX) yield is 1.75x its 5-yr average at 1.89%. Brown Forman (BF-B) is 1.96x its average at 3.23%. Both have 5-yr growth rates under 5%.",
+     "problems": [
+      "wording (count): 'Both'"
+     ]
+    },
+    {
+     "facts": [
+      "46"
+     ],
+     "text": "Nike ($NKE) current yield is 4.37%, which is 3.10x its 5-yr average of 1.41%. The 5-yr dividend growth rate is 10.3% and the streak is 23 years.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "37",
+      "38"
+     ],
+     "text": "Dick's Sporting Goods ($DKS) 5-yr dividend growth is 31.1%. Amphenol ($APH) 5-yr growth is 21.4%. Both are labeled safe with streaks of 11 and 14 years.",
+     "problems": [
+      "wording (count): 'Both'"
+     ]
+    },
+    {
+     "facts": [
+      "25"
+     ],
+     "text": "Zoetis ($ZTS) ex-div date is Oct 30, pay date Dec 1. Annual rate 2.12 USD, yield 2.71%. 5-yr growth 20.1%, safety watch.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "18"
+     ],
+     "text": "Clorox ($CLX) ex-div date is today, Oct 28. Pay date Nov 13. Annual rate 5.00 USD, yield 5.72%. Safety label is at_risk.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "8"
+     ],
+     "text": "PAX GLOBAL (0327.HK) annual rate changed from 0.33 to 0.08 HKD, a -75.8% cut. Seen on 2026-10-23. Streak years is 6.",
+     "problems": [
+      "figure not in the data: '0327'"
+     ]
+    },
+    {
+     "facts": [
+      "16"
+     ],
+     "text": "Microsoft ($MSFT) new annual rate 3.92 USD, up 7.7% from 3.64. Seen on 2026-10-16. 5-yr growth 10.2%, streak 15 years, safety safe.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "32"
+     ],
+     "text": "Healthcare sector snapshot: 40 companies. 12 safe, 18 watch, 10 at_risk. Median 5-yr avg yield 2.73%, median 5-yr growth 6.6%.",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 2,
+   "seconds": 26.5,
+   "prompt_tokens": 7926,
+   "posts": [
+    {
+     "facts": [
+      "53"
+     ],
+     "text": "MarketAxess (MKTX) yield is 1.75x its 5-yr average at 1.89%. The 5-yr dividend growth rate is 4.8% and the safety label is safe.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "46"
+     ],
+     "text": "Nike ($NKE) current yield is 4.37%, which is 3.10x its 5-yr average of 1.41%. The 5-yr dividend growth rate is 10.3% and the streak is 23 years.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "37",
+      "38"
+     ],
+     "text": "Dick's Sporting Goods ($DKS) 5-yr dividend growth is 31.1%. Amphenol ($APH) 5-yr growth is 21.4%. Both have safety labels of safe.",
+     "problems": [
+      "wording (count): 'Both'"
+     ]
+    },
+    {
+     "facts": [
+      "25"
+     ],
+     "text": "Zoetis ($ZTS) ex-div date is Oct 30, pay date Dec 1. Annual rate 2.12 USD, yield 2.71%. 5-yr growth 20.1%, safety watch.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "18"
+     ],
+     "text": "Clorox ($CLX) ex-div date is today, Oct 28. Pay date Nov 13. Annual rate 5.00 USD, yield 5.72%. Safety label is at_risk.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "8"
+     ],
+     "text": "PAX GLOBAL annual rate changed from 0.33 to 0.08 HKD, a -75.8% cut. Seen on 2026-10-23. Streak years is 6.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "16"
+     ],
+     "text": "Microsoft ($MSFT) new annual rate 3.92 USD, up 7.7% from 3.64. Seen on 2026-10-16. 5-yr growth 10.2%, streak 15 years, safety safe.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "32"
+     ],
+     "text": "Healthcare sector snapshot: 40 companies. 12 safe, 18 watch, 10 at_risk. Median 5-yr avg yield 2.73%, median 5-yr growth 6.6%.",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 3,
+   "seconds": 27.2,
+   "prompt_tokens": 8626,
+   "posts": [
+    {
+     "facts": [
+      "53"
+     ],
+     "text": "MarketAxess (MKTX) yield is 1.75x its 5-yr average at 1.89%. The 5-yr dividend growth rate is 4.8% and the safety label is safe.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "46"
+     ],
+     "text": "Nike ($NKE) current yield is 4.37%, which is 3.10x its 5-yr average of 1.41%. The 5-yr dividend growth rate is 10.3% and the streak is 23 years.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "37"
+     ],
+     "text": "Dick's Sporting Goods ($DKS) 5-yr dividend growth is 31.1%. The 5-yr average yield is 2.2% and the streak is 11 years of increases.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "25"
+     ],
+     "text": "Zoetis ($ZTS) ex-div date is Oct 30, pay date Dec 1. Annual rate 2.12 USD, yield 2.71%. 5-yr growth 20.1%, safety watch.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "18"
+     ],
+     "text": "Clorox ($CLX) ex-div date is today, Oct 28. Pay date Nov 13. Annual rate 5.00 USD, yield 5.72%. Safety label is at_risk.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "8"
+     ],
+     "text": "PAX GLOBAL annual rate changed from 0.33 to 0.08 HKD, a -75.8% cut. Seen on 2026-10-23. Streak years is 6.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "16"
+     ],
+     "text": "Microsoft ($MSFT) new annual rate 3.92 USD, up 7.7% from 3.64. Seen on 2026-10-16. 5-yr growth 10.2%, streak 15 years, safety safe.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "32"
+     ],
+     "text": "Healthcare sector snapshot: 40 companies. 12 safe, 18 watch, 10 at_risk. Median 5-yr avg yield 2.73%, median 5-yr growth 6.6%.",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

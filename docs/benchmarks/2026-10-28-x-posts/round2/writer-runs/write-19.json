@@ -1,0 +1,136 @@
+{
+ "mode": "facts",
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 32.8,
+   "prompt_tokens": 7158,
+   "posts": [
+    {
+     "facts": [
+      "8"
+     ],
+     "text": "PAX GLOBAL (0327.HK) annual dividend rate cut from 0.33 HKD to 0.08 HKD, a -75.8% change. Quantic flagged this change on 2026-10-23. The company has a 6-year dividend growth streak.",
+     "problems": [
+      "figure not in the data: '0327'"
+     ]
+    },
+    {
+     "facts": [
+      "17",
+      "18"
+     ],
+     "text": "Two names go ex-dividend on 2026-10-28: Fastenal ($FAST, annual rate 1.04 USD) and Clorox (CLX, annual rate 5.00 USD). Fastenal is labeled \"watch\" and Clorox \"at_risk\" for dividend safety.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "46"
+     ],
+     "text": "Nike ($NKE) current yield is 4.37%, which is 3.1 times its 5-year average yield of 1.41%. The company has a 23-year dividend increase streak and is labeled \"safe\".",
+     "problems": []
+    },
+    {
+     "facts": [
+      "9"
+     ],
+     "text": "Allwyn AG (ALWN.AT) saw its annual dividend rate increase by 40.0%, from 0.50 EUR to 0.70 EUR. This change was seen on 2026-10-23. The safety label is \"watch\".",
+     "problems": []
+    },
+    {
+     "facts": [
+      "26"
+     ],
+     "text": "Quantic's Basic Materials sector snapshot includes 39 companies. Of these, 21 are labeled \"safe\", 6 are \"watch\", and 12 are \"at_risk\" for dividend safety. The median 5-year yield is 3.04%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "37"
+     ],
+     "text": "Dick's Sporting Goods (DKS) is a fast grower with a 5-year dividend growth rate of 31.1%. The company has an 11-year dividend increase streak and a 5-year average yield of 2.2%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "12"
+     ],
+     "text": "Consolidated Edison ($ED) dividend rate increased from 3.51 USD to 3.55 USD, a 1.1% change seen on 2026-10-17. The company has a 29-year dividend increase streak and is labeled \"safe\".",
+     "problems": []
+    },
+    {
+     "facts": [
+      "25"
+     ],
+     "text": "Zoetis ($ZTS) goes ex-dividend on 2026-10-30. The annual rate is 2.12 USD with a current yield of 2.71%. The 5-year dividend growth rate is 20.1%, and the safety label is \"watch\".",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 2,
+   "seconds": 28.2,
+   "prompt_tokens": 7940,
+   "posts": [
+    {
+     "facts": [
+      "8"
+     ],
+     "text": "PAX GLOBAL annual dividend rate cut from 0.33 HKD to 0.08 HKD, a -75.8% change. Quantic flagged this change on 2026-10-23. The company has a 6-year dividend growth streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "17",
+      "18"
+     ],
+     "text": "Two names go ex-dividend on 2026-10-28: Fastenal ($FAST, annual rate 1.04 USD) and Clorox (CLX, annual rate 5.00 USD). Fastenal is labeled \"watch\" and Clorox \"at_risk\" for dividend safety.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "46"
+     ],
+     "text": "Nike ($NKE) current yield is 4.37%, which is 3.1 times its 5-year average yield of 1.41%. The company has a 23-year dividend increase streak and is labeled \"safe\".",
+     "problems": []
+    },
+    {
+     "facts": [
+      "9"
+     ],
+     "text": "Allwyn AG (ALWN.AT) saw its annual dividend rate increase by 40.0%, from 0.50 EUR to 0.70 EUR. This change was seen on 2026-10-23. The safety label is \"watch\".",
+     "problems": []
+    },
+    {
+     "facts": [
+      "26"
+     ],
+     "text": "Quantic's Basic Materials sector snapshot includes 39 companies. Of these, 21 are labeled \"safe\", 6 are \"watch\", and 12 are \"at_risk\" for dividend safety. The median 5-year yield is 3.04%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "37"
+     ],
+     "text": "Dick's Sporting Goods (DKS) is a fast grower with a 5-year dividend growth rate of 31.1%. The company has an 11-year dividend increase streak and a 5-year average yield of 2.2%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "12"
+     ],
+     "text": "Consolidated Edison ($ED) dividend rate increased from 3.51 USD to 3.55 USD, a 1.1% change seen on 2026-10-17. The company has a 29-year dividend increase streak and is labeled \"safe\".",
+     "problems": []
+    },
+    {
+     "facts": [
+      "25"
+     ],
+     "text": "Zoetis ($ZTS) goes ex-dividend on 2026-10-30. The annual rate is 2.12 USD with a current yield of 2.71%. The 5-year dividend growth rate is 20.1%, and the safety label is \"watch\".",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

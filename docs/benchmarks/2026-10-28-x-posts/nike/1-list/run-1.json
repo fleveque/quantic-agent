@@ -1,0 +1,87 @@
+{
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "seed": 1,
+ "facts": {
+  "company": "Nike",
+  "ticker": "NKE",
+  "current_yield_pct": 4.37,
+  "yield_avg_5y_pct": 1.41,
+  "yield_high_5y_pct": 2.33,
+  "yield_low_5y_pct": 0.73,
+  "current_yield_times_5y_average": 3.1,
+  "current_yield_times_5y_high": 1.88,
+  "streak_years": 23,
+  "dividend_growth_5y_pct": 10.3,
+  "dividend_growth_last_12_months_pct": 3.8,
+  "dividend_per_share_2014": 0.48,
+  "dividend_per_share_2025": 1.6,
+  "dividend_multiple_2014_to_2025": 3.33,
+  "payment_frequency": "quarterly",
+  "safety": "safe",
+  "last_known_price": 37.56,
+  "last_known_price_as_of": "2026-10-28",
+  "price_high_monthly_5y": 169.24,
+  "price_below_5y_high_pct": 77.8
+ },
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 13.1,
+   "posts": [
+    {
+     "text": "23 years of raises. $0.48 in 2014, $1.60 now. 📈\n$NKE yield at 4.37%. 3.1x its 5y average. 💵",
+     "problems": [
+      "figure not in the data: '2014'"
+     ]
+    },
+    {
+     "text": "Last seen at $37.56. 5y high was $169.24. 📉\n$NKE dividend up 10.3% over 5y. 🔥",
+     "problems": []
+    },
+    {
+     "text": "Yield: 4.37%. 5y avg: 1.41%. 📊\n$NKE has raised dividends 23 years straight. 🧾",
+     "problems": []
+    },
+    {
+     "text": "$NKE: 3.33x dividend growth since 2014. 💰\nQuantic rates safety as 'safe'. 👟",
+     "problems": [
+      "figure not in the data: '2014'"
+     ]
+    },
+    {
+     "text": "2014 DPS: $0.48. 2025 DPS: $1.60. 📈\n$NKE yield is 1.88x its 5y high. 💵",
+     "problems": [
+      "figure not in the data: '2014'",
+      "figure not in the data: '2025'"
+     ]
+    }
+   ]
+  },
+  {
+   "attempt": 2,
+   "seconds": 8.5,
+   "posts": [
+    {
+     "text": "23 years of raises. $0.48 to $1.60. 📈\n$NKE yield at 4.37%. 3.1x its 5y average. 💵",
+     "problems": []
+    },
+    {
+     "text": "Last seen at $37.56. 5y high was $169.24. 📉\n$NKE dividend up 10.3% over 5y. 🔥",
+     "problems": []
+    },
+    {
+     "text": "Yield: 4.37%. 5y avg: 1.41%. 📊\n$NKE has raised dividends 23 years straight. 🧾",
+     "problems": []
+    },
+    {
+     "text": "$NKE: 3.33x dividend growth. 💰\nQuantic rates safety as 'safe'. 👟",
+     "problems": []
+    },
+    {
+     "text": "DPS: $0.48 to $1.60. 📈\n$NKE yield is 1.88x its 5y high. 💵",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

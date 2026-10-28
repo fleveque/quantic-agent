@@ -1,0 +1,152 @@
+{
+ "mode": "facts",
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 26.9,
+   "prompt_tokens": 6926,
+   "posts": [
+    {
+     "facts": [
+      18,
+      17
+     ],
+     "text": "The Clorox Company and Fastenal hit ex-dividend date today, Wednesday. Clorox pays $5.00 annually with a 5.72% yield, while Fastenal pays $1.04 annually with a 2.02% yield.",
+     "problems": []
+    },
+    {
+     "facts": [
+      1
+     ],
+     "text": "Riley Exploration Permian raised its annual dividend from $1.60 to $1.68 on Oct 27. This marks a 5.0% increase, bringing the annual rate to $1.68 in USD.",
+     "problems": []
+    },
+    {
+     "facts": [
+      27
+     ],
+     "text": "Allwyn AG increased its dividend by 40.0% from EUR 0.50 to EUR 0.70, seen on Oct 23. The company currently holds a 1-year dividend streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      0
+     ],
+     "text": "Intertek Group PLC announced a dividend cut on Oct 28, lowering the annual rate from GBP 1.65 to GBP 1.08, a decrease of 34.5%.",
+     "problems": [
+      "figure not in the data: '34.5%'"
+     ]
+    },
+    {
+     "facts": [
+      13
+     ],
+     "text": "Diageo plc reduced its annual dividend from $3.32 to $2.00 on Oct 17. This change represents a 39.8% decrease in the annual payout.",
+     "problems": [
+      "figure not in the data: '39.8%'"
+     ]
+    },
+    {
+     "facts": [
+      16,
+      15
+     ],
+     "text": "Microsoft raised its dividend to $3.92 and Texas Instruments to $6.08, both seen on Oct 16. Microsoft's payout grew 7.7% while Texas Instruments' grew 7.0%.",
+     "problems": [
+      "wording (count): 'both'"
+     ]
+    },
+    {
+     "facts": [
+      35
+     ],
+     "text": "In the Technology sector, 39 of 62 companies are rated safe. The median 5-year average yield is 1.27% with a median dividend growth of 9.0%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      19,
+      20,
+      22,
+      23,
+      24,
+      25
+     ],
+     "text": "Six companies go ex-dividend on Friday, Oct 30, including Realty Income, A.O. Smith, NiSource, Costco, Texas Instruments, and Zoetis.",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 2,
+   "seconds": 22.9,
+   "prompt_tokens": 7580,
+   "posts": [
+    {
+     "facts": [
+      18,
+      17
+     ],
+     "text": "The Clorox Company and Fastenal hit ex-dividend date today, Wednesday. Clorox pays $5.00 annually with a 5.72% yield, while Fastenal pays $1.04 annually with a 2.02% yield.",
+     "problems": []
+    },
+    {
+     "facts": [
+      1
+     ],
+     "text": "Riley Exploration Permian raised its annual dividend from $1.60 to $1.68 on Oct 27. This marks a 5.0% increase, bringing the annual rate to $1.68 in USD.",
+     "problems": []
+    },
+    {
+     "facts": [
+      27
+     ],
+     "text": "Allwyn AG increased its dividend by 40.0% from EUR 0.50 to EUR 0.70, seen on Oct 23. The company currently holds a 1-year dividend streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      0
+     ],
+     "text": "Intertek Group PLC reduced its annual dividend from GBP 1.65 to GBP 1.08, seen on Oct 28. The data notes a change_pct of -34.5 for this adjustment.",
+     "problems": []
+    },
+    {
+     "facts": [
+      13
+     ],
+     "text": "Diageo plc reduced its annual dividend from $3.32 to $2.00 on Oct 17. The data notes a change_pct of -39.8 for this dividend cut.",
+     "problems": []
+    },
+    {
+     "facts": [
+      16,
+      15
+     ],
+     "text": "Microsoft raised its dividend to $3.92, a 7.7% increase, seen on Oct 16. Texas Instruments raised its dividend to $6.08, a 7.0% increase, also seen on Oct 16.",
+     "problems": []
+    },
+    {
+     "facts": [
+      35
+     ],
+     "text": "In the Technology sector, 39 of 62 companies are rated safe. The median 5-year average yield is 1.27% with a median dividend growth of 9.0%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      19,
+      20,
+      22,
+      23,
+      24,
+      25
+     ],
+     "text": "Six companies go ex-dividend on Friday, Oct 30, including Realty Income, A.O. Smith, NiSource, Costco, Texas Instruments, and Zoetis.",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

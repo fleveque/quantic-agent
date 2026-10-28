@@ -1,0 +1,206 @@
+{
+ "mode": "facts",
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 29.8,
+   "prompt_tokens": 6926,
+   "posts": [
+    {
+     "facts": [
+      0
+     ],
+     "text": "Interintek Group PLC cut its annual dividend by 34.5% to 1.08 GBP, a change seen on Oct 28. Despite this reduction, the company is classified as safe and has maintained a 3-year dividend streak.",
+     "problems": [
+      "figure not in the data: '34.5%'"
+     ]
+    },
+    {
+     "facts": [
+      8
+     ],
+     "text": "PAX Global saw its annual dividend slashed by 75.8% to 0.08 HKD, reported on Oct 23. The company is marked as safe and has a 6-year payout streak, with a 5-year dividend growth rate of 30.9%.",
+     "problems": [
+      "figure not in the data: '75.8%'"
+     ]
+    },
+    {
+     "facts": [
+      13
+     ],
+     "text": "Diageo plc lowered its annual dividend by 39.8% to 2.0 USD, a move noted on Oct 17. The company is categorized as safe and has a 5-year dividend growth percentage of 2.6%.",
+     "problems": [
+      "figure not in the data: '39.8%'"
+     ]
+    },
+    {
+     "facts": [
+      6
+     ],
+     "text": "West Pharmaceutical Services increased its annual rate by 18.2% to 1.04 USD, seen on Oct 23. The company has a 28-year dividend streak and is classified as safe, with a 5-year growth rate of 5.6%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      16
+     ],
+     "text": "Microsoft raised its annual dividend by 7.7% to 3.92 USD, reported on Oct 16. The company maintains a 15-year payout streak and is considered safe, with a 5-year dividend growth rate of 10.2%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      15,
+      24
+     ],
+     "text": "Texas Instruments increased its annual dividend to 6.08 USD, a 7.0% rise seen on Oct 16. With a 22-year streak and safe status, the company is set to go ex-dividend on Oct 30.",
+     "problems": []
+    },
+    {
+     "facts": [
+      41
+     ],
+     "text": "Agnico Eagle Mines Limited is a fast grower with an 11-year dividend streak and is classified as safe. Its 5-year dividend growth rate stands at 15.4%, with a 5-year average yield of 2.45%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      31
+     ],
+     "text": "In Financial Services, 38 of 117 companies in Quantic's screener are classified as at-risk, while 48 are safe. The sector has a median 5-year average yield of 6.75%.",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 2,
+   "seconds": 21.8,
+   "prompt_tokens": 7571,
+   "posts": [
+    {
+     "facts": [
+      0
+     ],
+     "text": "Interintek Group PLC (ITRK.L) reduced its annual dividend from 1.65 to 1.08 GBP, a change of -34.5% noted on Oct 28. The company is currently classified as safe with a 3-year dividend streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      8
+     ],
+     "text": "PAX Global (0327.HK) cut its annual dividend from 0.33 to 0.08 HKD, a change of -75.8% seen on Oct 23. Despite the cut, the company is marked as safe and has a 6-year dividend streak.",
+     "problems": [
+      "figure not in the data: '0327'"
+     ]
+    },
+    {
+     "facts": [
+      13
+     ],
+     "text": "Diageo plc (DEO) lowered its annual dividend from 3.32 to 2.0 USD, a change of -39.8% noted on Oct 17. The company is classified as safe and has a 5-year dividend growth rate of 2.6%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      6
+     ],
+     "text": "West Pharmaceutical Services (WST) raised its annual dividend from 0.88 to 1.04 USD, a change of 18.2% seen on Oct 23. The company has a 28-year dividend streak and is classified as safe.",
+     "problems": []
+    },
+    {
+     "facts": [
+      16
+     ],
+     "text": "Microsoft (MSFT) increased its annual dividend from 3.64 to 3.92 USD, a change of 7.7% noted on Oct 16. The company has a 15-year dividend streak and is classified as safe.",
+     "problems": []
+    },
+    {
+     "facts": [
+      15,
+      24
+     ],
+     "text": "Texas Instruments (TXN) raised its annual dividend to 6.08 USD, a 7.0% increase seen on Oct 16. The company has a 22-year streak, is safe, and goes ex-dividend on Oct 30.",
+     "problems": []
+    },
+    {
+     "facts": [
+      41
+     ],
+     "text": "Agnico Eagle Mines (AEM.TO) is listed as a fast grower with an 11-year dividend streak. The company is classified as safe and has a 5-year dividend growth rate of 15.4%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      31
+     ],
+     "text": "The Financial Services sector includes 117 companies in Quantic's screener. Of these, 48 are classified as safe, 31 as watch, and 38 as at-risk. The median 5-year average yield is 6.75%.",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 3,
+   "seconds": 24.9,
+   "prompt_tokens": 8185,
+   "posts": [
+    {
+     "facts": [
+      0
+     ],
+     "text": "Interintek Group PLC (ITRK.L) cut its annual dividend from 1.65 to 1.08 GBP, a change of -34.5% noted on Oct 28. The company is currently classified as safe with a 3-year dividend streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      8
+     ],
+     "text": "PAX Global cut its annual dividend from 0.33 to 0.08 HKD, a change of -75.8% seen on Oct 23. Despite the reduction, the company is marked as safe and has a 6-year dividend streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      13
+     ],
+     "text": "Diageo plc lowered its annual dividend from 3.32 to 2.0 USD, a change of -39.8% noted on Oct 17. The company is classified as safe and has a 5-year dividend growth rate of 2.6%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      6
+     ],
+     "text": "West Pharmaceutical Services (WST) raised its annual dividend from 0.88 to 1.04 USD, a change of 18.2% seen on Oct 23. The company has a 28-year dividend streak and is classified as safe.",
+     "problems": []
+    },
+    {
+     "facts": [
+      16
+     ],
+     "text": "Microsoft (MSFT) increased its annual dividend from 3.64 to 3.92 USD, a change of 7.7% noted on Oct 16. The company has a 15-year dividend streak and is classified as safe.",
+     "problems": []
+    },
+    {
+     "facts": [
+      15,
+      24
+     ],
+     "text": "Texas Instruments (TXN) raised its annual dividend to 6.08 USD, a 7.0% increase seen on Oct 16. The company has a 22-year streak, is safe, and goes ex-dividend on Oct 30.",
+     "problems": []
+    },
+    {
+     "facts": [
+      41
+     ],
+     "text": "Agnico Eagle Mines (AEM.TO) is listed as a fast grower with an 11-year dividend streak. The company is classified as safe and has a 5-year dividend growth rate of 15.4%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      31
+     ],
+     "text": "The Financial Services sector includes 117 companies in Quantic's screener. Of these, 48 are classified as safe, 31 as watch, and 38 as at-risk. The median 5-year average yield is 6.75%.",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

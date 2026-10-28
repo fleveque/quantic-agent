@@ -1,0 +1,199 @@
+{
+ "mode": "facts",
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 32.1,
+   "prompt_tokens": 7158,
+   "posts": [
+    {
+     "facts": [
+      "O"
+     ],
+     "text": "$O goes ex-dividend on Oct 30. The annual rate is 3.26 USD with a current yield of 5.74%. The company has a 28-year streak of dividend increases and is labeled safe.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "0327.HK"
+     ],
+     "text": "PAX GLOBAL (0327.HK) dividend reduced to 0.08 HKD from 0.33 HKD, a -75.8% change seen on 2026-10-23. Safety label is safe, despite a 30.9% 5-year dividend growth.",
+     "problems": [
+      "figure not in the data: '0327'"
+     ]
+    },
+    {
+     "facts": [
+      "LOW"
+     ],
+     "text": "$LOW dividend growth over 5 years is 16.4%. Current yield is 2.52%, which is 1.39 times its 5-year average yield of 1.81%. Safety label is safe with a 28-year streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "MSFT"
+     ],
+     "text": "Microsoft ($MSFT) new annual rate is 3.92 USD, up from 3.64 USD, a 7.7% change seen on 2026-10-16. The 5-year dividend growth is 10.2% and safety is safe.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "DEO"
+     ],
+     "text": "$DEO dividend dropped to 2.0 USD from 3.32 USD, a -39.8% change seen on 2026-10-17. Safety label is safe, 5-year growth 2.6%, current yield not specified in data.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "WDC"
+     ],
+     "text": "Western Digital ($WDC) dividend increased to 0.7 USD from 0.6 USD, a 16.7% change seen on 2026-10-26. Safety label is at_risk, 5-year dividend growth is -23.3%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "36"
+     ],
+     "text": "Utilities sector snapshot: 40 companies in Quantic's screener. Median 5-year average yield is 3.8%, median 5-year dividend growth is 4.7%. 7 safe, 18 watch, 15 at risk.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "NKE"
+     ],
+     "text": "$NKE current yield is 4.37%, 3.1 times its 5-year average of 1.41%. Safety label is safe with a 23-year streak of increases. 5-year dividend growth is 10.3%.",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 2,
+   "seconds": 28.2,
+   "prompt_tokens": 7912,
+   "posts": [
+    {
+     "facts": [
+      19
+     ],
+     "text": "Realty Income Corporation ($O) goes ex-dividend on Oct 30. The annual rate is 3.26 USD with a current yield of 5.74%. The company has a 28-year streak of dividend increases and is labeled safe.",
+     "problems": []
+    },
+    {
+     "facts": [
+      8
+     ],
+     "text": "PAX GLOBAL (0327.HK) dividend new rate is 0.08 HKD, down from 0.33 HKD, a -75.8% change seen on 2026-10-23. Safety label is safe. The 5-year dividend growth rate is 30.9%.",
+     "problems": [
+      "figure not in the data: '0327'"
+     ]
+    },
+    {
+     "facts": [
+      45
+     ],
+     "text": "Lowe's Companies ($LOW) current yield is 2.52%, which is 1.39 times its 5-year average yield of 1.81%. Safety label is safe with a 28-year streak of dividend increases.",
+     "problems": []
+    },
+    {
+     "facts": [
+      16
+     ],
+     "text": "Microsoft ($MSFT) new annual rate is 3.92 USD, up from 3.64 USD, a 7.7% change seen on 2026-10-16. The 5-year dividend growth is 10.2% and the safety label is safe.",
+     "problems": []
+    },
+    {
+     "facts": [
+      13
+     ],
+     "text": "Diageo ($DEO) dividend new rate is 2.0 USD, down from 3.32 USD, a -39.8% change seen on 2026-10-17. The safety label is safe and the 5-year dividend growth is 2.6%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      3
+     ],
+     "text": "Western Digital ($WDC) dividend new rate is 0.7 USD, up from 0.6 USD, a 16.7% change seen on 2026-10-26. The safety label is at_risk and the 5-year dividend growth is -23.3%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      36
+     ],
+     "text": "Utilities sector snapshot: 40 companies in Quantic's screener. Median 5-year average yield is 3.8%, median 5-year dividend growth is 4.7%. 7 are safe, 18 watch, 15 at risk.",
+     "problems": []
+    },
+    {
+     "facts": [
+      46
+     ],
+     "text": "Nike ($NKE) current yield is 4.37%, 3.1 times its 5-year average yield of 1.41%. The safety label is safe with a 23-year streak. The 5-year dividend growth is 10.3%.",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 3,
+   "seconds": 27.5,
+   "prompt_tokens": 8678,
+   "posts": [
+    {
+     "facts": [
+      "O"
+     ],
+     "text": "$O goes ex-dividend on Oct 30. The annual rate is 3.26 USD with a current yield of 5.74%. The company has a 28-year streak of dividend increases and is labeled safe.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "PAX GLOBAL"
+     ],
+     "text": "PAX GLOBAL dividend new rate is 0.08 HKD, down from 0.33 HKD, a -75.8% change seen on 2026-10-23. Safety label is safe. The 5-year dividend growth is 30.9%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "LOW"
+     ],
+     "text": "$LOW current yield is 2.52%, which is 1.39 times its 5-year average yield of 1.81%. Safety label is safe with a 28-year streak of dividend increases.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "MSFT"
+     ],
+     "text": "$MSFT new annual rate is 3.92 USD, up from 3.64 USD, a 7.7% change seen on 2026-10-16. The 5-year dividend growth is 10.2% and the safety label is safe.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "DEO"
+     ],
+     "text": "$DEO dividend new rate is 2.0 USD, down from 3.32 USD, a -39.8% change seen on 2026-10-17. The safety label is safe and the 5-year dividend growth is 2.6%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "WDC"
+     ],
+     "text": "$WDC dividend new rate is 0.7 USD, up from 0.6 USD, a 16.7% change seen on 2026-10-26. The safety label is at_risk and the 5-year dividend growth is -23.3%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "Utilities"
+     ],
+     "text": "Utilities sector snapshot: 40 companies in Quantic's screener. Median 5-year average yield is 3.8%, median 5-year dividend growth is 4.7%. 7 are safe, 18 watch, 15 at risk.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "NKE"
+     ],
+     "text": "$NKE current yield is 4.37%, 3.1 times its 5-year average yield of 1.41%. The safety label is safe with a 23-year streak. The 5-year dividend growth is 10.3%.",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,2260 @@
+[
+ {
+  "id": "s13p1",
+  "text": "$O goes ex-dividend on Oct 30. The annual rate is 3.26 USD with a current yield of 5.74%. The company has a 28-year streak of dividend increases and is labeled safe.",
+  "facts": [
+   {
+    "kind": "ex_dividend_soon",
+    "name": "Realty Income Corporation",
+    "symbol": "O",
+    "sector": "Real Estate",
+    "ex_dividend_date": "2026-10-30",
+    "weekday": "Friday",
+    "pay_date": "2026-11-13",
+    "annual_rate": 3.26,
+    "currency": "USD",
+    "yield_pct": 5.74,
+    "frequency": "monthly",
+    "streak_years": 28,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 3.5,
+    "yield_avg_5y_pct": 5.03,
+    "id": 19
+   }
+  ]
+ },
+ {
+  "id": "s13p2",
+  "text": "PAX GLOBAL dividend new rate is 0.08 HKD, down from 0.33 HKD, a -75.8% change seen on 2026-10-23. Safety label is safe. The 5-year dividend growth is 30.9%.",
+  "facts": [
+   {
+    "kind": "cut",
+    "name": "PAX GLOBAL",
+    "symbol": "0327.HK",
+    "sector": "Industrials",
+    "currency": "HKD",
+    "old_annual_rate": 0.33,
+    "new_annual_rate": 0.08,
+    "change_pct": -75.8,
+    "seen_on": "2026-10-23",
+    "streak_years": 6,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 30.9,
+    "yield_avg_5y_pct": 6.38,
+    "id": 8
+   }
+  ]
+ },
+ {
+  "id": "s13p3",
+  "text": "$LOW current yield is 2.52%, which is 1.39 times its 5-year average yield of 1.81%. Safety label is safe with a 28-year streak of dividend increases.",
+  "facts": [
+   {
+    "kind": "fast_grower",
+    "name": "Lowe's Companies, Inc.",
+    "symbol": "LOW",
+    "sector": "Consumer Cyclical",
+    "streak_years": 28,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 16.4,
+    "yield_avg_5y_pct": 1.81,
+    "id": 40
+   },
+   {
+    "kind": "yield_above_own_average",
+    "name": "Lowe's Companies, Inc.",
+    "symbol": "LOW",
+    "sector": "Consumer Cyclical",
+    "yield_pct": 2.52,
+    "times_own_avg": 1.39,
+    "streak_years": 28,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 16.4,
+    "yield_avg_5y_pct": 1.81,
+    "id": 45
+   }
+  ]
+ },
+ {
+  "id": "s13p4",
+  "text": "$MSFT new annual rate is 3.92 USD, up from 3.64 USD, a 7.7% change seen on 2026-10-16. The 5-year dividend growth is 10.2% and the safety label is safe.",
+  "facts": [
+   {
+    "kind": "raise",
+    "name": "Microsoft",
+    "symbol": "MSFT",
+    "sector": "Technology",
+    "currency": "USD",
+    "old_annual_rate": 3.64,
+    "new_annual_rate": 3.92,
+    "change_pct": 7.7,
+    "seen_on": "2026-10-16",
+    "streak_years": 15,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 10.2,
+    "yield_avg_5y_pct": 0.8,
+    "id": 16
+   }
+  ]
+ },
+ {
+  "id": "s13p5",
+  "text": "$DEO dividend new rate is 2.0 USD, down from 3.32 USD, a -39.8% change seen on 2026-10-17. The safety label is safe and the 5-year dividend growth is 2.6%.",
+  "facts": [
+   {
+    "kind": "cut",
+    "name": "Diageo plc",
+    "symbol": "DEO",
+    "sector": "Consumer Defensive",
+    "currency": "USD",
+    "old_annual_rate": 3.32,
+    "new_annual_rate": 2.0,
+    "change_pct": -39.8,
+    "seen_on": "2026-10-17",
+    "streak_years": 0,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 2.6,
+    "yield_avg_5y_pct": 2.75,
+    "id": 13
+   }
+  ]
+ },
+ {
+  "id": "s13p6",
+  "text": "$WDC dividend new rate is 0.7 USD, up from 0.6 USD, a 16.7% change seen on 2026-10-26. The safety label is at_risk and the 5-year dividend growth is -23.3%.",
+  "facts": [
+   {
+    "kind": "raise",
+    "name": "Western Digital Corporation",
+    "symbol": "WDC",
+    "sector": "Technology",
+    "currency": "USD",
+    "old_annual_rate": 0.6,
+    "new_annual_rate": 0.7,
+    "change_pct": 16.7,
+    "seen_on": "2026-10-26",
+    "streak_years": null,
+    "safety": "at_risk",
+    "dividend_growth_5y_pct": -23.3,
+    "yield_avg_5y_pct": 2.57,
+    "id": 3
+   }
+  ]
+ },
+ {
+  "id": "s13p7",
+  "text": "Utilities sector snapshot: 40 companies in Quantic's screener. Median 5-year average yield is 3.8%, median 5-year dividend growth is 4.7%. 7 are safe, 18 watch, 15 at risk.",
+  "facts": [
+   {
+    "kind": "sector_snapshot",
+    "sector": "Utilities",
+    "companies": 40,
+    "safe": 7,
+    "watch": 18,
+    "at_risk": 15,
+    "median_yield_avg_5y_pct": 3.8,
+    "median_dividend_growth_5y_pct": 4.7,
+    "note": "companies in Quantic's screener for this sector, not the whole market",
+    "id": 36
+   }
+  ]
+ },
+ {
+  "id": "s13p8",
+  "text": "$NKE current yield is 4.37%, 3.1 times its 5-year average yield of 1.41%. The safety label is safe with a 23-year streak. The 5-year dividend growth is 10.3%.",
+  "facts": [
+   {
+    "kind": "yield_above_own_average",
+    "name": "Nike, Inc.",
+    "symbol": "NKE",
+    "sector": "Consumer Cyclical",
+    "yield_pct": 4.37,
+    "times_own_avg": 3.1,
+    "streak_years": 23,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 10.3,
+    "yield_avg_5y_pct": 1.41,
+    "id": 46
+   }
+  ]
+ },
+ {
+  "id": "s14p1",
+  "text": "Diageo's annual dividend rate moved from 3.32 USD to 2.0 USD. Quantic saw the change on Oct 17. The current safety label is safe.",
+  "facts": [
+   {
+    "kind": "cut",
+    "name": "Diageo plc",
+    "symbol": "DEO",
+    "sector": "Consumer Defensive",
+    "currency": "USD",
+    "old_annual_rate": 3.32,
+    "new_annual_rate": 2.0,
+    "change_pct": -39.8,
+    "seen_on": "2026-10-17",
+    "streak_years": 0,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 2.6,
+    "yield_avg_5y_pct": 2.75,
+    "id": 13
+   }
+  ]
+ },
+ {
+  "id": "s14p2",
+  "text": "PAX GLOBAL's annual dividend rate moved from 0.33 HKD to 0.08 HKD. This change was seen on Oct 23.",
+  "facts": [
+   {
+    "kind": "cut",
+    "name": "PAX GLOBAL",
+    "symbol": "0327.HK",
+    "sector": "Industrials",
+    "currency": "HKD",
+    "old_annual_rate": 0.33,
+    "new_annual_rate": 0.08,
+    "change_pct": -75.8,
+    "seen_on": "2026-10-23",
+    "streak_years": 6,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 30.9,
+    "yield_avg_5y_pct": 6.38,
+    "id": 8
+   }
+  ]
+ },
+ {
+  "id": "s14p3",
+  "text": "Allwyn AG increased its annual dividend from 0.5 EUR to 0.7 EUR, seen on Oct 23. The 5-year average yield is 7.26%.",
+  "facts": [
+   {
+    "kind": "raise",
+    "name": "Allwyn AG",
+    "symbol": "ALWN.AT",
+    "sector": "Consumer Cyclical",
+    "currency": "EUR",
+    "old_annual_rate": 0.5,
+    "new_annual_rate": 0.7,
+    "change_pct": 40.0,
+    "seen_on": "2026-10-23",
+    "streak_years": 1,
+    "safety": "watch",
+    "dividend_growth_5y_pct": 0.0,
+    "yield_avg_5y_pct": 7.26,
+    "id": 9
+   }
+  ]
+ },
+ {
+  "id": "s14p4",
+  "text": "Texas Instruments goes ex-dividend on Oct 30. The annual rate is 6.08 USD, yielding 1.97% currently.",
+  "facts": [
+   {
+    "kind": "raise",
+    "name": "Texas Instruments Incorporated",
+    "symbol": "TXN",
+    "sector": "Technology",
+    "currency": "USD",
+    "old_annual_rate": 5.68,
+    "new_annual_rate": 6.08,
+    "change_pct": 7.0,
+    "seen_on": "2026-10-16",
+    "streak_years": 22,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 8.6,
+    "yield_avg_5y_pct": 2.71,
+    "id": 15
+   },
+   {
+    "kind": "ex_dividend_soon",
+    "name": "Texas Instruments Incorporated",
+    "symbol": "TXN",
+    "sector": "Technology",
+    "ex_dividend_date": "2026-10-30",
+    "weekday": "Friday",
+    "pay_date": "2026-11-10",
+    "annual_rate": 6.08,
+    "currency": "USD",
+    "yield_pct": 1.97,
+    "frequency": "quarterly",
+    "streak_years": 22,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 8.6,
+    "yield_avg_5y_pct": 2.71,
+    "id": 24
+   }
+  ]
+ },
+ {
+  "id": "s14p5",
+  "text": "Graco has raised its dividend for 26 consecutive years. The current yield of 1.78% is 1.48 times its 5-year average yield of 1.2%.",
+  "facts": [
+   {
+    "kind": "yield_above_own_average",
+    "name": "Graco Inc.",
+    "symbol": "GGG",
+    "sector": "Industrials",
+    "yield_pct": 1.78,
+    "times_own_avg": 1.48,
+    "streak_years": 26,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 9.5,
+    "yield_avg_5y_pct": 1.2,
+    "id": 49
+   }
+  ]
+ },
+ {
+  "id": "s14p6",
+  "text": "INTERTEK GROUP PLC's annual dividend rate moved from 1.65 GBP to 1.08 GBP, seen on Oct 28. The 5-year dividend growth rate is 8.6%.",
+  "facts": [
+   {
+    "kind": "cut",
+    "name": "INTERTEK GROUP PLC ORD 1P",
+    "symbol": "ITRK.L",
+    "sector": "Industrials",
+    "currency": "GBP",
+    "old_annual_rate": 1.65,
+    "new_annual_rate": 1.08,
+    "change_pct": -34.5,
+    "seen_on": "2026-10-28",
+    "streak_years": 3,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 8.6,
+    "yield_avg_5y_pct": 2.58,
+    "id": 0
+   }
+  ]
+ },
+ {
+  "id": "s14p7",
+  "text": "Microsoft increased its annual dividend from 3.64 USD to 3.92 USD, seen on Oct 16. The company has a 15-year increase streak.",
+  "facts": [
+   {
+    "kind": "raise",
+    "name": "Microsoft",
+    "symbol": "MSFT",
+    "sector": "Technology",
+    "currency": "USD",
+    "old_annual_rate": 3.64,
+    "new_annual_rate": 3.92,
+    "change_pct": 7.7,
+    "seen_on": "2026-10-16",
+    "streak_years": 15,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 10.2,
+    "yield_avg_5y_pct": 0.8,
+    "id": 16
+   }
+  ]
+ },
+ {
+  "id": "s14p8",
+  "text": "Nike's current yield is 4.37%, which is 3.1 times its 5-year average yield of 1.41%. The company has 23 consecutive years of increases.",
+  "facts": [
+   {
+    "kind": "yield_above_own_average",
+    "name": "Nike, Inc.",
+    "symbol": "NKE",
+    "sector": "Consumer Cyclical",
+    "yield_pct": 4.37,
+    "times_own_avg": 3.1,
+    "streak_years": 23,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 10.3,
+    "yield_avg_5y_pct": 1.41,
+    "id": 46
+   }
+  ]
+ },
+ {
+  "id": "s15p1",
+  "text": "$WST raised its annual dividend from 0.88 USD to 1.04 USD, a 18.2% increase seen on 2026-10-23. The company has 28 consecutive years of dividend increases and a safe safety label.",
+  "facts": [
+   {
+    "kind": "raise",
+    "name": "West Pharmaceutical Services, I",
+    "symbol": "WST",
+    "sector": "Healthcare",
+    "currency": "USD",
+    "old_annual_rate": 0.88,
+    "new_annual_rate": 1.04,
+    "change_pct": 18.2,
+    "seen_on": "2026-10-23",
+    "streak_years": 28,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 5.6,
+    "yield_avg_5y_pct": 0.24,
+    "id": 6
+   }
+  ]
+ },
+ {
+  "id": "s15p2",
+  "text": "INTERTEK GROUP PLC (ITRK.L) cut its annual dividend from 1.65 GBP to 1.08 GBP. The change is -34.5%, seen on 2026-10-28. The company's safety label is safe.",
+  "facts": [
+   {
+    "kind": "cut",
+    "name": "INTERTEK GROUP PLC ORD 1P",
+    "symbol": "ITRK.L",
+    "sector": "Industrials",
+    "currency": "GBP",
+    "old_annual_rate": 1.65,
+    "new_annual_rate": 1.08,
+    "change_pct": -34.5,
+    "seen_on": "2026-10-28",
+    "streak_years": 3,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 8.6,
+    "yield_avg_5y_pct": 2.58,
+    "id": 0
+   }
+  ]
+ },
+ {
+  "id": "s15p3",
+  "text": "$NKE current yield is 4.37%, which is 3.1 times its 5-year average yield of 1.41%. The company has 23 consecutive years of dividend increases and a safe safety label.",
+  "facts": [
+   {
+    "kind": "yield_above_own_average",
+    "name": "Nike, Inc.",
+    "symbol": "NKE",
+    "sector": "Consumer Cyclical",
+    "yield_pct": 4.37,
+    "times_own_avg": 3.1,
+    "streak_years": 23,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 10.3,
+    "yield_avg_5y_pct": 1.41,
+    "id": 46
+   }
+  ]
+ },
+ {
+  "id": "s15p4",
+  "text": "Diageo plc (DEO) cut its annual dividend from 3.32 USD to 2.0 USD. The change is -39.8%, seen on 2026-10-17. The company has a 5-year average yield of 2.75%.",
+  "facts": [
+   {
+    "kind": "cut",
+    "name": "Diageo plc",
+    "symbol": "DEO",
+    "sector": "Consumer Defensive",
+    "currency": "USD",
+    "old_annual_rate": 3.32,
+    "new_annual_rate": 2.0,
+    "change_pct": -39.8,
+    "seen_on": "2026-10-17",
+    "streak_years": 0,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 2.6,
+    "yield_avg_5y_pct": 2.75,
+    "id": 13
+   }
+  ]
+ },
+ {
+  "id": "s15p5",
+  "text": "$ED raised its annual dividend from 3.51 USD to 3.55 USD, a 1.1% increase seen on 2026-10-17. The company has 29 consecutive years of dividend increases.",
+  "facts": [
+   {
+    "kind": "raise",
+    "name": "Consolidated Edison, Inc.",
+    "symbol": "ED",
+    "sector": "Utilities",
+    "currency": "USD",
+    "old_annual_rate": 3.51,
+    "new_annual_rate": 3.55,
+    "change_pct": 1.1,
+    "seen_on": "2026-10-17",
+    "streak_years": 29,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 2.1,
+    "yield_avg_5y_pct": 3.58,
+    "id": 12
+   }
+  ]
+ },
+ {
+  "id": "s15p6",
+  "text": "$O is ex-dividend on Oct 30 with an annual rate of 3.26 USD and a current yield of 5.74%. The company has 28 consecutive years of dividend increases.",
+  "facts": [
+   {
+    "kind": "ex_dividend_soon",
+    "name": "Realty Income Corporation",
+    "symbol": "O",
+    "sector": "Real Estate",
+    "ex_dividend_date": "2026-10-30",
+    "weekday": "Friday",
+    "pay_date": "2026-11-13",
+    "annual_rate": 3.26,
+    "currency": "USD",
+    "yield_pct": 5.74,
+    "frequency": "monthly",
+    "streak_years": 28,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 3.5,
+    "yield_avg_5y_pct": 5.03,
+    "id": 19
+   }
+  ]
+ },
+ {
+  "id": "s15p7",
+  "text": "Quantic's screener includes 117 Financial Services companies. The median 5-year average yield is 6.75% and the median 5-year dividend growth is 6.5%.",
+  "facts": [
+   {
+    "kind": "sector_snapshot",
+    "sector": "Financial Services",
+    "companies": 117,
+    "safe": 48,
+    "watch": 31,
+    "at_risk": 38,
+    "median_yield_avg_5y_pct": 6.75,
+    "median_dividend_growth_5y_pct": 6.5,
+    "note": "companies in Quantic's screener for this sector, not the whole market",
+    "id": 31
+   }
+  ]
+ },
+ {
+  "id": "s15p8",
+  "text": "$DKS has a 5-year dividend growth rate of 31.1%. Its current yield is 3.53%, which is 1.6 times its 5-year average yield of 2.2%.",
+  "facts": [
+   {
+    "kind": "fast_grower",
+    "name": "Dick's Sporting Goods Inc",
+    "symbol": "DKS",
+    "sector": "Consumer Cyclical",
+    "streak_years": 11,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 31.1,
+    "yield_avg_5y_pct": 2.2,
+    "id": 37
+   },
+   {
+    "kind": "yield_above_own_average",
+    "name": "Dick's Sporting Goods Inc",
+    "symbol": "DKS",
+    "sector": "Consumer Cyclical",
+    "yield_pct": 3.53,
+    "times_own_avg": 1.6,
+    "streak_years": 11,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 31.1,
+    "yield_avg_5y_pct": 2.2,
+    "id": 44
+   }
+  ]
+ },
+ {
+  "id": "s16p1",
+  "text": "Western Digital ($WDC) changed its annual dividend rate from $0.60 to $0.70, a 16.7% increase seen on Oct 26. Despite the change, Quantic labels the dividend safety as at_risk, with a 5-year growth rate of -23.3%.",
+  "facts": [
+   {
+    "kind": "raise",
+    "name": "Western Digital Corporation",
+    "symbol": "WDC",
+    "sector": "Technology",
+    "currency": "USD",
+    "old_annual_rate": 0.6,
+    "new_annual_rate": 0.7,
+    "change_pct": 16.7,
+    "seen_on": "2026-10-26",
+    "streak_years": null,
+    "safety": "at_risk",
+    "dividend_growth_5y_pct": -23.3,
+    "yield_avg_5y_pct": 2.57,
+    "id": 3
+   }
+  ]
+ },
+ {
+  "id": "s16p2",
+  "text": "Texas Instruments ($TXN) has a 22-year streak of dividend increases. The company raised its annual rate from $5.68 to $6.08 (7.0% change) seen on Oct 16. The ex-dividend date is Oct 30, with a pay date of Nov 10.",
+  "facts": [
+   {
+    "kind": "raise",
+    "name": "Texas Instruments Incorporated",
+    "symbol": "TXN",
+    "sector": "Technology",
+    "currency": "USD",
+    "old_annual_rate": 5.68,
+    "new_annual_rate": 6.08,
+    "change_pct": 7.0,
+    "seen_on": "2026-10-16",
+    "streak_years": 22,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 8.6,
+    "yield_avg_5y_pct": 2.71,
+    "id": 15
+   },
+   {
+    "kind": "ex_dividend_soon",
+    "name": "Texas Instruments Incorporated",
+    "symbol": "TXN",
+    "sector": "Technology",
+    "ex_dividend_date": "2026-10-30",
+    "weekday": "Friday",
+    "pay_date": "2026-11-10",
+    "annual_rate": 6.08,
+    "currency": "USD",
+    "yield_pct": 1.97,
+    "frequency": "quarterly",
+    "streak_years": 22,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 8.6,
+    "yield_avg_5y_pct": 2.71,
+    "id": 24
+   }
+  ]
+ },
+ {
+  "id": "s16p3",
+  "text": "Diageo ($DEO) reduced its annual dividend from $3.32 to $2.00, a -39.8% change seen on Oct 17. The company's streak of dividend increases is now 0 years, and Quantic labels the safety as safe.",
+  "facts": [
+   {
+    "kind": "cut",
+    "name": "Diageo plc",
+    "symbol": "DEO",
+    "sector": "Consumer Defensive",
+    "currency": "USD",
+    "old_annual_rate": 3.32,
+    "new_annual_rate": 2.0,
+    "change_pct": -39.8,
+    "seen_on": "2026-10-17",
+    "streak_years": 0,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 2.6,
+    "yield_avg_5y_pct": 2.75,
+    "id": 13
+   }
+  ]
+ },
+ {
+  "id": "s16p4",
+  "text": "NiSource ($NI) hits ex-dividend status on Oct 30. The annual rate is $1.20 with a current yield of 2.75%. Quantic labels the safety as watch, and the 5-year dividend growth rate is 5.9%.",
+  "facts": [
+   {
+    "kind": "ex_dividend_soon",
+    "name": "NiSource Inc",
+    "symbol": "NI",
+    "sector": "Utilities",
+    "ex_dividend_date": "2026-10-30",
+    "weekday": "Friday",
+    "pay_date": "2026-11-20",
+    "annual_rate": 1.2,
+    "currency": "USD",
+    "yield_pct": 2.75,
+    "frequency": "quarterly",
+    "streak_years": 14,
+    "safety": "watch",
+    "dividend_growth_5y_pct": 5.9,
+    "yield_avg_5y_pct": 3.34,
+    "id": 22
+   }
+  ]
+ },
+ {
+  "id": "s16p5",
+  "text": "Realty Income ($O) goes ex-dividend on Oct 30 with a monthly frequency. The annual rate is $3.26 and the current yield is 5.74%. The company maintains a 28-year streak of dividend increases.",
+  "facts": [
+   {
+    "kind": "ex_dividend_soon",
+    "name": "Realty Income Corporation",
+    "symbol": "O",
+    "sector": "Real Estate",
+    "ex_dividend_date": "2026-10-30",
+    "weekday": "Friday",
+    "pay_date": "2026-11-13",
+    "annual_rate": 3.26,
+    "currency": "USD",
+    "yield_pct": 5.74,
+    "frequency": "monthly",
+    "streak_years": 28,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 3.5,
+    "yield_avg_5y_pct": 5.03,
+    "id": 19
+   }
+  ]
+ },
+ {
+  "id": "s16p6",
+  "text": "Dick's Sporting Goods ($DKS) shows a 5-year dividend growth rate of 31.1%, the highest 5-year growth figure in this dataset's fast grower selection. The company has an 11-year streak of increases.",
+  "facts": [
+   {
+    "kind": "fast_grower",
+    "name": "Dick's Sporting Goods Inc",
+    "symbol": "DKS",
+    "sector": "Consumer Cyclical",
+    "streak_years": 11,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 31.1,
+    "yield_avg_5y_pct": 2.2,
+    "id": 37
+   },
+   {
+    "kind": "yield_above_own_average",
+    "name": "Dick's Sporting Goods Inc",
+    "symbol": "DKS",
+    "sector": "Consumer Cyclical",
+    "yield_pct": 3.53,
+    "times_own_avg": 1.6,
+    "streak_years": 11,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 31.1,
+    "yield_avg_5y_pct": 2.2,
+    "id": 44
+   }
+  ]
+ },
+ {
+  "id": "s16p7",
+  "text": "In the Consumer Defensive sector, Quantic tracks 54 companies in its screener. Of these, 13 are labeled safe, 23 are watch, and 18 are at_risk. The median 5-year average yield for the sector is 3.05%.",
+  "facts": [
+   {
+    "kind": "sector_snapshot",
+    "sector": "Consumer Defensive",
+    "companies": 54,
+    "safe": 13,
+    "watch": 23,
+    "at_risk": 18,
+    "median_yield_avg_5y_pct": 3.05,
+    "median_dividend_growth_5y_pct": 4.1,
+    "note": "companies in Quantic's screener for this sector, not the whole market",
+    "id": 29
+   }
+  ]
+ },
+ {
+  "id": "s16p8",
+  "text": "Clorox ($CLX) goes ex-dividend on Oct 28. The annual rate is $5.00 with a current yield of 5.72%. Quantic labels the dividend safety as at_risk, despite a 23-year streak of increases.",
+  "facts": [
+   {
+    "kind": "ex_dividend_soon",
+    "name": "Clorox Company (The)",
+    "symbol": "CLX",
+    "sector": "Consumer Defensive",
+    "ex_dividend_date": "2026-10-28",
+    "weekday": "Wednesday",
+    "pay_date": "2026-11-13",
+    "annual_rate": 5.0,
+    "currency": "USD",
+    "yield_pct": 5.72,
+    "frequency": "quarterly",
+    "streak_years": 23,
+    "safety": "at_risk",
+    "dividend_growth_5y_pct": 2.5,
+    "yield_avg_5y_pct": 3.21,
+    "id": 18
+   }
+  ]
+ },
+ {
+  "id": "s17p1",
+  "text": "Dick's Sporting Goods ($DKS) dividend has grown 31.1% annually over the last 5 years. The current yield of 3.53% is 1.6 times the 5-year average yield.",
+  "facts": [
+   {
+    "kind": "fast_grower",
+    "name": "Dick's Sporting Goods Inc",
+    "symbol": "DKS",
+    "sector": "Consumer Cyclical",
+    "streak_years": 11,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 31.1,
+    "yield_avg_5y_pct": 2.2,
+    "id": 37
+   },
+   {
+    "kind": "yield_above_own_average",
+    "name": "Dick's Sporting Goods Inc",
+    "symbol": "DKS",
+    "sector": "Consumer Cyclical",
+    "yield_pct": 3.53,
+    "times_own_avg": 1.6,
+    "streak_years": 11,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 31.1,
+    "yield_avg_5y_pct": 2.2,
+    "id": 44
+   }
+  ]
+ },
+ {
+  "id": "s17p2",
+  "text": "INTERTEK GROUP PLC (ITRK.L) annual dividend fell from 1.65 GBP to 1.08 GBP. Quantic first saw this change on Oct 28, 2026.",
+  "facts": [
+   {
+    "kind": "cut",
+    "name": "INTERTEK GROUP PLC ORD 1P",
+    "symbol": "ITRK.L",
+    "sector": "Industrials",
+    "currency": "GBP",
+    "old_annual_rate": 1.65,
+    "new_annual_rate": 1.08,
+    "change_pct": -34.5,
+    "seen_on": "2026-10-28",
+    "streak_years": 3,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 8.6,
+    "yield_avg_5y_pct": 2.58,
+    "id": 0
+   }
+  ]
+ },
+ {
+  "id": "s17p3",
+  "text": "Allwyn AG (ALWN.AT) increased its annual dividend by 40.0%, from 0.5 EUR to 0.7 EUR. Quantic first saw this new rate on Oct 23, 2026.",
+  "facts": [
+   {
+    "kind": "raise",
+    "name": "Allwyn AG",
+    "symbol": "ALWN.AT",
+    "sector": "Consumer Cyclical",
+    "currency": "EUR",
+    "old_annual_rate": 0.5,
+    "new_annual_rate": 0.7,
+    "change_pct": 40.0,
+    "seen_on": "2026-10-23",
+    "streak_years": 1,
+    "safety": "watch",
+    "dividend_growth_5y_pct": 0.0,
+    "yield_avg_5y_pct": 7.26,
+    "id": 9
+   }
+  ]
+ },
+ {
+  "id": "s17p4",
+  "text": "Diageo plc ($DEO) reduced its annual dividend from $3.32 to $2.00. The company's dividend safety is currently labeled 'safe'.",
+  "facts": [
+   {
+    "kind": "cut",
+    "name": "Diageo plc",
+    "symbol": "DEO",
+    "sector": "Consumer Defensive",
+    "currency": "USD",
+    "old_annual_rate": 3.32,
+    "new_annual_rate": 2.0,
+    "change_pct": -39.8,
+    "seen_on": "2026-10-17",
+    "streak_years": 0,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 2.6,
+    "yield_avg_5y_pct": 2.75,
+    "id": 13
+   }
+  ]
+ },
+ {
+  "id": "s17p5",
+  "text": "Consolidated Edison ($ED) has increased its dividend for 29 consecutive years. The 5-year average yield for the utility is 3.58%.",
+  "facts": [
+   {
+    "kind": "raise",
+    "name": "Consolidated Edison, Inc.",
+    "symbol": "ED",
+    "sector": "Utilities",
+    "currency": "USD",
+    "old_annual_rate": 3.51,
+    "new_annual_rate": 3.55,
+    "change_pct": 1.1,
+    "seen_on": "2026-10-17",
+    "streak_years": 29,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 2.1,
+    "yield_avg_5y_pct": 3.58,
+    "id": 12
+   }
+  ]
+ },
+ {
+  "id": "s17p6",
+  "text": "Realty Income Corporation ($O) has a 28-year streak of dividend increases. The monthly payer's current yield is 5.74%.",
+  "facts": [
+   {
+    "kind": "ex_dividend_soon",
+    "name": "Realty Income Corporation",
+    "symbol": "O",
+    "sector": "Real Estate",
+    "ex_dividend_date": "2026-10-30",
+    "weekday": "Friday",
+    "pay_date": "2026-11-13",
+    "annual_rate": 3.26,
+    "currency": "USD",
+    "yield_pct": 5.74,
+    "frequency": "monthly",
+    "streak_years": 28,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 3.5,
+    "yield_avg_5y_pct": 5.03,
+    "id": 19
+   }
+  ]
+ },
+ {
+  "id": "s17p7",
+  "text": "Western Digital ($WDC) raised its annual dividend 16.7% to $0.70, despite a 5-year growth rate of -23.3%. Safety is labeled 'at_risk'.",
+  "facts": [
+   {
+    "kind": "raise",
+    "name": "Western Digital Corporation",
+    "symbol": "WDC",
+    "sector": "Technology",
+    "currency": "USD",
+    "old_annual_rate": 0.6,
+    "new_annual_rate": 0.7,
+    "change_pct": 16.7,
+    "seen_on": "2026-10-26",
+    "streak_years": null,
+    "safety": "at_risk",
+    "dividend_growth_5y_pct": -23.3,
+    "yield_avg_5y_pct": 2.57,
+    "id": 3
+   }
+  ]
+ },
+ {
+  "id": "s17p8",
+  "text": "NiSource ($NI) hits ex-dividend on Oct 30, 2026, with an annual rate of $1.20. The utility's dividend has grown 5.9% annually over 5 years.",
+  "facts": [
+   {
+    "kind": "ex_dividend_soon",
+    "name": "NiSource Inc",
+    "symbol": "NI",
+    "sector": "Utilities",
+    "ex_dividend_date": "2026-10-30",
+    "weekday": "Friday",
+    "pay_date": "2026-11-20",
+    "annual_rate": 1.2,
+    "currency": "USD",
+    "yield_pct": 2.75,
+    "frequency": "quarterly",
+    "streak_years": 14,
+    "safety": "watch",
+    "dividend_growth_5y_pct": 5.9,
+    "yield_avg_5y_pct": 3.34,
+    "id": 22
+   }
+  ]
+ },
+ {
+  "id": "s18p1",
+  "text": "Riley Exploration Permian, Inc. ($REPX) dividend was seen on Oct 27 at a new annual rate of 1.68 USD, up 5.0% from 1.6. The 5-year average yield is 4.72%.",
+  "facts": [
+   {
+    "kind": "raise",
+    "name": "Riley Exploration Permian, Inc.",
+    "symbol": "REPX",
+    "sector": "Energy",
+    "currency": "USD",
+    "old_annual_rate": 1.6,
+    "new_annual_rate": 1.68,
+    "change_pct": 5.0,
+    "seen_on": "2026-10-27",
+    "streak_years": 4,
+    "safety": "watch",
+    "dividend_growth_5y_pct": null,
+    "yield_avg_5y_pct": 4.72,
+    "id": 1
+   }
+  ]
+ },
+ {
+  "id": "s18p2",
+  "text": "Diageo plc ($DEO) dividend was seen on Oct 17 at a new annual rate of 2.0 USD. The annual rate change was -39.8. The 5-year average yield is 2.75%.",
+  "facts": [
+   {
+    "kind": "cut",
+    "name": "Diageo plc",
+    "symbol": "DEO",
+    "sector": "Consumer Defensive",
+    "currency": "USD",
+    "old_annual_rate": 3.32,
+    "new_annual_rate": 2.0,
+    "change_pct": -39.8,
+    "seen_on": "2026-10-17",
+    "streak_years": 0,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 2.6,
+    "yield_avg_5y_pct": 2.75,
+    "id": 13
+   }
+  ]
+ },
+ {
+  "id": "s18p3",
+  "text": "PAX GLOBAL dividend was seen on Oct 23 at a new annual rate of 0.08 HKD. The annual rate change was -75.8. The 5-year average yield is 6.38%.",
+  "facts": [
+   {
+    "kind": "cut",
+    "name": "PAX GLOBAL",
+    "symbol": "0327.HK",
+    "sector": "Industrials",
+    "currency": "HKD",
+    "old_annual_rate": 0.33,
+    "new_annual_rate": 0.08,
+    "change_pct": -75.8,
+    "seen_on": "2026-10-23",
+    "streak_years": 6,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 30.9,
+    "yield_avg_5y_pct": 6.38,
+    "id": 8
+   }
+  ]
+ },
+ {
+  "id": "s18p4",
+  "text": "Fastenal Company ($FAST) has an ex-dividend date of Oct 28, 2026. The pay date is Nov 25, 2026, with an annual rate of 1.04 USD and a current yield of 2.02%.",
+  "facts": [
+   {
+    "kind": "ex_dividend_soon",
+    "name": "Fastenal Company",
+    "symbol": "FAST",
+    "sector": "Industrials",
+    "ex_dividend_date": "2026-10-28",
+    "weekday": "Wednesday",
+    "pay_date": "2026-11-25",
+    "annual_rate": 1.04,
+    "currency": "USD",
+    "yield_pct": 2.02,
+    "frequency": "quarterly",
+    "streak_years": 14,
+    "safety": "watch",
+    "dividend_growth_5y_pct": 12.0,
+    "yield_avg_5y_pct": 2.25,
+    "id": 17
+   }
+  ]
+ },
+ {
+  "id": "s18p5",
+  "text": "Dick's Sporting Goods Inc ($DKS) shows a 5-year dividend growth rate of 31.1%. The company has a streak of 11 consecutive years of dividend increases.",
+  "facts": [
+   {
+    "kind": "fast_grower",
+    "name": "Dick's Sporting Goods Inc",
+    "symbol": "DKS",
+    "sector": "Consumer Cyclical",
+    "streak_years": 11,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 31.1,
+    "yield_avg_5y_pct": 2.2,
+    "id": 37
+   },
+   {
+    "kind": "yield_above_own_average",
+    "name": "Dick's Sporting Goods Inc",
+    "symbol": "DKS",
+    "sector": "Consumer Cyclical",
+    "yield_pct": 3.53,
+    "times_own_avg": 1.6,
+    "streak_years": 11,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 31.1,
+    "yield_avg_5y_pct": 2.2,
+    "id": 44
+   }
+  ]
+ },
+ {
+  "id": "s18p6",
+  "text": "Microsoft ($MSFT) dividend was seen on Oct 16 at a new annual rate of 3.92 USD, up 7.7% from 3.64. The 5-year average yield is 0.8%.",
+  "facts": [
+   {
+    "kind": "raise",
+    "name": "Microsoft",
+    "symbol": "MSFT",
+    "sector": "Technology",
+    "currency": "USD",
+    "old_annual_rate": 3.64,
+    "new_annual_rate": 3.92,
+    "change_pct": 7.7,
+    "seen_on": "2026-10-16",
+    "streak_years": 15,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 10.2,
+    "yield_avg_5y_pct": 0.8,
+    "id": 16
+   }
+  ]
+ },
+ {
+  "id": "s18p7",
+  "text": "Brown Forman Inc ($BF-B) has a current yield of 3.23%, which is 1.96 times its 5-year average yield of 1.65%. The company has a 29-year dividend increase streak.",
+  "facts": [
+   {
+    "kind": "yield_above_own_average",
+    "name": "Brown Forman Inc",
+    "symbol": "BF-B",
+    "sector": "Consumer Defensive",
+    "yield_pct": 3.23,
+    "times_own_avg": 1.96,
+    "streak_years": 29,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 5.5,
+    "yield_avg_5y_pct": 1.65,
+    "id": 52
+   }
+  ]
+ },
+ {
+  "id": "s18p8",
+  "text": "NiSource Inc ($NI) has an ex-dividend date of Oct 30, 2026, with a pay date of Nov 20, 2026. The annual rate is 1.2 USD and the current yield is 2.75%.",
+  "facts": [
+   {
+    "kind": "ex_dividend_soon",
+    "name": "NiSource Inc",
+    "symbol": "NI",
+    "sector": "Utilities",
+    "ex_dividend_date": "2026-10-30",
+    "weekday": "Friday",
+    "pay_date": "2026-11-20",
+    "annual_rate": 1.2,
+    "currency": "USD",
+    "yield_pct": 2.75,
+    "frequency": "quarterly",
+    "streak_years": 14,
+    "safety": "watch",
+    "dividend_growth_5y_pct": 5.9,
+    "yield_avg_5y_pct": 3.34,
+    "id": 22
+   }
+  ]
+ },
+ {
+  "id": "s19p1",
+  "text": "PAX GLOBAL annual dividend rate cut from 0.33 HKD to 0.08 HKD, a -75.8% change. Quantic flagged this change on 2026-10-23. The company has a 6-year dividend growth streak.",
+  "facts": [
+   {
+    "kind": "cut",
+    "name": "PAX GLOBAL",
+    "symbol": "0327.HK",
+    "sector": "Industrials",
+    "currency": "HKD",
+    "old_annual_rate": 0.33,
+    "new_annual_rate": 0.08,
+    "change_pct": -75.8,
+    "seen_on": "2026-10-23",
+    "streak_years": 6,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 30.9,
+    "yield_avg_5y_pct": 6.38,
+    "id": 8
+   }
+  ]
+ },
+ {
+  "id": "s19p2",
+  "text": "Two names go ex-dividend on 2026-10-28: Fastenal ($FAST, annual rate 1.04 USD) and Clorox (CLX, annual rate 5.00 USD). Fastenal is labeled \"watch\" and Clorox \"at_risk\" for dividend safety.",
+  "facts": [
+   {
+    "kind": "ex_dividend_soon",
+    "name": "Fastenal Company",
+    "symbol": "FAST",
+    "sector": "Industrials",
+    "ex_dividend_date": "2026-10-28",
+    "weekday": "Wednesday",
+    "pay_date": "2026-11-25",
+    "annual_rate": 1.04,
+    "currency": "USD",
+    "yield_pct": 2.02,
+    "frequency": "quarterly",
+    "streak_years": 14,
+    "safety": "watch",
+    "dividend_growth_5y_pct": 12.0,
+    "yield_avg_5y_pct": 2.25,
+    "id": 17
+   },
+   {
+    "kind": "ex_dividend_soon",
+    "name": "Clorox Company (The)",
+    "symbol": "CLX",
+    "sector": "Consumer Defensive",
+    "ex_dividend_date": "2026-10-28",
+    "weekday": "Wednesday",
+    "pay_date": "2026-11-13",
+    "annual_rate": 5.0,
+    "currency": "USD",
+    "yield_pct": 5.72,
+    "frequency": "quarterly",
+    "streak_years": 23,
+    "safety": "at_risk",
+    "dividend_growth_5y_pct": 2.5,
+    "yield_avg_5y_pct": 3.21,
+    "id": 18
+   }
+  ]
+ },
+ {
+  "id": "s19p3",
+  "text": "Nike ($NKE) current yield is 4.37%, which is 3.1 times its 5-year average yield of 1.41%. The company has a 23-year dividend increase streak and is labeled \"safe\".",
+  "facts": [
+   {
+    "kind": "yield_above_own_average",
+    "name": "Nike, Inc.",
+    "symbol": "NKE",
+    "sector": "Consumer Cyclical",
+    "yield_pct": 4.37,
+    "times_own_avg": 3.1,
+    "streak_years": 23,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 10.3,
+    "yield_avg_5y_pct": 1.41,
+    "id": 46
+   }
+  ]
+ },
+ {
+  "id": "s19p4",
+  "text": "Allwyn AG (ALWN.AT) saw its annual dividend rate increase by 40.0%, from 0.50 EUR to 0.70 EUR. This change was seen on 2026-10-23. The safety label is \"watch\".",
+  "facts": [
+   {
+    "kind": "raise",
+    "name": "Allwyn AG",
+    "symbol": "ALWN.AT",
+    "sector": "Consumer Cyclical",
+    "currency": "EUR",
+    "old_annual_rate": 0.5,
+    "new_annual_rate": 0.7,
+    "change_pct": 40.0,
+    "seen_on": "2026-10-23",
+    "streak_years": 1,
+    "safety": "watch",
+    "dividend_growth_5y_pct": 0.0,
+    "yield_avg_5y_pct": 7.26,
+    "id": 9
+   }
+  ]
+ },
+ {
+  "id": "s19p5",
+  "text": "Quantic's Basic Materials sector snapshot includes 39 companies. Of these, 21 are labeled \"safe\", 6 are \"watch\", and 12 are \"at_risk\" for dividend safety. The median 5-year yield is 3.04%.",
+  "facts": [
+   {
+    "kind": "sector_snapshot",
+    "sector": "Basic Materials",
+    "companies": 39,
+    "safe": 21,
+    "watch": 6,
+    "at_risk": 12,
+    "median_yield_avg_5y_pct": 3.04,
+    "median_dividend_growth_5y_pct": 5.9,
+    "note": "companies in Quantic's screener for this sector, not the whole market",
+    "id": 26
+   }
+  ]
+ },
+ {
+  "id": "s19p6",
+  "text": "Dick's Sporting Goods (DKS) is a fast grower with a 5-year dividend growth rate of 31.1%. The company has an 11-year dividend increase streak and a 5-year average yield of 2.2%.",
+  "facts": [
+   {
+    "kind": "fast_grower",
+    "name": "Dick's Sporting Goods Inc",
+    "symbol": "DKS",
+    "sector": "Consumer Cyclical",
+    "streak_years": 11,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 31.1,
+    "yield_avg_5y_pct": 2.2,
+    "id": 37
+   },
+   {
+    "kind": "yield_above_own_average",
+    "name": "Dick's Sporting Goods Inc",
+    "symbol": "DKS",
+    "sector": "Consumer Cyclical",
+    "yield_pct": 3.53,
+    "times_own_avg": 1.6,
+    "streak_years": 11,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 31.1,
+    "yield_avg_5y_pct": 2.2,
+    "id": 44
+   }
+  ]
+ },
+ {
+  "id": "s19p7",
+  "text": "Consolidated Edison ($ED) dividend rate increased from 3.51 USD to 3.55 USD, a 1.1% change seen on 2026-10-17. The company has a 29-year dividend increase streak and is labeled \"safe\".",
+  "facts": [
+   {
+    "kind": "raise",
+    "name": "Consolidated Edison, Inc.",
+    "symbol": "ED",
+    "sector": "Utilities",
+    "currency": "USD",
+    "old_annual_rate": 3.51,
+    "new_annual_rate": 3.55,
+    "change_pct": 1.1,
+    "seen_on": "2026-10-17",
+    "streak_years": 29,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 2.1,
+    "yield_avg_5y_pct": 3.58,
+    "id": 12
+   }
+  ]
+ },
+ {
+  "id": "s19p8",
+  "text": "Zoetis ($ZTS) goes ex-dividend on 2026-10-30. The annual rate is 2.12 USD with a current yield of 2.71%. The 5-year dividend growth rate is 20.1%, and the safety label is \"watch\".",
+  "facts": [
+   {
+    "kind": "ex_dividend_soon",
+    "name": "Zoetis Inc.",
+    "symbol": "ZTS",
+    "sector": "Healthcare",
+    "ex_dividend_date": "2026-10-30",
+    "weekday": "Friday",
+    "pay_date": "2026-12-01",
+    "annual_rate": 2.12,
+    "currency": "USD",
+    "yield_pct": 2.71,
+    "frequency": "quarterly",
+    "streak_years": 12,
+    "safety": "watch",
+    "dividend_growth_5y_pct": 20.1,
+    "yield_avg_5y_pct": 0.89,
+    "id": 25
+   }
+  ]
+ },
+ {
+  "id": "s20p1",
+  "text": "InterTek Group ($ITRK.L) dividend cut seen on Oct 28: annual rate drops from 1.65 to 1.08 GBP, a -34.5% change. The safety label is safe, with a 3-year streak of increases.",
+  "facts": [
+   {
+    "kind": "cut",
+    "name": "INTERTEK GROUP PLC ORD 1P",
+    "symbol": "ITRK.L",
+    "sector": "Industrials",
+    "currency": "GBP",
+    "old_annual_rate": 1.65,
+    "new_annual_rate": 1.08,
+    "change_pct": -34.5,
+    "seen_on": "2026-10-28",
+    "streak_years": 3,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 8.6,
+    "yield_avg_5y_pct": 2.58,
+    "id": 0
+   }
+  ]
+ },
+ {
+  "id": "s20p2",
+  "text": "Diageo ($DEO) shows a dividend cut seen on Oct 17: annual rate falls from 3.32 to 2.0 USD (-39.8%). The data lists a 0-year streak and a safe safety label.",
+  "facts": [
+   {
+    "kind": "cut",
+    "name": "Diageo plc",
+    "symbol": "DEO",
+    "sector": "Consumer Defensive",
+    "currency": "USD",
+    "old_annual_rate": 3.32,
+    "new_annual_rate": 2.0,
+    "change_pct": -39.8,
+    "seen_on": "2026-10-17",
+    "streak_years": 0,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 2.6,
+    "yield_avg_5y_pct": 2.75,
+    "id": 13
+   }
+  ]
+ },
+ {
+  "id": "s20p3",
+  "text": "Microsoft ($MSFT) raised its dividend, seen on Oct 16: annual rate moves from 3.64 to 3.92 USD, a 7.7% increase. It holds a 15-year streak of increases and a safe label.",
+  "facts": [
+   {
+    "kind": "raise",
+    "name": "Microsoft",
+    "symbol": "MSFT",
+    "sector": "Technology",
+    "currency": "USD",
+    "old_annual_rate": 3.64,
+    "new_annual_rate": 3.92,
+    "change_pct": 7.7,
+    "seen_on": "2026-10-16",
+    "streak_years": 15,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 10.2,
+    "yield_avg_5y_pct": 0.8,
+    "id": 16
+   }
+  ]
+ },
+ {
+  "id": "s20p4",
+  "text": "Realty Income ($O) goes ex-dividend Oct 30 with a 3.26 USD annual rate (5.74% yield). It has a 28-year streak of increases and a monthly frequency.",
+  "facts": [
+   {
+    "kind": "ex_dividend_soon",
+    "name": "Realty Income Corporation",
+    "symbol": "O",
+    "sector": "Real Estate",
+    "ex_dividend_date": "2026-10-30",
+    "weekday": "Friday",
+    "pay_date": "2026-11-13",
+    "annual_rate": 3.26,
+    "currency": "USD",
+    "yield_pct": 5.74,
+    "frequency": "monthly",
+    "streak_years": 28,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 3.5,
+    "yield_avg_5y_pct": 5.03,
+    "id": 19
+   }
+  ]
+ },
+ {
+  "id": "s20p5",
+  "text": "Dick's Sporting Goods ($DKS) has a 31.1% 5-year dividend growth rate and an 11-year streak of increases. Its current yield of 3.53% is 1.6x its 5-year average yield of 2.2%.",
+  "facts": [
+   {
+    "kind": "fast_grower",
+    "name": "Dick's Sporting Goods Inc",
+    "symbol": "DKS",
+    "sector": "Consumer Cyclical",
+    "streak_years": 11,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 31.1,
+    "yield_avg_5y_pct": 2.2,
+    "id": 37
+   },
+   {
+    "kind": "yield_above_own_average",
+    "name": "Dick's Sporting Goods Inc",
+    "symbol": "DKS",
+    "sector": "Consumer Cyclical",
+    "yield_pct": 3.53,
+    "times_own_avg": 1.6,
+    "streak_years": 11,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 31.1,
+    "yield_avg_5y_pct": 2.2,
+    "id": 44
+   }
+  ]
+ },
+ {
+  "id": "s20p6",
+  "text": "Nike ($NKE) current yield is 4.37%, which is 3.1x its 5-year average yield of 1.41%. It has a 23-year streak of increases and a safe safety label.",
+  "facts": [
+   {
+    "kind": "yield_above_own_average",
+    "name": "Nike, Inc.",
+    "symbol": "NKE",
+    "sector": "Consumer Cyclical",
+    "yield_pct": 4.37,
+    "times_own_avg": 3.1,
+    "streak_years": 23,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 10.3,
+    "yield_avg_5y_pct": 1.41,
+    "id": 46
+   }
+  ]
+ },
+ {
+  "id": "s20p7",
+  "text": "Zoetis ($ZTS) goes ex-dividend Oct 30 with a 2.12 USD annual rate (2.71% yield). It has a 12-year streak of increases and is labeled 'watch' for safety.",
+  "facts": [
+   {
+    "kind": "ex_dividend_soon",
+    "name": "Zoetis Inc.",
+    "symbol": "ZTS",
+    "sector": "Healthcare",
+    "ex_dividend_date": "2026-10-30",
+    "weekday": "Friday",
+    "pay_date": "2026-12-01",
+    "annual_rate": 2.12,
+    "currency": "USD",
+    "yield_pct": 2.71,
+    "frequency": "quarterly",
+    "streak_years": 12,
+    "safety": "watch",
+    "dividend_growth_5y_pct": 20.1,
+    "yield_avg_5y_pct": 0.89,
+    "id": 25
+   }
+  ]
+ },
+ {
+  "id": "s20p8",
+  "text": "Fastenal ($FAST) and Clorox ($CLX) go ex-dividend today, Oct 28. Fastenal's rate is 1.04 USD; Clorox's is 5.0 USD with an 'at_risk' safety label.",
+  "facts": [
+   {
+    "kind": "ex_dividend_soon",
+    "name": "Fastenal Company",
+    "symbol": "FAST",
+    "sector": "Industrials",
+    "ex_dividend_date": "2026-10-28",
+    "weekday": "Wednesday",
+    "pay_date": "2026-11-25",
+    "annual_rate": 1.04,
+    "currency": "USD",
+    "yield_pct": 2.02,
+    "frequency": "quarterly",
+    "streak_years": 14,
+    "safety": "watch",
+    "dividend_growth_5y_pct": 12.0,
+    "yield_avg_5y_pct": 2.25,
+    "id": 17
+   },
+   {
+    "kind": "ex_dividend_soon",
+    "name": "Clorox Company (The)",
+    "symbol": "CLX",
+    "sector": "Consumer Defensive",
+    "ex_dividend_date": "2026-10-28",
+    "weekday": "Wednesday",
+    "pay_date": "2026-11-13",
+    "annual_rate": 5.0,
+    "currency": "USD",
+    "yield_pct": 5.72,
+    "frequency": "quarterly",
+    "streak_years": 23,
+    "safety": "at_risk",
+    "dividend_growth_5y_pct": 2.5,
+    "yield_avg_5y_pct": 3.21,
+    "id": 18
+   }
+  ]
+ },
+ {
+  "id": "s21p1",
+  "text": "NiSource ($NI) goes ex-dividend on Oct 30 with a pay date of Nov 20. The annual rate is $1.20, yielding 2.75% currently. The company is labeled 'watch' with a 14-year dividend growth streak.",
+  "facts": [
+   {
+    "kind": "ex_dividend_soon",
+    "name": "NiSource Inc",
+    "symbol": "NI",
+    "sector": "Utilities",
+    "ex_dividend_date": "2026-10-30",
+    "weekday": "Friday",
+    "pay_date": "2026-11-20",
+    "annual_rate": 1.2,
+    "currency": "USD",
+    "yield_pct": 2.75,
+    "frequency": "quarterly",
+    "streak_years": 14,
+    "safety": "watch",
+    "dividend_growth_5y_pct": 5.9,
+    "yield_avg_5y_pct": 3.34,
+    "id": 22
+   }
+  ]
+ },
+ {
+  "id": "s21p2",
+  "text": "West Pharmaceutical Services ($WST) dividend increased from $0.88 to $1.04 (18.2% change), seen on Oct 23. The company has a 28-year streak of increases and is labeled 'safe'.",
+  "facts": [
+   {
+    "kind": "raise",
+    "name": "West Pharmaceutical Services, I",
+    "symbol": "WST",
+    "sector": "Healthcare",
+    "currency": "USD",
+    "old_annual_rate": 0.88,
+    "new_annual_rate": 1.04,
+    "change_pct": 18.2,
+    "seen_on": "2026-10-23",
+    "streak_years": 28,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 5.6,
+    "yield_avg_5y_pct": 0.24,
+    "id": 6
+   }
+  ]
+ },
+ {
+  "id": "s21p3",
+  "text": "Zoetis ($ZTS) shows 20.1% dividend growth over 5 years. The current yield is 2.71% compared to a 5-year average yield of 0.89%. The company is labeled 'watch' with a 12-year streak.",
+  "facts": [
+   {
+    "kind": "ex_dividend_soon",
+    "name": "Zoetis Inc.",
+    "symbol": "ZTS",
+    "sector": "Healthcare",
+    "ex_dividend_date": "2026-10-30",
+    "weekday": "Friday",
+    "pay_date": "2026-12-01",
+    "annual_rate": 2.12,
+    "currency": "USD",
+    "yield_pct": 2.71,
+    "frequency": "quarterly",
+    "streak_years": 12,
+    "safety": "watch",
+    "dividend_growth_5y_pct": 20.1,
+    "yield_avg_5y_pct": 0.89,
+    "id": 25
+   }
+  ]
+ },
+ {
+  "id": "s21p4",
+  "text": "Microsoft ($MSFT) dividend rose from $3.64 to $3.92, a 7.7% increase seen on Oct 16. The company is labeled 'safe' with a 15-year dividend growth streak.",
+  "facts": [
+   {
+    "kind": "raise",
+    "name": "Microsoft",
+    "symbol": "MSFT",
+    "sector": "Technology",
+    "currency": "USD",
+    "old_annual_rate": 3.64,
+    "new_annual_rate": 3.92,
+    "change_pct": 7.7,
+    "seen_on": "2026-10-16",
+    "streak_years": 15,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 10.2,
+    "yield_avg_5y_pct": 0.8,
+    "id": 16
+   }
+  ]
+ },
+ {
+  "id": "s21p5",
+  "text": "PAX GLOBAL dividend changed from 0.33 HKD to 0.08 HKD, a -75.8% change seen on Oct 23. The company is labeled 'safe' with a 6-year dividend streak.",
+  "facts": [
+   {
+    "kind": "cut",
+    "name": "PAX GLOBAL",
+    "symbol": "0327.HK",
+    "sector": "Industrials",
+    "currency": "HKD",
+    "old_annual_rate": 0.33,
+    "new_annual_rate": 0.08,
+    "change_pct": -75.8,
+    "seen_on": "2026-10-23",
+    "streak_years": 6,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 30.9,
+    "yield_avg_5y_pct": 6.38,
+    "id": 8
+   }
+  ]
+ },
+ {
+  "id": "s21p6",
+  "text": "Realty Income ($O) pays a monthly dividend of $3.26 annually, yielding 5.74%. The ex-dividend date is Oct 30 and the pay date is Nov 13. The company has a 28-year growth streak.",
+  "facts": [
+   {
+    "kind": "ex_dividend_soon",
+    "name": "Realty Income Corporation",
+    "symbol": "O",
+    "sector": "Real Estate",
+    "ex_dividend_date": "2026-10-30",
+    "weekday": "Friday",
+    "pay_date": "2026-11-13",
+    "annual_rate": 3.26,
+    "currency": "USD",
+    "yield_pct": 5.74,
+    "frequency": "monthly",
+    "streak_years": 28,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 3.5,
+    "yield_avg_5y_pct": 5.03,
+    "id": 19
+   }
+  ]
+ },
+ {
+  "id": "s21p7",
+  "text": "Diageo ($DEO) dividend changed from $3.32 to $2.00, a -39.8% change seen on Oct 17. The company is labeled 'safe' and has a streak of 0 years of dividend increases.",
+  "facts": [
+   {
+    "kind": "cut",
+    "name": "Diageo plc",
+    "symbol": "DEO",
+    "sector": "Consumer Defensive",
+    "currency": "USD",
+    "old_annual_rate": 3.32,
+    "new_annual_rate": 2.0,
+    "change_pct": -39.8,
+    "seen_on": "2026-10-17",
+    "streak_years": 0,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 2.6,
+    "yield_avg_5y_pct": 2.75,
+    "id": 13
+   }
+  ]
+ },
+ {
+  "id": "s21p8",
+  "text": "Clorox ($CLX) goes ex-dividend today, Oct 28, with a pay date of Nov 13. The annual rate is $5.00, yielding 5.72%. The company is labeled 'at_risk' with a 23-year dividend streak.",
+  "facts": [
+   {
+    "kind": "ex_dividend_soon",
+    "name": "Clorox Company (The)",
+    "symbol": "CLX",
+    "sector": "Consumer Defensive",
+    "ex_dividend_date": "2026-10-28",
+    "weekday": "Wednesday",
+    "pay_date": "2026-11-13",
+    "annual_rate": 5.0,
+    "currency": "USD",
+    "yield_pct": 5.72,
+    "frequency": "quarterly",
+    "streak_years": 23,
+    "safety": "at_risk",
+    "dividend_growth_5y_pct": 2.5,
+    "yield_avg_5y_pct": 3.21,
+    "id": 18
+   }
+  ]
+ },
+ {
+  "id": "s22p1",
+  "text": "MarketAxess (MKTX) yield is 1.75x its 5-yr average at 1.89%. The 5-yr dividend growth rate is 4.8% and the safety label is safe.",
+  "facts": [
+   {
+    "kind": "yield_above_own_average",
+    "name": "MarketAxess Holdings, Inc.",
+    "symbol": "MKTX",
+    "sector": "Financial Services",
+    "yield_pct": 1.89,
+    "times_own_avg": 1.75,
+    "streak_years": 15,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 4.8,
+    "yield_avg_5y_pct": 1.08,
+    "id": 53
+   }
+  ]
+ },
+ {
+  "id": "s22p2",
+  "text": "Nike ($NKE) current yield is 4.37%, which is 3.10x its 5-yr average of 1.41%. The 5-yr dividend growth rate is 10.3% and the streak is 23 years.",
+  "facts": [
+   {
+    "kind": "yield_above_own_average",
+    "name": "Nike, Inc.",
+    "symbol": "NKE",
+    "sector": "Consumer Cyclical",
+    "yield_pct": 4.37,
+    "times_own_avg": 3.1,
+    "streak_years": 23,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 10.3,
+    "yield_avg_5y_pct": 1.41,
+    "id": 46
+   }
+  ]
+ },
+ {
+  "id": "s22p3",
+  "text": "Dick's Sporting Goods ($DKS) 5-yr dividend growth is 31.1%. The 5-yr average yield is 2.2% and the streak is 11 years of increases.",
+  "facts": [
+   {
+    "kind": "fast_grower",
+    "name": "Dick's Sporting Goods Inc",
+    "symbol": "DKS",
+    "sector": "Consumer Cyclical",
+    "streak_years": 11,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 31.1,
+    "yield_avg_5y_pct": 2.2,
+    "id": 37
+   },
+   {
+    "kind": "yield_above_own_average",
+    "name": "Dick's Sporting Goods Inc",
+    "symbol": "DKS",
+    "sector": "Consumer Cyclical",
+    "yield_pct": 3.53,
+    "times_own_avg": 1.6,
+    "streak_years": 11,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 31.1,
+    "yield_avg_5y_pct": 2.2,
+    "id": 44
+   }
+  ]
+ },
+ {
+  "id": "s22p4",
+  "text": "Zoetis ($ZTS) ex-div date is Oct 30, pay date Dec 1. Annual rate 2.12 USD, yield 2.71%. 5-yr growth 20.1%, safety watch.",
+  "facts": [
+   {
+    "kind": "ex_dividend_soon",
+    "name": "Zoetis Inc.",
+    "symbol": "ZTS",
+    "sector": "Healthcare",
+    "ex_dividend_date": "2026-10-30",
+    "weekday": "Friday",
+    "pay_date": "2026-12-01",
+    "annual_rate": 2.12,
+    "currency": "USD",
+    "yield_pct": 2.71,
+    "frequency": "quarterly",
+    "streak_years": 12,
+    "safety": "watch",
+    "dividend_growth_5y_pct": 20.1,
+    "yield_avg_5y_pct": 0.89,
+    "id": 25
+   }
+  ]
+ },
+ {
+  "id": "s22p5",
+  "text": "Clorox ($CLX) ex-div date is today, Oct 28. Pay date Nov 13. Annual rate 5.00 USD, yield 5.72%. Safety label is at_risk.",
+  "facts": [
+   {
+    "kind": "ex_dividend_soon",
+    "name": "Clorox Company (The)",
+    "symbol": "CLX",
+    "sector": "Consumer Defensive",
+    "ex_dividend_date": "2026-10-28",
+    "weekday": "Wednesday",
+    "pay_date": "2026-11-13",
+    "annual_rate": 5.0,
+    "currency": "USD",
+    "yield_pct": 5.72,
+    "frequency": "quarterly",
+    "streak_years": 23,
+    "safety": "at_risk",
+    "dividend_growth_5y_pct": 2.5,
+    "yield_avg_5y_pct": 3.21,
+    "id": 18
+   }
+  ]
+ },
+ {
+  "id": "s22p6",
+  "text": "PAX GLOBAL annual rate changed from 0.33 to 0.08 HKD, a -75.8% cut. Seen on 2026-10-23. Streak years is 6.",
+  "facts": [
+   {
+    "kind": "cut",
+    "name": "PAX GLOBAL",
+    "symbol": "0327.HK",
+    "sector": "Industrials",
+    "currency": "HKD",
+    "old_annual_rate": 0.33,
+    "new_annual_rate": 0.08,
+    "change_pct": -75.8,
+    "seen_on": "2026-10-23",
+    "streak_years": 6,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 30.9,
+    "yield_avg_5y_pct": 6.38,
+    "id": 8
+   }
+  ]
+ },
+ {
+  "id": "s22p7",
+  "text": "Microsoft ($MSFT) new annual rate 3.92 USD, up 7.7% from 3.64. Seen on 2026-10-16. 5-yr growth 10.2%, streak 15 years, safety safe.",
+  "facts": [
+   {
+    "kind": "raise",
+    "name": "Microsoft",
+    "symbol": "MSFT",
+    "sector": "Technology",
+    "currency": "USD",
+    "old_annual_rate": 3.64,
+    "new_annual_rate": 3.92,
+    "change_pct": 7.7,
+    "seen_on": "2026-10-16",
+    "streak_years": 15,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 10.2,
+    "yield_avg_5y_pct": 0.8,
+    "id": 16
+   }
+  ]
+ },
+ {
+  "id": "s22p8",
+  "text": "Healthcare sector snapshot: 40 companies. 12 safe, 18 watch, 10 at_risk. Median 5-yr avg yield 2.73%, median 5-yr growth 6.6%.",
+  "facts": [
+   {
+    "kind": "sector_snapshot",
+    "sector": "Healthcare",
+    "companies": 40,
+    "safe": 12,
+    "watch": 18,
+    "at_risk": 10,
+    "median_yield_avg_5y_pct": 2.73,
+    "median_dividend_growth_5y_pct": 6.6,
+    "note": "companies in Quantic's screener for this sector, not the whole market",
+    "id": 32
+   }
+  ]
+ },
+ {
+  "id": "s23p1",
+  "text": "Western Digital ($WDC) dividend increased 16.7% to $0.70 from $0.60. Quantic saw the new rate on Oct 26.",
+  "facts": [
+   {
+    "kind": "raise",
+    "name": "Western Digital Corporation",
+    "symbol": "WDC",
+    "sector": "Technology",
+    "currency": "USD",
+    "old_annual_rate": 0.6,
+    "new_annual_rate": 0.7,
+    "change_pct": 16.7,
+    "seen_on": "2026-10-26",
+    "streak_years": null,
+    "safety": "at_risk",
+    "dividend_growth_5y_pct": -23.3,
+    "yield_avg_5y_pct": 2.57,
+    "id": 3
+   }
+  ]
+ },
+ {
+  "id": "s23p2",
+  "text": "Rollins, Inc. ($ROL) dividend increased 9.6% to $0.80 from $0.73. The change was seen on Oct 23. Quantic rates its safety as watch.",
+  "facts": [
+   {
+    "kind": "raise",
+    "name": "Rollins, Inc.",
+    "symbol": "ROL",
+    "sector": "Consumer Cyclical",
+    "currency": "USD",
+    "old_annual_rate": 0.73,
+    "new_annual_rate": 0.8,
+    "change_pct": 9.6,
+    "seen_on": "2026-10-23",
+    "streak_years": 5,
+    "safety": "watch",
+    "dividend_growth_5y_pct": 19.9,
+    "yield_avg_5y_pct": 1.16,
+    "id": 7
+   }
+  ]
+ },
+ {
+  "id": "s23p3",
+  "text": "ASA Gold and Precious Metals ($ASA) dividend rose 25.0% to $0.10 from $0.08. Quantic noted the new rate on Oct 20.",
+  "facts": [
+   {
+    "kind": "raise",
+    "name": "ASA  Gold and Precious Metals L",
+    "symbol": "ASA",
+    "sector": "Financial Services",
+    "currency": "USD",
+    "old_annual_rate": 0.08,
+    "new_annual_rate": 0.1,
+    "change_pct": 25.0,
+    "seen_on": "2026-10-20",
+    "streak_years": 2,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 24.6,
+    "yield_avg_5y_pct": 0.15,
+    "id": 11
+   }
+  ]
+ },
+ {
+  "id": "s23p4",
+  "text": "Getty Realty Corporation ($GTY) dividend increased 3.1% to $2.00 from $1.94, seen on Oct 24. Quantic rates its safety as watch.",
+  "facts": [
+   {
+    "kind": "raise",
+    "name": "Getty Realty Corporation",
+    "symbol": "GTY",
+    "sector": "Real Estate",
+    "currency": "USD",
+    "old_annual_rate": 1.94,
+    "new_annual_rate": 2.0,
+    "change_pct": 3.1,
+    "seen_on": "2026-10-24",
+    "streak_years": 11,
+    "safety": "watch",
+    "dividend_growth_5y_pct": 4.9,
+    "yield_avg_5y_pct": 5.76,
+    "id": 5
+   }
+  ]
+ },
+ {
+  "id": "s23p5",
+  "text": "McDonald's ($MCD) current yield is 3.09%, which is 1.38 times its 5-year average yield of 2.24%. The company has a 17-year streak of dividend increases.",
+  "facts": [
+   {
+    "kind": "yield_above_own_average",
+    "name": "McDonald's Corporation",
+    "symbol": "MCD",
+    "sector": "Consumer Cyclical",
+    "yield_pct": 3.09,
+    "times_own_avg": 1.38,
+    "streak_years": 17,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 7.2,
+    "yield_avg_5y_pct": 2.24,
+    "id": 43
+   }
+  ]
+ },
+ {
+  "id": "s23p6",
+  "text": "CapLand Ascendas REIT ($A17U.SI) dividend rose 36.4% to SGD 0.15 from SGD 0.11. Quantic saw the new rate on Oct 27.",
+  "facts": [
+   {
+    "kind": "raise",
+    "name": "CapLand Ascendas REIT",
+    "symbol": "A17U.SI",
+    "sector": "Real Estate",
+    "currency": "SGD",
+    "old_annual_rate": 0.11,
+    "new_annual_rate": 0.15,
+    "change_pct": 36.4,
+    "seen_on": "2026-10-27",
+    "streak_years": 0,
+    "safety": "watch",
+    "dividend_growth_5y_pct": 2.5,
+    "yield_avg_5y_pct": 6.47,
+    "id": 2
+   }
+  ]
+ },
+ {
+  "id": "s23p7",
+  "text": "Texas Instruments ($TXN) dividend was raised 7.0% to $6.08 from $5.68, seen on Oct 16. The company has a 22-year streak of increases.",
+  "facts": [
+   {
+    "kind": "raise",
+    "name": "Texas Instruments Incorporated",
+    "symbol": "TXN",
+    "sector": "Technology",
+    "currency": "USD",
+    "old_annual_rate": 5.68,
+    "new_annual_rate": 6.08,
+    "change_pct": 7.0,
+    "seen_on": "2026-10-16",
+    "streak_years": 22,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 8.6,
+    "yield_avg_5y_pct": 2.71,
+    "id": 15
+   },
+   {
+    "kind": "ex_dividend_soon",
+    "name": "Texas Instruments Incorporated",
+    "symbol": "TXN",
+    "sector": "Technology",
+    "ex_dividend_date": "2026-10-30",
+    "weekday": "Friday",
+    "pay_date": "2026-11-10",
+    "annual_rate": 6.08,
+    "currency": "USD",
+    "yield_pct": 1.97,
+    "frequency": "quarterly",
+    "streak_years": 22,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 8.6,
+    "yield_avg_5y_pct": 2.71,
+    "id": 24
+   }
+  ]
+ },
+ {
+  "id": "s23p8",
+  "text": "Realty Income ($O) goes ex-dividend on Oct 30 with a $3.26 annual rate. Current yield is 5.74%. Quantic rates its dividend safety as safe.",
+  "facts": [
+   {
+    "kind": "ex_dividend_soon",
+    "name": "Realty Income Corporation",
+    "symbol": "O",
+    "sector": "Real Estate",
+    "ex_dividend_date": "2026-10-30",
+    "weekday": "Friday",
+    "pay_date": "2026-11-13",
+    "annual_rate": 3.26,
+    "currency": "USD",
+    "yield_pct": 5.74,
+    "frequency": "monthly",
+    "streak_years": 28,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 3.5,
+    "yield_avg_5y_pct": 5.03,
+    "id": 19
+   }
+  ]
+ },
+ {
+  "id": "s24p1",
+  "text": "Western Digital Corporation (WDC) annual rate changed from 0.6 to 0.7 USD, a change of 16.7%, seen on 2026-10-26. 5y dividend growth is -23.3% and safety is at_risk.",
+  "facts": [
+   {
+    "kind": "raise",
+    "name": "Western Digital Corporation",
+    "symbol": "WDC",
+    "sector": "Technology",
+    "currency": "USD",
+    "old_annual_rate": 0.6,
+    "new_annual_rate": 0.7,
+    "change_pct": 16.7,
+    "seen_on": "2026-10-26",
+    "streak_years": null,
+    "safety": "at_risk",
+    "dividend_growth_5y_pct": -23.3,
+    "yield_avg_5y_pct": 2.57,
+    "id": 3
+   }
+  ]
+ },
+ {
+  "id": "s24p2",
+  "text": "West Pharmaceutical Services (WST) rate moved from 0.88 to 1.04 USD, a 18.2% change, seen on 2026-10-23. It has a 28-year streak and safe safety label.",
+  "facts": [
+   {
+    "kind": "raise",
+    "name": "West Pharmaceutical Services, I",
+    "symbol": "WST",
+    "sector": "Healthcare",
+    "currency": "USD",
+    "old_annual_rate": 0.88,
+    "new_annual_rate": 1.04,
+    "change_pct": 18.2,
+    "seen_on": "2026-10-23",
+    "streak_years": 28,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 5.6,
+    "yield_avg_5y_pct": 0.24,
+    "id": 6
+   }
+  ]
+ },
+ {
+  "id": "s24p3",
+  "text": "INTERTEK GROUP PLC (ITRK.L) annual rate changed from 1.65 to 1.08 GBP, a change of -34.5%, seen on 2026-10-28. It has a 3-year streak and safe safety label.",
+  "facts": [
+   {
+    "kind": "cut",
+    "name": "INTERTEK GROUP PLC ORD 1P",
+    "symbol": "ITRK.L",
+    "sector": "Industrials",
+    "currency": "GBP",
+    "old_annual_rate": 1.65,
+    "new_annual_rate": 1.08,
+    "change_pct": -34.5,
+    "seen_on": "2026-10-28",
+    "streak_years": 3,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 8.6,
+    "yield_avg_5y_pct": 2.58,
+    "id": 0
+   }
+  ]
+ },
+ {
+  "id": "s24p4",
+  "text": "Allwyn AG (ALWN.AT) rate moved from 0.5 to 0.7 EUR, a 40.0% change, seen on 2026-10-23. It has a 1-year streak and watch safety label.",
+  "facts": [
+   {
+    "kind": "raise",
+    "name": "Allwyn AG",
+    "symbol": "ALWN.AT",
+    "sector": "Consumer Cyclical",
+    "currency": "EUR",
+    "old_annual_rate": 0.5,
+    "new_annual_rate": 0.7,
+    "change_pct": 40.0,
+    "seen_on": "2026-10-23",
+    "streak_years": 1,
+    "safety": "watch",
+    "dividend_growth_5y_pct": 0.0,
+    "yield_avg_5y_pct": 7.26,
+    "id": 9
+   }
+  ]
+ },
+ {
+  "id": "s24p5",
+  "text": "Diageo plc (DEO) annual rate changed from 3.32 to 2.0 USD, a change of -39.8%, seen on 2026-10-17. It has a 0-year streak and safe safety label.",
+  "facts": [
+   {
+    "kind": "cut",
+    "name": "Diageo plc",
+    "symbol": "DEO",
+    "sector": "Consumer Defensive",
+    "currency": "USD",
+    "old_annual_rate": 3.32,
+    "new_annual_rate": 2.0,
+    "change_pct": -39.8,
+    "seen_on": "2026-10-17",
+    "streak_years": 0,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 2.6,
+    "yield_avg_5y_pct": 2.75,
+    "id": 13
+   }
+  ]
+ },
+ {
+  "id": "s24p6",
+  "text": "Realty Income Corporation (O) ex-dividend date is 2026-10-30. Current yield is 5.74%, pay date is 2026-11-13, frequency is monthly, and safety is safe.",
+  "facts": [
+   {
+    "kind": "ex_dividend_soon",
+    "name": "Realty Income Corporation",
+    "symbol": "O",
+    "sector": "Real Estate",
+    "ex_dividend_date": "2026-10-30",
+    "weekday": "Friday",
+    "pay_date": "2026-11-13",
+    "annual_rate": 3.26,
+    "currency": "USD",
+    "yield_pct": 5.74,
+    "frequency": "monthly",
+    "streak_years": 28,
+    "safety": "safe",
+    "dividend_growth_5y_pct": 3.5,
+    "yield_avg_5y_pct": 5.03,
+    "id": 19
+   }
+  ]
+ },
+ {
+  "id": "s24p7",
+  "text": "Zoetis Inc. (ZTS) ex-dividend date is 2026-10-30. Current yield is 2.71%, it has a 12-year streak, and its safety label is watch.",
+  "facts": [
+   {
+    "kind": "ex_dividend_soon",
+    "name": "Zoetis Inc.",
+    "symbol": "ZTS",
+    "sector": "Healthcare",
+    "ex_dividend_date": "2026-10-30",
+    "weekday": "Friday",
+    "pay_date": "2026-12-01",
+    "annual_rate": 2.12,
+    "currency": "USD",
+    "yield_pct": 2.71,
+    "frequency": "quarterly",
+    "streak_years": 12,
+    "safety": "watch",
+    "dividend_growth_5y_pct": 20.1,
+    "yield_avg_5y_pct": 0.89,
+    "id": 25
+   }
+  ]
+ },
+ {
+  "id": "s24p8",
+  "text": "Technology sector snapshot: 62 companies. Median 5-year average yield is 1.27% and median 5-year dividend growth is 9.0%.",
+  "facts": [
+   {
+    "kind": "sector_snapshot",
+    "sector": "Technology",
+    "companies": 62,
+    "safe": 39,
+    "watch": 17,
+    "at_risk": 6,
+    "median_yield_avg_5y_pct": 1.27,
+    "median_dividend_growth_5y_pct": 9.0,
+    "note": "companies in Quantic's screener for this sector, not the whole market",
+    "id": 35
+   }
+  ]
+ }
+]

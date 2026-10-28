@@ -1,0 +1,210 @@
+{
+ "mode": "facts",
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 31.7,
+   "prompt_tokens": 6926,
+   "posts": [
+    {
+     "facts": [
+      8
+     ],
+     "text": "PAX Global (0327.HK) reduced its annual dividend rate from 0.33 HKD to 0.08 HKD, a 75.8% cut. The company has maintained a dividend streak for 6 years.",
+     "problems": [
+      "figure not in the data: '0327'",
+      "figure not in the data: '75.8%'"
+     ]
+    },
+    {
+     "facts": [
+      2
+     ],
+     "text": "CapLand Ascendas REIT (A17U.SI) raised its annual dividend rate by 36.4%, moving from 0.11 SGD to 0.15 SGD. This marks the company's first increase in its streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      4
+     ],
+     "text": "BAE Systems (BA.L) increased its annual dividend by 5.6% to 0.38 GBP. This extends the company's dividend growth streak to 21 consecutive years.",
+     "problems": []
+    },
+    {
+     "facts": [
+      15,
+      24
+     ],
+     "text": "Texas Instruments ($TXN) raised its annual dividend rate to $6.08. The company hit an ex-dividend date of Oct 30, 2026, with a pay date of Nov 10.",
+     "problems": []
+    },
+    {
+     "facts": [
+      16
+     ],
+     "text": "Microsoft ($MSFT) increased its annual dividend by 7.7% to $3.92. The tech giant has now raised its dividend for 15 consecutive years.",
+     "problems": []
+    },
+    {
+     "facts": [
+      13
+     ],
+     "text": "Diageo plc ($DEO) cut its annual dividend rate by 39.8%, dropping from $3.32 to $2.00. The company is in its first year of a new dividend streak.",
+     "problems": [
+      "figure not in the data: '39.8%'"
+     ]
+    },
+    {
+     "facts": [
+      37
+     ],
+     "text": "Dick's Sporting Goods ($DKS) leads the fast growers list with a 5-year dividend growth rate of 31.1%. The company has maintained a dividend streak for 11 years.",
+     "problems": []
+    },
+    {
+     "facts": [
+      18
+     ],
+     "text": "Clorox ($CLX) hit an ex-dividend date on Oct 28, 2026. The company has a 23-year dividend streak and a current yield of 5.72%.",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 2,
+   "seconds": 15.7,
+   "prompt_tokens": 7476,
+   "posts": [
+    {
+     "facts": [
+      8
+     ],
+     "text": "PAX GLOBAL (0327.HK) reduced its annual dividend rate from 0.33 HKD to 0.08 HKD, a 75.8% cut. The company has maintained a dividend streak for 6 years.",
+     "problems": [
+      "figure not in the data: '0327'",
+      "figure not in the data: '75.8%'"
+     ]
+    },
+    {
+     "facts": [
+      2
+     ],
+     "text": "CapLand Ascendas REIT (A17U.SI) raised its annual dividend rate by 36.4%, moving from 0.11 SGD to 0.15 SGD. This marks the company's first increase in its streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      4
+     ],
+     "text": "BAE Systems (BA.L) increased its annual dividend by 5.6% to 0.38 GBP. This extends the company's dividend growth streak to 21 consecutive years.",
+     "problems": []
+    },
+    {
+     "facts": [
+      15,
+      24
+     ],
+     "text": "Texas Instruments ($TXN) raised its annual dividend rate to $6.08. The company hit an ex-dividend date of Oct 30, 2026, with a pay date of Nov 10.",
+     "problems": []
+    },
+    {
+     "facts": [
+      16
+     ],
+     "text": "Microsoft ($MSFT) increased its annual dividend by 7.7% to $3.92. The tech giant has now raised its dividend for 15 consecutive years.",
+     "problems": []
+    },
+    {
+     "facts": [
+      13
+     ],
+     "text": "Diageo plc ($DEO) cut its annual dividend rate by 39.8%, dropping from $3.32 to $2.00. The company is in its first year of a new dividend streak.",
+     "problems": [
+      "figure not in the data: '39.8%'"
+     ]
+    },
+    {
+     "facts": [
+      37
+     ],
+     "text": "Dick's Sporting Goods ($DKS) leads the fast growers list with a 5-year dividend growth rate of 31.1%. The company has maintained a dividend streak for 11 years.",
+     "problems": []
+    },
+    {
+     "facts": [
+      18
+     ],
+     "text": "Clorox ($CLX) hit an ex-dividend date on Oct 28, 2026. The company has a 23-year dividend streak and a current yield of 5.72%.",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 3,
+   "seconds": 15.2,
+   "prompt_tokens": 8026,
+   "posts": [
+    {
+     "facts": [
+      8
+     ],
+     "text": "PAX GLOBAL (0327.HK) reduced its annual dividend rate from 0.33 HKD to 0.08 HKD. The company has maintained a dividend streak for 6 years.",
+     "problems": [
+      "figure not in the data: '0327'"
+     ]
+    },
+    {
+     "facts": [
+      2
+     ],
+     "text": "CapLand Ascendas REIT (A17U.SI) raised its annual dividend rate by 36.4%, moving from 0.11 SGD to 0.15 SGD. This marks the company's first increase in its streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      4
+     ],
+     "text": "BAE Systems (BA.L) increased its annual dividend by 5.6% to 0.38 GBP. This extends the company's dividend growth streak to 21 consecutive years.",
+     "problems": []
+    },
+    {
+     "facts": [
+      15,
+      24
+     ],
+     "text": "Texas Instruments ($TXN) raised its annual dividend rate to $6.08. The company hit an ex-dividend date of Oct 30, 2026, with a pay date of Nov 10.",
+     "problems": []
+    },
+    {
+     "facts": [
+      16
+     ],
+     "text": "Microsoft ($MSFT) increased its annual dividend by 7.7% to $3.92. The tech giant has now raised its dividend for 15 consecutive years.",
+     "problems": []
+    },
+    {
+     "facts": [
+      13
+     ],
+     "text": "Diageo plc ($DEO) cut its annual dividend rate from $3.32 to $2.00. The company is in its first year of a new dividend streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      37
+     ],
+     "text": "Dick's Sporting Goods ($DKS) leads the fast growers list with a 5-year dividend growth rate of 31.1%. The company has maintained a dividend streak for 11 years.",
+     "problems": []
+    },
+    {
+     "facts": [
+      18
+     ],
+     "text": "Clorox ($CLX) hit an ex-dividend date on Oct 28, 2026. The company has a 23-year dividend streak and a current yield of 5.72%.",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

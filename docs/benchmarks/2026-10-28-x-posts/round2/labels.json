@@ -1,0 +1,10 @@
+{
+ "_rules": "same rules as labels.json; 'subset' = a count true to the facts but false in reality because the facts are a filtered selection: no verifier given these facts can catch it",
+ "s16p6": {"wrong": "minor", "why": "'the highest 5-year growth figure in this dataset's fast grower selection': internal selection leaked as a ranking"},
+ "s19p2": {"wrong": "major", "why": "'Two names go ex-dividend on 2026-10-28': true of the facts (streak 10+ only), the calendar has four (PSEC, REPX)", "subset": true},
+ "s19p1": {"data": true},
+ "s20p1": {"data": true},
+ "s21p5": {"data": true},
+ "s22p6": {"data": true},
+ "s24p3": {"data": true}
+}
