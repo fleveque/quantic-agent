@@ -1,0 +1,138 @@
+{
+ "mode": "facts",
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 21.2,
+   "prompt_tokens": 7158,
+   "posts": [
+    {
+     "facts": [
+      13
+     ],
+     "text": "Diageo's annual dividend rate dropped 39.8% to 2.0 USD. Quantic saw the change on Oct 17. The company's current safety label is safe.",
+     "problems": [
+      "figure not in the data: '39.8%'"
+     ]
+    },
+    {
+     "facts": [
+      8
+     ],
+     "text": "PAX GLOBAL cut its dividend by 75.8%, moving from 0.33 HKD to 0.08 HKD. This change was seen on Oct 23.",
+     "problems": [
+      "figure not in the data: '75.8%'"
+     ]
+    },
+    {
+     "facts": [
+      9
+     ],
+     "text": "Allwyn AG increased its annual dividend 40.0% to 0.7 EUR, seen on Oct 23. The 5-year average yield is 7.26%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      24
+     ],
+     "text": "Texas Instruments goes ex-dividend on Oct 30. The annual rate is 6.08 USD, yielding 1.97% currently.",
+     "problems": []
+    },
+    {
+     "facts": [
+      49
+     ],
+     "text": "Graco has raised its dividend for 26 consecutive years. The current yield of 1.78% is 1.48 times its 5-year average yield of 1.2%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      0
+     ],
+     "text": "INTERTEK GROUP PLC cut its dividend 34.5% to 1.08 GBP, seen on Oct 28. The 5-year dividend growth rate is 8.6%.",
+     "problems": [
+      "figure not in the data: '34.5%'"
+     ]
+    },
+    {
+     "facts": [
+      16
+     ],
+     "text": "Microsoft increased its annual dividend to 3.92 USD, a 7.7% rise, seen on Oct 16. The company has a 15-year increase streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      46
+     ],
+     "text": "Nike's current yield is 4.37%, which is 3.1 times its 5-year average yield of 1.41%. The company has 23 consecutive years of increases.",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 2,
+   "seconds": 16.4,
+   "prompt_tokens": 7664,
+   "posts": [
+    {
+     "facts": [
+      13
+     ],
+     "text": "Diageo's annual dividend rate moved from 3.32 USD to 2.0 USD. Quantic saw the change on Oct 17. The current safety label is safe.",
+     "problems": []
+    },
+    {
+     "facts": [
+      8
+     ],
+     "text": "PAX GLOBAL's annual dividend rate moved from 0.33 HKD to 0.08 HKD. This change was seen on Oct 23.",
+     "problems": []
+    },
+    {
+     "facts": [
+      9
+     ],
+     "text": "Allwyn AG increased its annual dividend from 0.5 EUR to 0.7 EUR, seen on Oct 23. The 5-year average yield is 7.26%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      24
+     ],
+     "text": "Texas Instruments goes ex-dividend on Oct 30. The annual rate is 6.08 USD, yielding 1.97% currently.",
+     "problems": []
+    },
+    {
+     "facts": [
+      49
+     ],
+     "text": "Graco has raised its dividend for 26 consecutive years. The current yield of 1.78% is 1.48 times its 5-year average yield of 1.2%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      0
+     ],
+     "text": "INTERTEK GROUP PLC's annual dividend rate moved from 1.65 GBP to 1.08 GBP, seen on Oct 28. The 5-year dividend growth rate is 8.6%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      16
+     ],
+     "text": "Microsoft increased its annual dividend from 3.64 USD to 3.92 USD, seen on Oct 16. The company has a 15-year increase streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      46
+     ],
+     "text": "Nike's current yield is 4.37%, which is 3.1 times its 5-year average yield of 1.41%. The company has 23 consecutive years of increases.",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

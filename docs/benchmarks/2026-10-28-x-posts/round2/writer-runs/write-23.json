@@ -1,0 +1,202 @@
+{
+ "mode": "facts",
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 27.6,
+   "prompt_tokens": 7158,
+   "posts": [
+    {
+     "facts": [
+      0
+     ],
+     "text": "Intertek Group Plc ($ITRK.L) dividend was cut 34.5%, from \u00a31.65 to \u00a31.08 per share. Quantic saw the new rate on Oct 28. Safety label remains safe.",
+     "problems": [
+      "figure not in the data: '34.5%'"
+     ]
+    },
+    {
+     "facts": [
+      8
+     ],
+     "text": "PAX Global ($0327.HK) dividend dropped 75.8% to HKD 0.08 per share, down from HKD 0.33. The change was seen by Quantic on Oct 23.",
+     "problems": [
+      "figure not in the data: '$0327'",
+      "figure not in the data: '75.8%'"
+     ]
+    },
+    {
+     "facts": [
+      9
+     ],
+     "text": "Allwyn AG ($ALWN.AT) dividend rose 40.0% to \u20ac0.70 from \u20ac0.50. Quantic noted the new rate on Oct 23. 5-year dividend growth is 0.0%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      2
+     ],
+     "text": "CapLand Ascendas REIT ($A17U.SI) dividend increased 36.4% to SGD 0.15 from SGD 0.11, seen on Oct 27. Quantic rates its safety as watch.",
+     "problems": []
+    },
+    {
+     "facts": [
+      46
+     ],
+     "text": "Nike ($NKE) current yield is 4.37%, which is 3.1 times its 5-year average yield of 1.41%. The company has a 23-year streak of dividend increases.",
+     "problems": []
+    },
+    {
+     "facts": [
+      18
+     ],
+     "text": "Clorox Company ($CLX) goes ex-dividend on Oct 28 with a $5.00 annual rate. Current yield is 5.72%, and Quantic labels dividend safety as at_risk.",
+     "problems": []
+    },
+    {
+     "facts": [
+      22
+     ],
+     "text": "NiSource ($NI) dividend was raised 5.9% over 5 years. Current yield is 2.75% vs a 5-year average yield of 3.34%. Ex-date is Oct 30.",
+     "problems": []
+    },
+    {
+     "facts": [
+      16
+     ],
+     "text": "Microsoft ($MSFT) dividend rose 7.7% to $3.92 from $3.64, seen on Oct 16. The company has increased its dividend for 15 consecutive years.",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 2,
+   "seconds": 21.0,
+   "prompt_tokens": 7773,
+   "posts": [
+    {
+     "facts": [
+      13
+     ],
+     "text": "Diageo ($DEO) dividend was cut 39.8%, dropping from $3.32 to $2.00 per share. Quantic saw the new rate on Oct 17.",
+     "problems": [
+      "figure not in the data: '39.8%'"
+     ]
+    },
+    {
+     "facts": [
+      7
+     ],
+     "text": "Rollins, Inc. ($ROL) dividend increased 9.6% to $0.80 from $0.73. The change was seen on Oct 23. Quantic rates its safety as watch.",
+     "problems": []
+    },
+    {
+     "facts": [
+      11
+     ],
+     "text": "ASA Gold and Precious Metals ($ASA) dividend rose 25.0% to $0.10 from $0.08. Quantic noted the new rate on Oct 20.",
+     "problems": []
+    },
+    {
+     "facts": [
+      5
+     ],
+     "text": "Getty Realty Corporation ($GTY) dividend increased 3.1% to $2.00 from $1.94, seen on Oct 24. Quantic rates its safety as watch.",
+     "problems": []
+    },
+    {
+     "facts": [
+      43
+     ],
+     "text": "McDonald's ($MCD) current yield is 3.09%, which is 1.38 times its 5-year average yield of 2.24%. The company has a 17-year streak of dividend increases.",
+     "problems": []
+    },
+    {
+     "facts": [
+      2
+     ],
+     "text": "CapLand Ascendas REIT ($A17U.SI) dividend rose 36.4% to SGD 0.15 from SGD 0.11. Quantic saw the new rate on Oct 27.",
+     "problems": []
+    },
+    {
+     "facts": [
+      15
+     ],
+     "text": "Texas Instruments ($TXN) dividend was raised 7.0% to $6.08 from $5.68, seen on Oct 16. The company has a 22-year streak of increases.",
+     "problems": []
+    },
+    {
+     "facts": [
+      19
+     ],
+     "text": "Realty Income ($O) goes ex-dividend on Oct 30 with a $3.26 annual rate. Current yield is 5.74%. Quantic rates its dividend safety as safe.",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 3,
+   "seconds": 20.9,
+   "prompt_tokens": 8323,
+   "posts": [
+    {
+     "facts": [
+      3
+     ],
+     "text": "Western Digital ($WDC) dividend increased 16.7% to $0.70 from $0.60. Quantic saw the new rate on Oct 26.",
+     "problems": []
+    },
+    {
+     "facts": [
+      7
+     ],
+     "text": "Rollins, Inc. ($ROL) dividend increased 9.6% to $0.80 from $0.73. The change was seen on Oct 23. Quantic rates its safety as watch.",
+     "problems": []
+    },
+    {
+     "facts": [
+      11
+     ],
+     "text": "ASA Gold and Precious Metals ($ASA) dividend rose 25.0% to $0.10 from $0.08. Quantic noted the new rate on Oct 20.",
+     "problems": []
+    },
+    {
+     "facts": [
+      5
+     ],
+     "text": "Getty Realty Corporation ($GTY) dividend increased 3.1% to $2.00 from $1.94, seen on Oct 24. Quantic rates its safety as watch.",
+     "problems": []
+    },
+    {
+     "facts": [
+      43
+     ],
+     "text": "McDonald's ($MCD) current yield is 3.09%, which is 1.38 times its 5-year average yield of 2.24%. The company has a 17-year streak of dividend increases.",
+     "problems": []
+    },
+    {
+     "facts": [
+      2
+     ],
+     "text": "CapLand Ascendas REIT ($A17U.SI) dividend rose 36.4% to SGD 0.15 from SGD 0.11. Quantic saw the new rate on Oct 27.",
+     "problems": []
+    },
+    {
+     "facts": [
+      15
+     ],
+     "text": "Texas Instruments ($TXN) dividend was raised 7.0% to $6.08 from $5.68, seen on Oct 16. The company has a 22-year streak of increases.",
+     "problems": []
+    },
+    {
+     "facts": [
+      19
+     ],
+     "text": "Realty Income ($O) goes ex-dividend on Oct 30 with a $3.26 annual rate. Current yield is 5.74%. Quantic rates its dividend safety as safe.",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

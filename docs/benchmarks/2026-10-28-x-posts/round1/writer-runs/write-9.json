@@ -1,0 +1,146 @@
+{
+ "mode": "facts",
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 26.8,
+   "prompt_tokens": 6926,
+   "posts": [
+    {
+     "facts": [
+      46,
+      47
+     ],
+     "text": "Nike yields 4.37%, 3.1x its 5-year average. Domino's Pizza yields 2.55%, 2.06x its 5-year average. Both have maintained dividends for over 10 years.",
+     "problems": [
+      "wording (count): 'Both'"
+     ]
+    },
+    {
+     "facts": [
+      28
+     ],
+     "text": "Quantic's Consumer Cyclical screener includes 61 companies. The median 5-year average yield is 2.38% and the median 5-year dividend growth is 8.9%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      18,
+      26
+     ],
+     "text": "$CLX hits ex-dividend today with a 5.72% yield. It is flagged as 'at risk' with 23 years of consecutive increases, despite a 2.5% 5-year growth rate.",
+     "problems": []
+    },
+    {
+     "facts": [
+      12,
+      10,
+      22
+     ],
+     "text": "Three utilities posted dividend raises this month: Consolidated Edison (+1.1%), American Electric Power (+2.1%), and NiSource has an ex-div date of Oct 30.",
+     "problems": []
+    },
+    {
+     "facts": [
+      13
+     ],
+     "text": "Diageo reduced its dividend by 39.8% to an annual rate of 2.00 USD, seen on Oct 17. Its 5-year dividend growth stands at 2.6%.",
+     "problems": [
+      "figure not in the data: '39.8%'"
+     ]
+    },
+    {
+     "facts": [
+      4
+     ],
+     "text": "BAE Systems PLC raised its dividend by 5.6% to 0.38 GBP, seen on Oct 25. It has maintained the dividend for 21 consecutive years.",
+     "problems": []
+    },
+    {
+     "facts": [
+      16
+     ],
+     "text": "$MSFT increased its annual dividend rate from 3.64 to 3.92 USD, a 7.7% raise. The move brings its 5-year dividend growth to 10.2%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      30,
+      34
+     ],
+     "text": "In Quantic's Energy sector, 43 companies show a median 5-year yield of 4.64%. In Real Estate, 56 companies show a median 5-year yield of 4.93%.",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 2,
+   "seconds": 21.5,
+   "prompt_tokens": 7550,
+   "posts": [
+    {
+     "facts": [
+      46,
+      47
+     ],
+     "text": "Nike yields 4.37%, 3.1x its 5-year average. Domino's Pizza yields 2.55%, 2.06x its 5-year average. Each has maintained dividends for over 10 years.",
+     "problems": []
+    },
+    {
+     "facts": [
+      28
+     ],
+     "text": "Quantic's Consumer Cyclical screener includes 61 companies. The median 5-year average yield is 2.38% and the median 5-year dividend growth is 8.9%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      18,
+      26
+     ],
+     "text": "$CLX hits ex-dividend today with a 5.72% yield. It is flagged as 'at risk' with 23 years of consecutive increases, despite a 2.5% 5-year growth rate.",
+     "problems": []
+    },
+    {
+     "facts": [
+      12,
+      10,
+      22
+     ],
+     "text": "Three utilities posted dividend raises this month: Consolidated Edison (+1.1%), American Electric Power (+2.1%), and NiSource has an ex-div date of Oct 30.",
+     "problems": []
+    },
+    {
+     "facts": [
+      13
+     ],
+     "text": "Diageo reduced its dividend from 3.32 to 2.00 USD, seen on Oct 17. Its 5-year dividend growth stands at 2.6%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      4
+     ],
+     "text": "BAE Systems PLC raised its dividend by 5.6% to 0.38 GBP, seen on Oct 25. It has maintained the dividend for 21 consecutive years.",
+     "problems": []
+    },
+    {
+     "facts": [
+      16
+     ],
+     "text": "$MSFT increased its annual dividend rate from 3.64 to 3.92 USD, a 7.7% raise. The move brings its 5-year dividend growth to 10.2%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      30,
+      34
+     ],
+     "text": "In Quantic's Energy sector, 43 companies show a median 5-year yield of 4.64%. In Real Estate, 56 companies show a median 5-year yield of 4.93%.",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

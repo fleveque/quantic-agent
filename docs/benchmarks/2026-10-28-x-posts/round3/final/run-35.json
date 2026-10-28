@@ -1,0 +1,150 @@
+{
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "seed": 35,
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 15.0,
+   "posts": [
+    {
+     "facts": [
+      8
+     ],
+     "text": "Pax Global slashed its annual dividend by 75.8%, cutting the payout from HK$0.33 to HK$0.08.",
+     "link": "https://quantic.finance/stocks/0327.HK",
+     "problems": []
+    },
+    {
+     "facts": [
+      13
+     ],
+     "text": "Diageo cut its annual dividend by 39.8%, dropping the rate from $3.32 to $2.00.",
+     "link": "https://quantic.finance/stocks/DEO",
+     "problems": []
+    },
+    {
+     "facts": [
+      9
+     ],
+     "text": "Allwyn AG hiked its annual dividend by 40%, raising the payout from €0.50 to €0.70.",
+     "link": "https://quantic.finance/stocks/ALWN.AT",
+     "problems": []
+    },
+    {
+     "facts": [
+      46
+     ],
+     "text": "Nike now yields 4.37%, 3.1 times its 5-year average. The company has increased its dividend for 23 consecutive years.",
+     "link": "https://quantic.finance/stocks/NKE",
+     "problems": []
+    },
+    {
+     "facts": [
+      19
+     ],
+     "text": "Realty Income goes ex-dividend on Oct 30. The real estate firm has a 28-year streak of increases and a 5.74% yield.",
+     "link": "https://quantic.finance/stocks/O",
+     "problems": []
+    },
+    {
+     "facts": [
+      37,
+      44
+     ],
+     "text": "Dick's Sporting Goods posted 31.1% five-year dividend growth and now yields 3.53%.",
+     "link": "https://quantic.finance/stocks/DKS",
+     "problems": []
+    },
+    {
+     "facts": [
+      0
+     ],
+     "text": "Intertek reduced its annual dividend by 34.5%, lowering the payout from £1.65 to £1.08.",
+     "link": "https://quantic.finance/stocks/ITRK.L",
+     "problems": []
+    },
+    {
+     "facts": [
+      24
+     ],
+     "text": "Texas Instruments raised its annual dividend by 7.0% to $6.08, maintaining a 22-year streak of increases.",
+     "link": "https://quantic.finance/stocks/TXN",
+     "problems": [
+      "figure not in the data: '7.0%'"
+     ]
+    }
+   ]
+  },
+  {
+   "attempt": 2,
+   "seconds": 16.4,
+   "posts": [
+    {
+     "facts": [
+      8
+     ],
+     "text": "Pax Global slashed its annual dividend by 75.8%, cutting the payout from HK$0.33 to HK$0.08.",
+     "link": "https://quantic.finance/stocks/0327.HK",
+     "problems": []
+    },
+    {
+     "facts": [
+      13
+     ],
+     "text": "Diageo cut its annual dividend by 39.8%, dropping the rate from $3.32 to $2.00.",
+     "link": "https://quantic.finance/stocks/DEO",
+     "problems": []
+    },
+    {
+     "facts": [
+      9
+     ],
+     "text": "Allwyn AG hiked its annual dividend by 40%, raising the payout from €0.50 to €0.70.",
+     "link": "https://quantic.finance/stocks/ALWN.AT",
+     "problems": []
+    },
+    {
+     "facts": [
+      46
+     ],
+     "text": "Nike now yields 4.37%, 3.1 times its 5-year average. The company has increased its dividend for 23 consecutive years.",
+     "link": "https://quantic.finance/stocks/NKE",
+     "problems": []
+    },
+    {
+     "facts": [
+      19
+     ],
+     "text": "Realty Income goes ex-dividend on Oct 30. The real estate firm has a 28-year streak of increases and a 5.74% yield.",
+     "link": "https://quantic.finance/stocks/O",
+     "problems": []
+    },
+    {
+     "facts": [
+      37,
+      44
+     ],
+     "text": "Dick's Sporting Goods posted 31.1% five-year dividend growth and now yields 3.53%.",
+     "link": "https://quantic.finance/stocks/DKS",
+     "problems": []
+    },
+    {
+     "facts": [
+      0
+     ],
+     "text": "Intertek reduced its annual dividend by 34.5%, lowering the payout from £1.65 to £1.08.",
+     "link": "https://quantic.finance/stocks/ITRK.L",
+     "problems": []
+    },
+    {
+     "facts": [
+      15
+     ],
+     "text": "Texas Instruments lifted its annual dividend from $5.68 to $6.08, extending its streak to 22 years.",
+     "link": "https://quantic.finance/stocks/TXN",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

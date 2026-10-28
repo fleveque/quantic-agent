@@ -1,0 +1,136 @@
+{
+ "mode": "facts",
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 23.7,
+   "prompt_tokens": 6926,
+   "posts": [
+    {
+     "facts": [
+      "46"
+     ],
+     "text": "Nike Inc is paying a dividend yield of 4.37%. That is 3.1 times its 5-year average yield of 1.41%. The company has maintained this payment streak for 23 years.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "13"
+     ],
+     "text": "Diageo plc cut its annual dividend from 3.32 to 2.00 USD, a 39.8% decrease. The change was seen on Oct 17, 2026.",
+     "problems": [
+      "figure not in the data: '39.8%'"
+     ]
+    },
+    {
+     "facts": [
+      "8"
+     ],
+     "text": "PAX GLOBAL reduced its annual dividend by 75.8%, moving from 0.33 to 0.08 HKD. This cut was seen on Oct 23, 2026.",
+     "problems": [
+      "figure not in the data: '75.8%'"
+     ]
+    },
+    {
+     "facts": [
+      "44"
+     ],
+     "text": "Dick's Sporting Goods has a 5-year dividend growth rate of 31.1%. Its current yield is 3.53%, which is 1.6 times its 5-year average yield.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "18"
+     ],
+     "text": "Clorox Company goes ex-dividend on Oct 28, 2026, with an annual rate of 5.00 USD and a yield of 5.72%. The payment date is Nov 13, 2026.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "19"
+     ],
+     "text": "Realty Income Corporation pays dividends monthly. It goes ex-dividend on Oct 30, 2026, with a 5.74% yield and a 28-year streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "17"
+     ],
+     "text": "Fastenal Company goes ex-dividend today, Oct 28, 2026. The annual rate is 1.04 USD with a 2.02% yield. The next payment is due Nov 25, 2026.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "6"
+     ],
+     "text": "West Pharmaceutical Services increased its annual dividend by 18.2%, from 0.88 to 1.04 USD. The change was seen on Oct 23, 2026.",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 2,
+   "seconds": 19.7,
+   "prompt_tokens": 7475,
+   "posts": [
+    {
+     "facts": [
+      46
+     ],
+     "text": "Nike Inc pays a dividend yield of 4.37%. That is 3.1 times its 5-year average yield of 1.41%. The company has maintained a 23-year streak of payments.",
+     "problems": []
+    },
+    {
+     "facts": [
+      13
+     ],
+     "text": "Diageo plc cut its annual dividend from 3.32 to 2.00 USD. The change was seen on Oct 17, 2026. The company is currently rated safe with a 2.75% 5-year avg yield.",
+     "problems": []
+    },
+    {
+     "facts": [
+      8
+     ],
+     "text": "PAX GLOBAL reduced its annual dividend from 0.33 to 0.08 HKD. The change was seen on Oct 23, 2026. The company has a 6-year streak and is rated safe.",
+     "problems": []
+    },
+    {
+     "facts": [
+      44
+     ],
+     "text": "Dick's Sporting Goods has a 5-year dividend growth rate of 31.1%. Its current yield is 3.53%, which is 1.6 times its 5-year average yield of 2.2.",
+     "problems": []
+    },
+    {
+     "facts": [
+      18
+     ],
+     "text": "Clorox Company goes ex-dividend on Oct 28, 2026. The annual rate is 5.0 USD with a yield of 5.72%. The pay date is Nov 13, 2026.",
+     "problems": []
+    },
+    {
+     "facts": [
+      19
+     ],
+     "text": "Realty Income Corporation pays monthly. It goes ex-dividend on Oct 30, 2026, with a yield of 5.74%. The company has a 28-year streak of payments.",
+     "problems": []
+    },
+    {
+     "facts": [
+      17
+     ],
+     "text": "Fastenal Company goes ex-dividend on Oct 28, 2026. The annual rate is 1.04 USD with a yield of 2.02%. The pay date is Nov 25, 2026.",
+     "problems": []
+    },
+    {
+     "facts": [
+      6
+     ],
+     "text": "West Pharmaceutical Services increased its annual dividend from 0.88 to 1.04 USD. The change was seen on Oct 23, 2026. The company has a 28-year streak.",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

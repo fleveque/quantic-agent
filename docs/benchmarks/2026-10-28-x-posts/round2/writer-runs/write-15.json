@@ -1,0 +1,205 @@
+{
+ "mode": "facts",
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 30.0,
+   "prompt_tokens": 7158,
+   "posts": [
+    {
+     "facts": [
+      6
+     ],
+     "text": "$WST (West Pharmaceutical Services) raised its annual dividend rate from 0.88 USD to 1.04 USD, a 18.2% increase seen on 2026-10-23. The company has 28 consecutive years of dividend increases.",
+     "problems": []
+    },
+    {
+     "facts": [
+      0
+     ],
+     "text": "INTERTEK GROUP PLC (ITRK.L) reduced its annual dividend rate from 1.65 GBP to 1.08 GBP, a 34.5% cut seen on 2026-10-28. The dividend safety label for the company is currently safe.",
+     "problems": [
+      "figure not in the data: '34.5%'"
+     ]
+    },
+    {
+     "facts": [
+      46,
+      47
+     ],
+     "text": "$NKE (Nike) current yield is 4.37%, which is 3.1 times its 5-year average yield of 1.41%. $DPZ (Domino's Pizza) current yield is 2.55%, 2.06 times its 5-year average of 1.24%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      37
+     ],
+     "text": "$DKS (Dick's Sporting Goods) has a 5-year annual dividend growth rate of 31.1%. The company maintains a safe dividend safety label and a 5-year average yield of 2.2%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      13
+     ],
+     "text": "Diageo plc (DEO) lowered its annual dividend rate from 3.32 USD to 2.0 USD, a 39.8% reduction seen on 2026-10-17. The company's 5-year average yield is 2.75%.",
+     "problems": [
+      "figure not in the data: '39.8%'"
+     ]
+    },
+    {
+     "facts": [
+      12
+     ],
+     "text": "$ED (Consolidated Edison) increased its annual dividend rate from 3.51 USD to 3.55 USD, a 1.1% increase seen on 2026-10-17. The company has 29 consecutive years of dividend increases.",
+     "problems": []
+    },
+    {
+     "facts": [
+      19
+     ],
+     "text": "$O (Realty Income) goes ex-dividend on 2026-10-30. The annual rate is 3.26 USD with a current yield of 5.74%. The company has a 28-year streak of dividend increases.",
+     "problems": []
+    },
+    {
+     "facts": [
+      31
+     ],
+     "text": "In the Financial Services sector snapshot from Quantic's screener, the median 5-year average yield is 6.75% and the median 5-year dividend growth is 6.5% across 117 companies.",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 2,
+   "seconds": 24.7,
+   "prompt_tokens": 7875,
+   "posts": [
+    {
+     "facts": [
+      6
+     ],
+     "text": "West Pharmaceutical Services (WST) raised its annual dividend from 0.88 to 1.04 USD, a 18.2% increase seen on 2026-10-23. The company has a streak of 28 years of dividend increases.",
+     "problems": []
+    },
+    {
+     "facts": [
+      0
+     ],
+     "text": "INTERTEK GROUP PLC (ITRK.L) cut its annual dividend from 1.65 to 1.08 GBP, a 34.5% decrease seen on 2026-10-28. Quantic\u2019s data labels the dividend safety as safe.",
+     "problems": [
+      "figure not in the data: '34.5%'"
+     ]
+    },
+    {
+     "facts": [
+      46
+     ],
+     "text": "Nike (NKE) has a current yield of 4.37%, which is 3.1 times its 5-year average yield of 1.41%. The company maintains a streak of 23 consecutive years of dividend increases.",
+     "problems": []
+    },
+    {
+     "facts": [
+      13
+     ],
+     "text": "Diageo plc (DEO) lowered its annual dividend from 3.32 to 2.0 USD, a 39.8% reduction seen on 2026-10-17. The company has a 5-year average yield of 2.75%.",
+     "problems": [
+      "figure not in the data: '39.8%'"
+     ]
+    },
+    {
+     "facts": [
+      12
+     ],
+     "text": "Consolidated Edison (ED) raised its annual dividend from 3.51 to 3.55 USD, a 1.1% increase seen on 2026-10-17. The company has a streak of 29 consecutive years of dividend increases.",
+     "problems": []
+    },
+    {
+     "facts": [
+      19
+     ],
+     "text": "Realty Income (O) is ex-dividend on Oct 30 with an annual rate of 3.26 USD and a current yield of 5.74%. The company has a streak of 28 consecutive years of dividend increases.",
+     "problems": []
+    },
+    {
+     "facts": [
+      31
+     ],
+     "text": "Quantic's screener shows 117 companies in the Financial Services sector. The median 5-year average yield is 6.75% and the median 5-year dividend growth is 6.5%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      37,
+      44
+     ],
+     "text": "Dick's Sporting Goods (DKS) has a 5-year dividend growth rate of 31.1%. Its current yield is 3.53%, which is 1.6 times its 5-year average yield of 2.2%.",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 3,
+   "seconds": 23.3,
+   "prompt_tokens": 8576,
+   "posts": [
+    {
+     "facts": [
+      6
+     ],
+     "text": "$WST raised its annual dividend from 0.88 USD to 1.04 USD, a 18.2% increase seen on 2026-10-23. The company has 28 consecutive years of dividend increases and a safe safety label.",
+     "problems": []
+    },
+    {
+     "facts": [
+      0
+     ],
+     "text": "INTERTEK GROUP PLC (ITRK.L) cut its annual dividend from 1.65 GBP to 1.08 GBP. The change is -34.5%, seen on 2026-10-28. The company's safety label is safe.",
+     "problems": []
+    },
+    {
+     "facts": [
+      46
+     ],
+     "text": "$NKE current yield is 4.37%, which is 3.1 times its 5-year average yield of 1.41%. The company has 23 consecutive years of dividend increases and a safe safety label.",
+     "problems": []
+    },
+    {
+     "facts": [
+      13
+     ],
+     "text": "Diageo plc (DEO) cut its annual dividend from 3.32 USD to 2.0 USD. The change is -39.8%, seen on 2026-10-17. The company has a 5-year average yield of 2.75%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      12
+     ],
+     "text": "$ED raised its annual dividend from 3.51 USD to 3.55 USD, a 1.1% increase seen on 2026-10-17. The company has 29 consecutive years of dividend increases.",
+     "problems": []
+    },
+    {
+     "facts": [
+      19
+     ],
+     "text": "$O is ex-dividend on Oct 30 with an annual rate of 3.26 USD and a current yield of 5.74%. The company has 28 consecutive years of dividend increases.",
+     "problems": []
+    },
+    {
+     "facts": [
+      31
+     ],
+     "text": "Quantic's screener includes 117 Financial Services companies. The median 5-year average yield is 6.75% and the median 5-year dividend growth is 6.5%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      37
+     ],
+     "text": "$DKS has a 5-year dividend growth rate of 31.1%. Its current yield is 3.53%, which is 1.6 times its 5-year average yield of 2.2%.",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

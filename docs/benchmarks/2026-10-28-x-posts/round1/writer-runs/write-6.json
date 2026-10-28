@@ -1,0 +1,199 @@
+{
+ "mode": "facts",
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 28.3,
+   "prompt_tokens": 6926,
+   "posts": [
+    {
+     "facts": [
+      "18"
+     ],
+     "text": "Clorox (CLX) hits ex-dividend today. The annual rate is $5.00, a 5.72% yield. Quantic classifies the safety as at_risk, with a 5-year dividend growth of 2.5%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "46"
+     ],
+     "text": "Nike (NKE) currently yields 4.37%. This figure is 3.1 times the company's 5-year average yield of 1.41%. The data marks the dividend safety as safe.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "40"
+     ],
+     "text": "Lowe's (LOW) has maintained a 28-year dividend streak. The 5-year dividend growth stands at 16.4%, while the average 5-year yield is 1.81%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "13"
+     ],
+     "text": "Diageo (DEO) cut its annual dividend rate from $3.32 to $2.00, a 39.8% decrease seen on Oct 17. The 5-year dividend growth was previously 2.6%.",
+     "problems": [
+      "figure not in the data: '39.8%'"
+     ]
+    },
+    {
+     "facts": [
+      "31"
+     ],
+     "text": "Financial Services leads the screener with 117 companies tracked. The median 5-year average yield is 6.75%, with 48 classified as safe and 38 as at_risk.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "37"
+     ],
+     "text": "Dick's Sporting Goods (DKS) shows a 5-year dividend growth of 31.1%. The 5-year average yield is 2.2%, and the company has a 11-year dividend streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "24"
+     ],
+     "text": "Texas Instruments ($TXN) goes ex-dividend on Oct 30. The annual rate is $6.08, representing a 1.97% yield, with a 22-year dividend streak recorded.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "35"
+     ],
+     "text": "The Technology sector snapshot covers 62 companies. The median 5-year dividend growth is 9.0%, and the median 5-year average yield is 1.27%.",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 2,
+   "seconds": 18.5,
+   "prompt_tokens": 7583,
+   "posts": [
+    {
+     "facts": [
+      18
+     ],
+     "text": "Clorox (CLX) hits ex-dividend today. The annual rate is $5.00, a 5.72% yield. Quantic classifies the safety as at_risk, with a 5-year dividend growth of 2.5%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      46
+     ],
+     "text": "Nike (NKE) currently yields 4.37%. This figure is 3.1 times the company's 5-year average yield of 1.41%. The data marks the dividend safety as safe.",
+     "problems": []
+    },
+    {
+     "facts": [
+      40
+     ],
+     "text": "Lowe's (LOW) has maintained a 28-year dividend streak. The 5-year dividend growth stands at 16.4%, while the average 5-year yield is 1.81%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      13
+     ],
+     "text": "Diageo (DEO) cut its annual dividend rate from $3.32 to $2.00, a 39.8% decrease seen on Oct 17. The 5-year dividend growth was previously 2.6%.",
+     "problems": [
+      "figure not in the data: '39.8%'"
+     ]
+    },
+    {
+     "facts": [
+      31
+     ],
+     "text": "Financial Services leads the screener with 117 companies tracked. The median 5-year average yield is 6.75%, with 48 classified as safe and 38 as at_risk.",
+     "problems": []
+    },
+    {
+     "facts": [
+      37
+     ],
+     "text": "Dick's Sporting Goods (DKS) shows a 5-year dividend growth of 31.1%. The 5-year average yield is 2.2%, and the company has a 11-year dividend streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      24
+     ],
+     "text": "Texas Instruments ($TXN) goes ex-dividend on Oct 30. The annual rate is $6.08, representing a 1.97% yield, with a 22-year dividend streak recorded.",
+     "problems": []
+    },
+    {
+     "facts": [
+      35
+     ],
+     "text": "The Technology sector snapshot covers 62 companies. The median 5-year dividend growth is 9.0%, and the median 5-year average yield is 1.27%.",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 3,
+   "seconds": 18.8,
+   "prompt_tokens": 8112,
+   "posts": [
+    {
+     "facts": [
+      18
+     ],
+     "text": "Clorox (CLX) hits ex-dividend today. The annual rate is $5.00, a 5.72% yield. Quantic classifies the safety as at_risk, with a 5-year dividend growth of 2.5%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      46
+     ],
+     "text": "Nike (NKE) currently yields 4.37%. This figure is 3.1 times the company's 5-year average yield of 1.41%. The data marks the dividend safety as safe.",
+     "problems": []
+    },
+    {
+     "facts": [
+      40
+     ],
+     "text": "Lowe's (LOW) has maintained a 28-year dividend streak. The 5-year dividend growth stands at 16.4%, while the average 5-year yield is 1.81%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      13
+     ],
+     "text": "Diageo (DEO) cut its annual dividend rate from $3.32 to $2.00, a change of -39.8% seen on Oct 17. The 5-year dividend growth was previously 2.6%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      31
+     ],
+     "text": "Financial Services leads the screener with 117 companies tracked. The median 5-year average yield is 6.75%, with 48 classified as safe and 38 as at_risk.",
+     "problems": []
+    },
+    {
+     "facts": [
+      37
+     ],
+     "text": "Dick's Sporting Goods (DKS) shows a 5-year dividend growth of 31.1%. The 5-year average yield is 2.2%, and the company has a 11-year dividend streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      24
+     ],
+     "text": "Texas Instruments ($TXN) goes ex-dividend on Oct 30. The annual rate is $6.08, representing a 1.97% yield, with a 22-year dividend streak recorded.",
+     "problems": []
+    },
+    {
+     "facts": [
+      35
+     ],
+     "text": "The Technology sector snapshot covers 62 companies. The median 5-year dividend growth is 9.0%, and the median 5-year average yield is 1.27%.",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

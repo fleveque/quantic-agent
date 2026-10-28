@@ -1,0 +1,210 @@
+{
+ "mode": "facts",
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 21.6,
+   "prompt_tokens": 6926,
+   "posts": [
+    {
+     "facts": [
+      8
+     ],
+     "text": "PAX GLOBAL ($0327.HK) cut its dividend by 75.8% to 0.08 HKD, seen on Oct 23, 2026, despite a 30.9% 5-year growth rate.",
+     "problems": [
+      "figure not in the data: '$0327'",
+      "figure not in the data: '75.8%'"
+     ]
+    },
+    {
+     "facts": [
+      19
+     ],
+     "text": "$O pays a monthly dividend with an annual rate of 3.26 USD and a 5.74% yield. Ex-dividend date is Oct 30, 2026.",
+     "problems": []
+    },
+    {
+     "facts": [
+      28
+     ],
+     "text": "The Consumer Cyclical sector shows a median 5-year dividend growth of 8.9% across 61 companies in the screener.",
+     "problems": []
+    },
+    {
+     "facts": [
+      46,
+      43
+     ],
+     "text": "$NKE has a 4.37% yield, 3.1 times its 5-year average. $MCD is at 3.09%, 1.38 times its average.",
+     "problems": []
+    },
+    {
+     "facts": [
+      26
+     ],
+     "text": "Basic Materials has the highest safe ratio at 54% (21 of 39 companies), with a median yield of 3.04%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      2,
+      9
+     ],
+     "text": "Two non-US names raised dividends recently: CapLand Ascendas (+36.4% to 0.15 SGD) and Allwyn AG (+40.0% to 0.7 EUR).",
+     "problems": []
+    },
+    {
+     "facts": [
+      40
+     ],
+     "text": "$LOW has maintained a dividend streak for 28 years, with a 16.4% 5-year growth rate and a 1.81% average yield.",
+     "problems": []
+    },
+    {
+     "facts": [
+      32
+     ],
+     "text": "Healthcare sector data shows 40 companies, with 12 rated safe, 18 watch, and 10 at-risk. Median yield is 2.73%.",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 2,
+   "seconds": 15.9,
+   "prompt_tokens": 7418,
+   "posts": [
+    {
+     "facts": [
+      8
+     ],
+     "text": "PAX GLOBAL (0327.HK) cut its dividend to 0.08 HKD, a 75.8% drop, seen on Oct 23, 2026.",
+     "problems": [
+      "figure not in the data: '0327'",
+      "figure not in the data: '75.8%'"
+     ]
+    },
+    {
+     "facts": [
+      19
+     ],
+     "text": "$O pays a monthly dividend with an annual rate of 3.26 USD and a 5.74% yield. Ex-dividend date is Oct 30, 2026.",
+     "problems": []
+    },
+    {
+     "facts": [
+      28
+     ],
+     "text": "The Consumer Cyclical sector shows a median 5-year dividend growth of 8.9% across 61 companies in the screener.",
+     "problems": []
+    },
+    {
+     "facts": [
+      46,
+      43
+     ],
+     "text": "$NKE has a 4.37% yield, 3.1 times its 5-year average. $MCD is at 3.09%, 1.38 times its average.",
+     "problems": []
+    },
+    {
+     "facts": [
+      26
+     ],
+     "text": "Basic Materials has 21 of 39 companies rated safe, with a median yield of 3.04%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      2,
+      9
+     ],
+     "text": "CapLand Ascendas REIT raised its dividend 36.4% to 0.15 SGD. Allwyn AG raised 40.0% to 0.7 EUR.",
+     "problems": []
+    },
+    {
+     "facts": [
+      40
+     ],
+     "text": "$LOW has maintained a dividend streak for 28 years, with a 16.4% 5-year growth rate and a 1.81% average yield.",
+     "problems": []
+    },
+    {
+     "facts": [
+      32
+     ],
+     "text": "Healthcare sector data shows 40 companies, with 12 rated safe, 18 watch, and 10 at-risk. Median yield is 2.73%.",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 3,
+   "seconds": 16.5,
+   "prompt_tokens": 7888,
+   "posts": [
+    {
+     "facts": [
+      8
+     ],
+     "text": "PAX GLOBAL (0327.HK) cut its annual dividend from 0.33 HKD to 0.08 HKD, a 75.8% reduction, seen on Oct 23, 2026.",
+     "problems": [
+      "figure not in the data: '0327'",
+      "figure not in the data: '75.8%'"
+     ]
+    },
+    {
+     "facts": [
+      19
+     ],
+     "text": "$O pays a monthly dividend with an annual rate of 3.26 USD and a 5.74% yield. Ex-dividend date is Oct 30, 2026.",
+     "problems": []
+    },
+    {
+     "facts": [
+      28
+     ],
+     "text": "The Consumer Cyclical sector shows a median 5-year dividend growth of 8.9% across 61 companies in the screener.",
+     "problems": []
+    },
+    {
+     "facts": [
+      46,
+      43
+     ],
+     "text": "$NKE has a 4.37% yield, 3.1 times its 5-year average. $MCD is at 3.09%, 1.38 times its average.",
+     "problems": []
+    },
+    {
+     "facts": [
+      26
+     ],
+     "text": "Basic Materials has 21 of 39 companies rated safe, with a median yield of 3.04%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      2,
+      9
+     ],
+     "text": "CapLand Ascendas REIT raised its dividend 36.4% to 0.15 SGD. Allwyn AG raised 40.0% to 0.7 EUR.",
+     "problems": []
+    },
+    {
+     "facts": [
+      40
+     ],
+     "text": "$LOW has maintained a dividend streak for 28 years, with a 16.4% 5-year growth rate and a 1.81% average yield.",
+     "problems": []
+    },
+    {
+     "facts": [
+      32
+     ],
+     "text": "Healthcare sector data shows 40 companies, with 12 rated safe, 18 watch, and 10 at-risk. Median yield is 2.73%.",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

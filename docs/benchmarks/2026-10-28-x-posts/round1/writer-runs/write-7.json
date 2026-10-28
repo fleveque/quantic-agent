@@ -1,0 +1,144 @@
+{
+ "mode": "facts",
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 26.8,
+   "prompt_tokens": 6926,
+   "posts": [
+    {
+     "facts": [
+      24,
+      15
+     ],
+     "text": "$TXN goes ex-dividend Friday, Oct 30. The annual rate rose to 6.08 USD, a 7.0% increase. The 22-year streak remains intact with a current yield of 1.97%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      22
+     ],
+     "text": "$NI enters ex-dividend status on Friday, Oct 30. The annual rate is 1.2 USD, representing a 2.75% yield. Safety status is classified as watch.",
+     "problems": []
+    },
+    {
+     "facts": [
+      0,
+      8
+     ],
+     "text": "ITRK.L cut its annual rate to 1.08 GBP, a 34.5% reduction. Meanwhile, 0327.HK cut its rate to 0.08 HKD, a 75.8% drop. Both were seen in October.",
+     "problems": [
+      "figure not in the data: '34.5%'",
+      "figure not in the data: '0327'",
+      "figure not in the data: '75.8%'",
+      "wording (count): 'Both'"
+     ]
+    },
+    {
+     "facts": [
+      1,
+      13
+     ],
+     "text": "The largest dividend cut in the data is Diageo plc ($DEO), down 39.8% to 2.0 USD. The largest raise is Allwyn AG (ALWN.AT), up 40.0% to 0.7 EUR.",
+     "problems": [
+      "figure not in the data: '39.8%'"
+     ]
+    },
+    {
+     "facts": [
+      43,
+      24
+     ],
+     "text": "McDonald's ($MCD) yield is 3.09%, which is 1.38 times its 5-year average of 2.24%. The 17-year dividend streak is currently rated safe.",
+     "problems": []
+    },
+    {
+     "facts": [
+      52
+     ],
+     "text": "Brown-Forman (BF-B) shows a 29-year dividend streak. The current yield of 3.23% is 1.96 times its 5-year average yield of 1.65%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      19
+     ],
+     "text": "Realty Income (O) pays monthly and goes ex-dividend Friday, Oct 30. The annual rate is 3.26 USD with a 28-year streak. Safety status is safe.",
+     "problems": []
+    },
+    {
+     "facts": [
+      36
+     ],
+     "text": "In the Utilities sector, 40 companies are tracked. 7 are safe, 18 are on watch, and 15 are at risk. The median 5-year dividend growth is 4.7%.",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 2,
+   "seconds": 23.7,
+   "prompt_tokens": 7591,
+   "posts": [
+    {
+     "facts": [
+      24,
+      15
+     ],
+     "text": "$TXN goes ex-dividend Friday, Oct 30. The annual rate rose to 6.08 USD, a 7.0% increase. The 22-year streak remains intact with a current yield of 1.97%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      22
+     ],
+     "text": "$NI enters ex-dividend status on Friday, Oct 30. The annual rate is 1.2 USD, representing a 2.75% yield. Safety status is classified as watch.",
+     "problems": []
+    },
+    {
+     "facts": [
+      0
+     ],
+     "text": "INTERTEK GROUP PLC ORD 1P (ITRK.L) reduced its annual rate from 1.65 to 1.08 GBP. This change of -34.5 was seen on 2026-10-28.",
+     "problems": []
+    },
+    {
+     "facts": [
+      13
+     ],
+     "text": "Diageo plc (DEO) cut its annual rate from 3.32 to 2.0 USD. This change of -39.8 was seen on 2026-10-17.",
+     "problems": []
+    },
+    {
+     "facts": [
+      43
+     ],
+     "text": "McDonald's ($MCD) yield is 3.09%, which is 1.38 times its 5-year average of 2.24%. The 17-year dividend streak is currently rated safe.",
+     "problems": []
+    },
+    {
+     "facts": [
+      52
+     ],
+     "text": "Brown-Forman (BF-B) shows a 29-year dividend streak. The current yield of 3.23% is 1.96 times its 5-year average yield of 1.65%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      19
+     ],
+     "text": "Realty Income (O) pays monthly and goes ex-dividend Friday, Oct 30. The annual rate is 3.26 USD with a 28-year streak. Safety status is safe.",
+     "problems": []
+    },
+    {
+     "facts": [
+      36
+     ],
+     "text": "In the Utilities sector, 40 companies are tracked. 7 are safe, 18 are on watch, and 15 are at risk. The median 5-year dividend growth is 4.7%.",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

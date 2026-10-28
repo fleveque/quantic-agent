@@ -1,0 +1,152 @@
+{
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "seed": 31,
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 28.0,
+   "posts": [
+    {
+     "facts": [
+      13
+     ],
+     "text": "Diageo's annual dividend rate dropped 39.8% to $2.00, a cut first seen on Oct 17. The company's 5-year dividend growth rate stands at 2.6%. 📉",
+     "link": "https://quantic.finance/stocks/DEO",
+     "problems": [
+      "figure not in the data: '39.8%'"
+     ]
+    },
+    {
+     "facts": [
+      37
+     ],
+     "text": "Dick's Sporting Goods shows a 31.1% 5-year dividend growth rate. The retailer maintains an 11-year streak of annual increases. 📈",
+     "link": "https://quantic.finance/stocks/DKS",
+     "problems": []
+    },
+    {
+     "facts": [
+      16
+     ],
+     "text": "Microsoft's annual dividend rose 7.7% to $3.92, a change first seen on Oct 16. The company has increased its payout for 15 consecutive years.",
+     "link": "https://quantic.finance/stocks/MSFT",
+     "problems": []
+    },
+    {
+     "facts": [
+      46
+     ],
+     "text": "Nike's current yield of 4.37% is 3.1 times its 5-year average yield of 1.41%. The brand holds a 23-year streak of dividend increases.",
+     "link": "https://quantic.finance/stocks/NKE",
+     "problems": []
+    },
+    {
+     "facts": [
+      11
+     ],
+     "text": "ASA Gold raised its annual rate 25% to $0.10, first seen on Oct 20. The 5-year dividend growth rate for the firm is 24.6%. 📈",
+     "link": "https://quantic.finance/stocks/ASA",
+     "problems": []
+    },
+    {
+     "facts": [
+      25
+     ],
+     "text": "Zoetis goes ex-dividend on Oct 30. The company pays quarterly and has a 12-year streak of annual dividend increases. 📅",
+     "link": "https://quantic.finance/stocks/ZTS",
+     "problems": []
+    },
+    {
+     "facts": [
+      0
+     ],
+     "text": "Intertek's annual dividend rate fell 34.5% to £1.08, a change first seen on Oct 28. The 5-year dividend growth rate is 8.6%. 📉",
+     "link": "https://quantic.finance/stocks/ITRK.L",
+     "problems": [
+      "figure not in the data: '34.5%'"
+     ]
+    },
+    {
+     "facts": [
+      2
+     ],
+     "text": "CapLand Ascendas REIT raised its annual rate 36.4% to $0.15 SGD, first seen on Oct 27. The company's 5-year dividend growth is 2.5%.",
+     "link": "https://quantic.finance/stocks/A17U.SI",
+     "problems": [
+      "a word in capitals: REIT"
+     ]
+    }
+   ]
+  },
+  {
+   "attempt": 2,
+   "seconds": 18.7,
+   "posts": [
+    {
+     "facts": [
+      13
+     ],
+     "text": "Diageo cut its annual dividend rate from $3.32 to $2.00, first seen on Oct 17. The company's 5-year dividend growth rate is 2.6%. 📉",
+     "link": "https://quantic.finance/stocks/DEO",
+     "problems": []
+    },
+    {
+     "facts": [
+      37
+     ],
+     "text": "Dick's Sporting Goods has a 31.1% 5-year dividend growth rate. The retailer maintains an 11-year streak of annual increases. 📈",
+     "link": "https://quantic.finance/stocks/DKS",
+     "problems": []
+    },
+    {
+     "facts": [
+      16
+     ],
+     "text": "Microsoft's annual dividend rose from $3.64 to $3.92, first seen on Oct 16. The company has increased its payout for 15 consecutive years.",
+     "link": "https://quantic.finance/stocks/MSFT",
+     "problems": []
+    },
+    {
+     "facts": [
+      46
+     ],
+     "text": "Nike's current yield of 4.37% is 3.1 times its 5-year average yield of 1.41%. The brand holds a 23-year streak of dividend increases.",
+     "link": "https://quantic.finance/stocks/NKE",
+     "problems": []
+    },
+    {
+     "facts": [
+      11
+     ],
+     "text": "ASA Gold raised its annual rate from $0.08 to $0.10, first seen on Oct 20. The 5-year dividend growth rate for the firm is 24.6%. 📈",
+     "link": "https://quantic.finance/stocks/ASA",
+     "problems": []
+    },
+    {
+     "facts": [
+      25
+     ],
+     "text": "Zoetis goes ex-dividend on Oct 30. The company pays quarterly and has a 12-year streak of annual dividend increases. 📅",
+     "link": "https://quantic.finance/stocks/ZTS",
+     "problems": []
+    },
+    {
+     "facts": [
+      0
+     ],
+     "text": "Intertek's annual dividend rate fell from £1.65 to £1.08, first seen on Oct 28. The 5-year dividend growth rate is 8.6%. 📉",
+     "link": "https://quantic.finance/stocks/ITRK.L",
+     "problems": []
+    },
+    {
+     "facts": [
+      2
+     ],
+     "text": "CapLand Ascendas raised its annual rate from $0.11 to $0.15 SGD, first seen on Oct 27. The company's 5-year dividend growth is 2.5%.",
+     "link": "https://quantic.finance/stocks/A17U.SI",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,137 @@
+{
+ "mode": "facts",
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 30.8,
+   "prompt_tokens": 7158,
+   "posts": [
+    {
+     "facts": [
+      "1"
+     ],
+     "text": "Riley Exploration Permian, Inc. ($REPX) dividend was seen on Oct 27 at a new annual rate of 1.68 USD, up 5.0% from 1.6. The 5-year average yield is 4.72%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "13"
+     ],
+     "text": "Diageo plc ($DEO) dividend was seen on Oct 17 at a new annual rate of 2.0 USD, down 39.8% from 3.32. The 5-year average yield is 2.75%.",
+     "problems": [
+      "figure not in the data: '39.8%'"
+     ]
+    },
+    {
+     "facts": [
+      "8"
+     ],
+     "text": "PAX GLOBAL (0327.HK) dividend was seen on Oct 23 at a new annual rate of 0.08 HKD, down 75.8% from 0.33. The 5-year average yield is 6.38%.",
+     "problems": [
+      "figure not in the data: '0327'",
+      "figure not in the data: '75.8%'"
+     ]
+    },
+    {
+     "facts": [
+      "17"
+     ],
+     "text": "Fastenal Company ($FAST) has an ex-dividend date of Oct 28, 2026. The pay date is Nov 25, 2026, with an annual rate of 1.04 USD and a current yield of 2.02%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "37"
+     ],
+     "text": "Dick's Sporting Goods Inc ($DKS) shows a 5-year dividend growth rate of 31.1%. The company has a streak of 11 consecutive years of dividend increases.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "16"
+     ],
+     "text": "Microsoft ($MSFT) dividend was seen on Oct 16 at a new annual rate of 3.92 USD, up 7.7% from 3.64. The 5-year average yield is 0.8%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "52"
+     ],
+     "text": "Brown Forman Inc ($BF-B) has a current yield of 3.23%, which is 1.96 times its 5-year average yield of 1.65%. The company has a 29-year dividend increase streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "22"
+     ],
+     "text": "NiSource Inc ($NI) has an ex-dividend date of Oct 30, 2026, with a pay date of Nov 20, 2026. The annual rate is 1.2 USD and the current yield is 2.75%.",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 2,
+   "seconds": 25.6,
+   "prompt_tokens": 7908,
+   "posts": [
+    {
+     "facts": [
+      "1"
+     ],
+     "text": "Riley Exploration Permian, Inc. ($REPX) dividend was seen on Oct 27 at a new annual rate of 1.68 USD, up 5.0% from 1.6. The 5-year average yield is 4.72%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "13"
+     ],
+     "text": "Diageo plc ($DEO) dividend was seen on Oct 17 at a new annual rate of 2.0 USD. The annual rate change was -39.8. The 5-year average yield is 2.75%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "8"
+     ],
+     "text": "PAX GLOBAL dividend was seen on Oct 23 at a new annual rate of 0.08 HKD. The annual rate change was -75.8. The 5-year average yield is 6.38%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "17"
+     ],
+     "text": "Fastenal Company ($FAST) has an ex-dividend date of Oct 28, 2026. The pay date is Nov 25, 2026, with an annual rate of 1.04 USD and a current yield of 2.02%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "37"
+     ],
+     "text": "Dick's Sporting Goods Inc ($DKS) shows a 5-year dividend growth rate of 31.1%. The company has a streak of 11 consecutive years of dividend increases.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "16"
+     ],
+     "text": "Microsoft ($MSFT) dividend was seen on Oct 16 at a new annual rate of 3.92 USD, up 7.7% from 3.64. The 5-year average yield is 0.8%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "52"
+     ],
+     "text": "Brown Forman Inc ($BF-B) has a current yield of 3.23%, which is 1.96 times its 5-year average yield of 1.65%. The company has a 29-year dividend increase streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "22"
+     ],
+     "text": "NiSource Inc ($NI) has an ex-dividend date of Oct 30, 2026, with a pay date of Nov 20, 2026. The annual rate is 1.2 USD and the current yield is 2.75%.",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

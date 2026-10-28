@@ -1,0 +1,70 @@
+{
+ "mode": "facts",
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 36.0,
+   "prompt_tokens": 7158,
+   "posts": [
+    {
+     "facts": [
+      "3"
+     ],
+     "text": "Western Digital ($WDC) changed its annual dividend rate from $0.60 to $0.70, a 16.7% increase seen on Oct 26. Despite the change, Quantic labels the dividend safety as at_risk, with a 5-year growth rate of -23.3%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "24",
+      "15"
+     ],
+     "text": "Texas Instruments ($TXN) has a 22-year streak of dividend increases. The company raised its annual rate from $5.68 to $6.08 (7.0% change) seen on Oct 16. The ex-dividend date is Oct 30, with a pay date of Nov 10.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "13"
+     ],
+     "text": "Diageo ($DEO) reduced its annual dividend from $3.32 to $2.00, a -39.8% change seen on Oct 17. The company's streak of dividend increases is now 0 years, and Quantic labels the safety as safe.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "22"
+     ],
+     "text": "NiSource ($NI) hits ex-dividend status on Oct 30. The annual rate is $1.20 with a current yield of 2.75%. Quantic labels the safety as watch, and the 5-year dividend growth rate is 5.9%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "19"
+     ],
+     "text": "Realty Income ($O) goes ex-dividend on Oct 30 with a monthly frequency. The annual rate is $3.26 and the current yield is 5.74%. The company maintains a 28-year streak of dividend increases.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "37"
+     ],
+     "text": "Dick's Sporting Goods ($DKS) shows a 5-year dividend growth rate of 31.1%, the highest 5-year growth figure in this dataset's fast grower selection. The company has an 11-year streak of increases.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "29"
+     ],
+     "text": "In the Consumer Defensive sector, Quantic tracks 54 companies in its screener. Of these, 13 are labeled safe, 23 are watch, and 18 are at_risk. The median 5-year average yield for the sector is 3.05%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "18"
+     ],
+     "text": "Clorox ($CLX) goes ex-dividend on Oct 28. The annual rate is $5.00 with a current yield of 5.72%. Quantic labels the dividend safety as at_risk, despite a 23-year streak of increases.",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

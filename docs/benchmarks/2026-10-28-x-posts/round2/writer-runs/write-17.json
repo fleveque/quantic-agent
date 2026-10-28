@@ -1,0 +1,202 @@
+{
+ "mode": "facts",
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 29.1,
+   "prompt_tokens": 7158,
+   "posts": [
+    {
+     "facts": [
+      "DKS"
+     ],
+     "text": "Dick's Sporting Goods ($DKS) dividend has grown 31.1% annually over the last 5 years. The current yield of 3.53% is 1.6 times the 5-year average yield.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "PAX GLOBAL"
+     ],
+     "text": "PAX GLOBAL (0327.HK) annual dividend dropped 75.8% from 0.33 HKD to 0.08 HKD. This change was seen on Oct 23, 2026.",
+     "problems": [
+      "figure not in the data: '0327'",
+      "figure not in the data: '75.8%'"
+     ]
+    },
+    {
+     "facts": [
+      "ALLWYN AG"
+     ],
+     "text": "Allwyn AG (ALWN.AT) increased its annual dividend by 40.0%, from 0.5 EUR to 0.7 EUR. Quantic first saw this new rate on Oct 23, 2026.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "Diageo plc"
+     ],
+     "text": "Diageo plc ($DEO) reduced its annual dividend 39.8%, from $3.32 to $2.00. The company's dividend safety is currently labeled 'safe'.",
+     "problems": [
+      "figure not in the data: '39.8%'"
+     ]
+    },
+    {
+     "facts": [
+      "Consolidated Edison, Inc."
+     ],
+     "text": "Consolidated Edison ($ED) has increased its dividend for 29 consecutive years. The 5-year average yield for the utility is 3.58%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "Realty Income Corporation"
+     ],
+     "text": "Realty Income Corporation ($O) has a 28-year streak of dividend increases. The monthly payer's current yield is 5.74%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "Western Digital Corporation"
+     ],
+     "text": "Western Digital ($WDC) raised its annual dividend 16.7% to $0.70, despite a 5-year growth rate of -23.3%. Safety is labeled 'at_risk'.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "NiSource Inc"
+     ],
+     "text": "NiSource ($NI) hits ex-dividend on Oct 30, 2026, with an annual rate of $1.20. The utility's dividend has grown 5.9% annually over 5 years.",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 2,
+   "seconds": 21.6,
+   "prompt_tokens": 7780,
+   "posts": [
+    {
+     "facts": [
+      "DKS"
+     ],
+     "text": "Dick's Sporting Goods ($DKS) dividend has grown 31.1% annually over the last 5 years. The current yield of 3.53% is 1.6 times the 5-year average yield.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "INTERTEK GROUP PLC ORD 1P"
+     ],
+     "text": "INTERTEK GROUP PLC (ITRK.L) annual dividend dropped 34.5% from 1.65 GBP to 1.08 GBP. Quantic first saw this new rate on Oct 28, 2026.",
+     "problems": [
+      "figure not in the data: '34.5%'"
+     ]
+    },
+    {
+     "facts": [
+      "Allwyn AG"
+     ],
+     "text": "Allwyn AG (ALWN.AT) increased its annual dividend by 40.0%, from 0.5 EUR to 0.7 EUR. Quantic first saw this new rate on Oct 23, 2026.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "Diageo plc"
+     ],
+     "text": "Diageo plc ($DEO) reduced its annual dividend from $3.32 to $2.00. The company's dividend safety is currently labeled 'safe'.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "Consolidated Edison, Inc."
+     ],
+     "text": "Consolidated Edison ($ED) has increased its dividend for 29 consecutive years. The 5-year average yield for the utility is 3.58%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "Realty Income Corporation"
+     ],
+     "text": "Realty Income Corporation ($O) has a 28-year streak of dividend increases. The monthly payer's current yield is 5.74%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "Western Digital Corporation"
+     ],
+     "text": "Western Digital ($WDC) raised its annual dividend 16.7% to $0.70, despite a 5-year growth rate of -23.3%. Safety is labeled 'at_risk'.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "NiSource Inc"
+     ],
+     "text": "NiSource ($NI) hits ex-dividend on Oct 30, 2026, with an annual rate of $1.20. The utility's dividend has grown 5.9% annually over 5 years.",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 3,
+   "seconds": 20.9,
+   "prompt_tokens": 8372,
+   "posts": [
+    {
+     "facts": [
+      "DKS"
+     ],
+     "text": "Dick's Sporting Goods ($DKS) dividend has grown 31.1% annually over the last 5 years. The current yield of 3.53% is 1.6 times the 5-year average yield.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "ITRK.L"
+     ],
+     "text": "INTERTEK GROUP PLC (ITRK.L) annual dividend fell from 1.65 GBP to 1.08 GBP. Quantic first saw this change on Oct 28, 2026.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "Allwyn AG"
+     ],
+     "text": "Allwyn AG (ALWN.AT) increased its annual dividend by 40.0%, from 0.5 EUR to 0.7 EUR. Quantic first saw this new rate on Oct 23, 2026.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "Diageo plc"
+     ],
+     "text": "Diageo plc ($DEO) reduced its annual dividend from $3.32 to $2.00. The company's dividend safety is currently labeled 'safe'.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "Consolidated Edison, Inc."
+     ],
+     "text": "Consolidated Edison ($ED) has increased its dividend for 29 consecutive years. The 5-year average yield for the utility is 3.58%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "Realty Income Corporation"
+     ],
+     "text": "Realty Income Corporation ($O) has a 28-year streak of dividend increases. The monthly payer's current yield is 5.74%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "Western Digital Corporation"
+     ],
+     "text": "Western Digital ($WDC) raised its annual dividend 16.7% to $0.70, despite a 5-year growth rate of -23.3%. Safety is labeled 'at_risk'.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "NiSource Inc"
+     ],
+     "text": "NiSource ($NI) hits ex-dividend on Oct 30, 2026, with an annual rate of $1.20. The utility's dividend has grown 5.9% annually over 5 years.",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

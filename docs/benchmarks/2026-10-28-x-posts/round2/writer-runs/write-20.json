@@ -1,0 +1,70 @@
+{
+ "mode": "facts",
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 25.9,
+   "prompt_tokens": 7158,
+   "posts": [
+    {
+     "facts": [
+      "ITRK.L"
+     ],
+     "text": "InterTek Group ($ITRK.L) dividend cut seen on Oct 28: annual rate drops from 1.65 to 1.08 GBP, a -34.5% change. The safety label is safe, with a 3-year streak of increases.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "DEO"
+     ],
+     "text": "Diageo ($DEO) shows a dividend cut seen on Oct 17: annual rate falls from 3.32 to 2.0 USD (-39.8%). The data lists a 0-year streak and a safe safety label.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "MSFT"
+     ],
+     "text": "Microsoft ($MSFT) raised its dividend, seen on Oct 16: annual rate moves from 3.64 to 3.92 USD, a 7.7% increase. It holds a 15-year streak of increases and a safe label.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "O"
+     ],
+     "text": "Realty Income ($O) goes ex-dividend Oct 30 with a 3.26 USD annual rate (5.74% yield). It has a 28-year streak of increases and a monthly frequency.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "DKS"
+     ],
+     "text": "Dick's Sporting Goods ($DKS) has a 31.1% 5-year dividend growth rate and an 11-year streak of increases. Its current yield of 3.53% is 1.6x its 5-year average yield of 2.2%.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "NIKE"
+     ],
+     "text": "Nike ($NKE) current yield is 4.37%, which is 3.1x its 5-year average yield of 1.41%. It has a 23-year streak of increases and a safe safety label.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "ZTS"
+     ],
+     "text": "Zoetis ($ZTS) goes ex-dividend Oct 30 with a 2.12 USD annual rate (2.71% yield). It has a 12-year streak of increases and is labeled 'watch' for safety.",
+     "problems": []
+    },
+    {
+     "facts": [
+      "FAST",
+      "CLX"
+     ],
+     "text": "Fastenal ($FAST) and Clorox ($CLX) go ex-dividend today, Oct 28. Fastenal's rate is 1.04 USD; Clorox's is 5.0 USD with an 'at_risk' safety label.",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

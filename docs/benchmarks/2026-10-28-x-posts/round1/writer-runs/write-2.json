@@ -1,0 +1,207 @@
+{
+ "mode": "facts",
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 26.5,
+   "prompt_tokens": 6926,
+   "posts": [
+    {
+     "facts": [
+      21
+     ],
+     "text": "$UNM goes ex-dividend on Oct 30 with an annual rate of 2.02 USD. The company has maintained a 17-year dividend streak and currently shows a yield of 2.27 percent.",
+     "problems": []
+    },
+    {
+     "facts": [
+      16
+     ],
+     "text": "$MSFT raised its annual dividend rate from 3.64 to 3.92 USD on Oct 16. The 7.7 percent increase brings the current yield to 0.80 percent over a 15-year streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      0
+     ],
+     "text": "Intertek Group PLC cut its annual dividend from 1.65 to 1.08 GBP on Oct 28. The 34.5 percent reduction was announced after a 3-year payment streak.",
+     "problems": [
+      "figure not in the data: '34.5'"
+     ]
+    },
+    {
+     "facts": [
+      37
+     ],
+     "text": "Dick's Sporting Goods ($DKS) reports a 5-year dividend growth rate of 31.1 percent. The company has maintained an 11-year streak with a safety rating of safe.",
+     "problems": []
+    },
+    {
+     "facts": [
+      46
+     ],
+     "text": "Nike ($NKE) currently yields 4.37 percent, which is 3.1 times its 5-year average yield of 1.41 percent. The company maintains a 23-year dividend streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      24,
+      15
+     ],
+     "text": "$TXN goes ex-dividend on Oct 30 at 6.08 USD annually. This rate reflects a 7.0 percent increase from the previous 5.68 USD, continuing a 22-year streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      40
+     ],
+     "text": "Lowe's ($LOW) shows a 16.4 percent 5-year dividend growth rate. The company has a 28-year streak and its current yield of 2.52 percent is 1.39 times its 5-year average.",
+     "problems": []
+    },
+    {
+     "facts": [
+      8
+     ],
+     "text": "PAX Global (0327.HK) cut its HKD dividend by 75.8 percent to 0.08 on Oct 23. Despite the cut, the data shows a 5-year growth rate of 30.9 percent and a 6-year streak.",
+     "problems": [
+      "figure not in the data: '0327'",
+      "figure not in the data: '75.8'"
+     ]
+    }
+   ]
+  },
+  {
+   "attempt": 2,
+   "seconds": 21.4,
+   "prompt_tokens": 7560,
+   "posts": [
+    {
+     "facts": [
+      21
+     ],
+     "text": "$UNM goes ex-dividend on Oct 30 with an annual rate of 2.02 USD. The company has maintained a 17-year dividend streak and currently shows a yield of 2.27 percent.",
+     "problems": []
+    },
+    {
+     "facts": [
+      16
+     ],
+     "text": "$MSFT raised its annual dividend rate from 3.64 to 3.92 USD on Oct 16. The 7.7 percent increase brings the current yield to 0.80 percent over a 15-year streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      0
+     ],
+     "text": "Intertek Group PLC cut its annual dividend from 1.65 to 1.08 GBP on Oct 28. The 34.5 percent reduction was announced after a 3-year payment streak.",
+     "problems": [
+      "figure not in the data: '34.5'"
+     ]
+    },
+    {
+     "facts": [
+      37
+     ],
+     "text": "Dick's Sporting Goods ($DKS) reports a 5-year dividend growth rate of 31.1 percent. The company has maintained an 11-year streak with a safety rating of safe.",
+     "problems": []
+    },
+    {
+     "facts": [
+      46
+     ],
+     "text": "Nike ($NKE) currently yields 4.37 percent, which is 3.1 times its 5-year average yield of 1.41 percent. The company maintains a 23-year dividend streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      24,
+      15
+     ],
+     "text": "$TXN goes ex-dividend on Oct 30 at 6.08 USD annually. This rate reflects a 7.0 percent increase from the previous 5.68 USD, continuing a 22-year streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      40
+     ],
+     "text": "Lowe's ($LOW) shows a 16.4 percent 5-year dividend growth rate. The company has a 28-year streak and its current yield of 2.52 percent is 1.39 times its 5-year average.",
+     "problems": []
+    },
+    {
+     "facts": [
+      8
+     ],
+     "text": "PAX Global cut its HKD dividend by 75.8 percent to 0.08 on Oct 23. Despite the cut, the data shows a 5-year growth rate of 30.9 percent and a 6-year streak.",
+     "problems": [
+      "figure not in the data: '75.8'"
+     ]
+    }
+   ]
+  },
+  {
+   "attempt": 3,
+   "seconds": 21.6,
+   "prompt_tokens": 8174,
+   "posts": [
+    {
+     "facts": [
+      21
+     ],
+     "text": "$UNM goes ex-dividend on Oct 30 with an annual rate of 2.02 USD. The company has maintained a 17-year dividend streak and currently shows a yield of 2.27 percent.",
+     "problems": []
+    },
+    {
+     "facts": [
+      16
+     ],
+     "text": "$MSFT raised its annual dividend rate from 3.64 to 3.92 USD on Oct 16. The 7.7 percent increase brings the current yield to 0.80 percent over a 15-year streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      0
+     ],
+     "text": "Intertek Group PLC cut its annual dividend from 1.65 to 1.08 GBP on Oct 28. This change was seen on Oct 28 after a 3-year payment streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      37
+     ],
+     "text": "Dick's Sporting Goods ($DKS) reports a 5-year dividend growth rate of 31.1 percent. The company has maintained an 11-year streak with a safety rating of safe.",
+     "problems": []
+    },
+    {
+     "facts": [
+      46
+     ],
+     "text": "Nike ($NKE) currently yields 4.37 percent, which is 3.1 times its 5-year average yield of 1.41 percent. The company maintains a 23-year dividend streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      24,
+      15
+     ],
+     "text": "$TXN goes ex-dividend on Oct 30 at 6.08 USD annually. This rate reflects a 7.0 percent increase from the previous 5.68 USD, continuing a 22-year streak.",
+     "problems": []
+    },
+    {
+     "facts": [
+      40
+     ],
+     "text": "Lowe's ($LOW) shows a 16.4 percent 5-year dividend growth rate. The company has a 28-year streak and its current yield of 2.52 percent is 1.39 times its 5-year average.",
+     "problems": []
+    },
+    {
+     "facts": [
+      8
+     ],
+     "text": "PAX Global cut its HKD dividend from 0.33 to 0.08 on Oct 23. Despite the cut, the data shows a 5-year growth rate of 30.9 percent and a 6-year streak.",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

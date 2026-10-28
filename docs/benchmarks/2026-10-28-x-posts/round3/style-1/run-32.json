@@ -1,0 +1,226 @@
+{
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "seed": 32,
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 22.8,
+   "posts": [
+    {
+     "facts": [
+      6
+     ],
+     "text": "West Pharmaceutical Services raised its annual dividend by 18.2%, seen on Oct 23. The new rate is $1.04. 📈",
+     "link": "https://quantic.finance/stocks/WST",
+     "problems": []
+    },
+    {
+     "facts": [
+      9
+     ],
+     "text": "Allwyn AG’s dividend jumped 40.0% to €0.70, seen on Oct 23. The label is 'watch'.",
+     "link": "https://quantic.finance/stocks/ALWN.AT",
+     "problems": []
+    },
+    {
+     "facts": [
+      8
+     ],
+     "text": "PAX Global’s dividend fell 75.8% to HK$0.08, seen on Oct 23. The previous rate was HK$0.33. 📉",
+     "link": "https://quantic.finance/stocks/0327.HK",
+     "problems": [
+      "figure not in the data: '75.8%'"
+     ]
+    },
+    {
+     "facts": [
+      13
+     ],
+     "text": "Diageo cut its annual dividend by 39.8% to $2.00, seen on Oct 17. The prior rate was $3.32.",
+     "link": "https://quantic.finance/stocks/DEO",
+     "problems": [
+      "figure not in the data: '39.8%'"
+     ]
+    },
+    {
+     "facts": [
+      37
+     ],
+     "text": "Dick’s Sporting Goods posted a 31.1% 5-year dividend growth rate. The safety label is 'safe'.",
+     "link": "https://quantic.finance/stocks/DKS",
+     "problems": []
+    },
+    {
+     "facts": [
+      46
+     ],
+     "text": "Nike’s current yield is 4.37%, roughly 3.1 times its 5-year average. The label is 'safe'.",
+     "link": "https://quantic.finance/stocks/NKE",
+     "problems": []
+    },
+    {
+     "facts": [
+      2
+     ],
+     "text": "CapLand Ascendas REIT raised its dividend 36.4% to S$0.15, seen on Oct 27. The streak is 0 years.",
+     "link": "https://quantic.finance/stocks/A17U.SI",
+     "problems": [
+      "a word in capitals: REIT"
+     ]
+    },
+    {
+     "facts": [
+      19
+     ],
+     "text": "Realty Income goes ex-dividend Oct 30 with a 5.74% yield. It has a 28-year streak. 📅",
+     "link": "https://quantic.finance/stocks/O",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 2,
+   "seconds": 16.9,
+   "posts": [
+    {
+     "facts": [
+      6
+     ],
+     "text": "West Pharmaceutical Services raised its annual dividend by 18.2%, seen on Oct 23. The new rate is $1.04. 📈",
+     "link": "https://quantic.finance/stocks/WST",
+     "problems": []
+    },
+    {
+     "facts": [
+      9
+     ],
+     "text": "Allwyn AG’s dividend jumped 40.0% to €0.70, seen on Oct 23. The safety label is 'watch'.",
+     "link": "https://quantic.finance/stocks/ALWN.AT",
+     "problems": []
+    },
+    {
+     "facts": [
+      8
+     ],
+     "text": "PAX Global’s dividend cut was 75.8%, seen on Oct 23. The new rate is HK$0.08, down from HK$0.33. 📉",
+     "link": "https://quantic.finance/stocks/0327.HK",
+     "problems": [
+      "figure not in the data: '75.8%'"
+     ]
+    },
+    {
+     "facts": [
+      13
+     ],
+     "text": "Diageo’s dividend cut was 39.8%, seen on Oct 17. The new rate is $2.00, down from $3.32.",
+     "link": "https://quantic.finance/stocks/DEO",
+     "problems": [
+      "figure not in the data: '39.8%'"
+     ]
+    },
+    {
+     "facts": [
+      37
+     ],
+     "text": "Dick’s Sporting Goods posted a 31.1% 5-year dividend growth rate. The safety label is 'safe'.",
+     "link": "https://quantic.finance/stocks/DKS",
+     "problems": []
+    },
+    {
+     "facts": [
+      46
+     ],
+     "text": "Nike’s current yield is 4.37%, roughly 3.1 times its 5-year average. The label is 'safe'.",
+     "link": "https://quantic.finance/stocks/NKE",
+     "problems": []
+    },
+    {
+     "facts": [
+      2
+     ],
+     "text": "CapLand Ascendas raised its dividend 36.4% to S$0.15, seen on Oct 27. The streak is 0 years.",
+     "link": "https://quantic.finance/stocks/A17U.SI",
+     "problems": []
+    },
+    {
+     "facts": [
+      19
+     ],
+     "text": "Realty Income goes ex-dividend Oct 30 with a 5.74% yield. It has a 28-year streak. 📅",
+     "link": "https://quantic.finance/stocks/O",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 3,
+   "seconds": 16.1,
+   "posts": [
+    {
+     "facts": [
+      6
+     ],
+     "text": "West Pharmaceutical Services raised its annual dividend by 18.2%, seen on Oct 23. The new rate is $1.04. 📈",
+     "link": "https://quantic.finance/stocks/WST",
+     "problems": []
+    },
+    {
+     "facts": [
+      9
+     ],
+     "text": "Allwyn AG’s dividend jumped 40.0% to €0.70, seen on Oct 23. The safety label is 'watch'.",
+     "link": "https://quantic.finance/stocks/ALWN.AT",
+     "problems": []
+    },
+    {
+     "facts": [
+      8
+     ],
+     "text": "PAX Global’s dividend changed by -75.8%, seen on Oct 23. The new rate is HK$0.08.",
+     "link": "https://quantic.finance/stocks/0327.HK",
+     "problems": []
+    },
+    {
+     "facts": [
+      13
+     ],
+     "text": "Diageo’s dividend changed by -39.8%, seen on Oct 17. The new rate is $2.00.",
+     "link": "https://quantic.finance/stocks/DEO",
+     "problems": []
+    },
+    {
+     "facts": [
+      37
+     ],
+     "text": "Dick’s Sporting Goods posted a 31.1% 5-year dividend growth rate. The safety label is 'safe'.",
+     "link": "https://quantic.finance/stocks/DKS",
+     "problems": []
+    },
+    {
+     "facts": [
+      46
+     ],
+     "text": "Nike’s current yield is 4.37%, roughly 3.1 times its 5-year average. The label is 'safe'.",
+     "link": "https://quantic.finance/stocks/NKE",
+     "problems": []
+    },
+    {
+     "facts": [
+      2
+     ],
+     "text": "CapLand Ascendas raised its dividend 36.4% to S$0.15, seen on Oct 27. The streak is 0 years.",
+     "link": "https://quantic.finance/stocks/A17U.SI",
+     "problems": []
+    },
+    {
+     "facts": [
+      19
+     ],
+     "text": "Realty Income goes ex-dividend Oct 30 with a 5.74% yield. It has a 28-year streak. 📅",
+     "link": "https://quantic.finance/stocks/O",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,674 @@
+[
+ {
+  "id": "s13p1",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 18.3
+ },
+ {
+  "id": "s13p2",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 15.3
+ },
+ {
+  "id": "s13p3",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 11.7
+ },
+ {
+  "id": "s13p4",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 12.0
+ },
+ {
+  "id": "s13p5",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 10.4
+ },
+ {
+  "id": "s13p6",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 11.4
+ },
+ {
+  "id": "s13p7",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 17.3
+ },
+ {
+  "id": "s13p8",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 9.5
+ },
+ {
+  "id": "s14p1",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.2
+ },
+ {
+  "id": "s14p2",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 6.6
+ },
+ {
+  "id": "s14p3",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 7.8
+ },
+ {
+  "id": "s14p4",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 9.9
+ },
+ {
+  "id": "s14p5",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 7.7
+ },
+ {
+  "id": "s14p6",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.1
+ },
+ {
+  "id": "s14p7",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 7.8
+ },
+ {
+  "id": "s14p8",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.8
+ },
+ {
+  "id": "s15p1",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 12.0
+ },
+ {
+  "id": "s15p2",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.3
+ },
+ {
+  "id": "s15p3",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 10.6
+ },
+ {
+  "id": "s15p4",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 10.8
+ },
+ {
+  "id": "s15p5",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 9.3
+ },
+ {
+  "id": "s15p6",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 9.6
+ },
+ {
+  "id": "s15p7",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.4
+ },
+ {
+  "id": "s15p8",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 9.6
+ },
+ {
+  "id": "s16p1",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 14.0
+ },
+ {
+  "id": "s16p2",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 12.6
+ },
+ {
+  "id": "s16p3",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 10.5
+ },
+ {
+  "id": "s16p4",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 14.2
+ },
+ {
+  "id": "s16p5",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 15.1
+ },
+ {
+  "id": "s16p6",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 10.9
+ },
+ {
+  "id": "s16p7",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 13.5
+ },
+ {
+  "id": "s16p8",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 10.9
+ },
+ {
+  "id": "s17p1",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.1
+ },
+ {
+  "id": "s17p2",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 7.3
+ },
+ {
+  "id": "s17p3",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.9
+ },
+ {
+  "id": "s17p4",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 6.0
+ },
+ {
+  "id": "s17p5",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 6.2
+ },
+ {
+  "id": "s17p6",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 5.5
+ },
+ {
+  "id": "s17p7",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 7.1
+ },
+ {
+  "id": "s17p8",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 10.7
+ },
+ {
+  "id": "s18p1",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 13.3
+ },
+ {
+  "id": "s18p2",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 13.2
+ },
+ {
+  "id": "s18p3",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 11.1
+ },
+ {
+  "id": "s18p4",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 11.9
+ },
+ {
+  "id": "s18p5",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 7.0
+ },
+ {
+  "id": "s18p6",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 12.9
+ },
+ {
+  "id": "s18p7",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.3
+ },
+ {
+  "id": "s18p8",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 9.9
+ },
+ {
+  "id": "s19p1",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 14.1
+ },
+ {
+  "id": "s19p2",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 17.5
+ },
+ {
+  "id": "s19p3",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 10.1
+ },
+ {
+  "id": "s19p4",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 12.2
+ },
+ {
+  "id": "s19p5",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 10.6
+ },
+ {
+  "id": "s19p6",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 11.5
+ },
+ {
+  "id": "s19p7",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 10.4
+ },
+ {
+  "id": "s19p8",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 15.7
+ },
+ {
+  "id": "s20p1",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 13.3
+ },
+ {
+  "id": "s20p2",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 12.7
+ },
+ {
+  "id": "s20p3",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 13.9
+ },
+ {
+  "id": "s20p4",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 14.3
+ },
+ {
+  "id": "s20p5",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 10.1
+ },
+ {
+  "id": "s20p6",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.6
+ },
+ {
+  "id": "s20p7",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 15.7
+ },
+ {
+  "id": "s20p8",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 12.4
+ },
+ {
+  "id": "s21p1",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 16.5
+ },
+ {
+  "id": "s21p2",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 12.3
+ },
+ {
+  "id": "s21p3",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 10.9
+ },
+ {
+  "id": "s21p4",
+  "flagged": true,
+  "unsupported": [],
+  "data_inconsistent": "The data lists change_pct as 7.0 for MSFT, but the calculated change from 3.64 to 3.92 is approximately 7.7%. The post uses the calculated value (7.7%) while the data field contains 7.0.",
+  "seconds": 31.5
+ },
+ {
+  "id": "s21p5",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 13.5
+ },
+ {
+  "id": "s21p6",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 10.2
+ },
+ {
+  "id": "s21p7",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 9.9
+ },
+ {
+  "id": "s21p8",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 17.6
+ },
+ {
+  "id": "s22p1",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.5
+ },
+ {
+  "id": "s22p2",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 9.7
+ },
+ {
+  "id": "s22p3",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.1
+ },
+ {
+  "id": "s22p4",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 16.7
+ },
+ {
+  "id": "s22p5",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 13.9
+ },
+ {
+  "id": "s22p6",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 11.2
+ },
+ {
+  "id": "s22p7",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 14.9
+ },
+ {
+  "id": "s22p8",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 14.4
+ },
+ {
+  "id": "s23p1",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 7.8
+ },
+ {
+  "id": "s23p2",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.6
+ },
+ {
+  "id": "s23p3",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 10.6
+ },
+ {
+  "id": "s23p4",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 7.9
+ },
+ {
+  "id": "s23p5",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.9
+ },
+ {
+  "id": "s23p6",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 9.9
+ },
+ {
+  "id": "s23p7",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 8.5
+ },
+ {
+  "id": "s23p8",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 11.5
+ },
+ {
+  "id": "s24p1",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 12.0
+ },
+ {
+  "id": "s24p2",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 12.7
+ },
+ {
+  "id": "s24p3",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 12.0
+ },
+ {
+  "id": "s24p4",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 13.0
+ },
+ {
+  "id": "s24p5",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 12.8
+ },
+ {
+  "id": "s24p6",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 12.5
+ },
+ {
+  "id": "s24p7",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 11.9
+ },
+ {
+  "id": "s24p8",
+  "flagged": false,
+  "unsupported": [],
+  "data_inconsistent": "",
+  "seconds": 9.3
+ }
+]
