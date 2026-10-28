@@ -1,0 +1,147 @@
+{
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "seed": 2,
+ "facts": {
+  "company": "Nike",
+  "ticker": "NKE",
+  "current_yield_pct": 4.37,
+  "yield_avg_5y_pct": 1.41,
+  "yield_high_5y_pct": 2.33,
+  "yield_low_5y_pct": 0.73,
+  "current_yield_times_5y_average": 3.1,
+  "current_yield_times_5y_high": 1.88,
+  "streak_years": 23,
+  "dividend_growth_5y_pct": 10.3,
+  "dividend_first_year": 2014,
+  "dividend_per_share_first_year": 0.48,
+  "dividend_last_full_year": 2025,
+  "dividend_per_share_last_full_year": 1.6,
+  "years_from_first_to_last_year": 11,
+  "dividend_multiple_first_to_last_year": 3.33,
+  "payment_frequency": "quarterly",
+  "pays_in": [
+   "March",
+   "June",
+   "September",
+   "December"
+  ],
+  "next_earnings_date": "2026-12-17",
+  "next_earnings_date_is_estimated": true,
+  "sector": "Consumer Cyclical",
+  "sector_yield_ranking": {
+   "selection": "Consumer Cyclical companies in Quantic's screener with a dividend streak of at least min_streak_years",
+   "min_streak_years": 20,
+   "companies": 4,
+   "nike_rank_by_current_yield": 1,
+   "others": {
+    "Best Buy": 3.9,
+    "Genuine Parts": 3.49,
+    "Lowe's": 2.52
+   }
+  },
+  "safety": "safe",
+  "last_known_price": 37.56,
+  "last_known_price_as_of": "2026-10-28",
+  "price_high_monthly_5y": 169.24,
+  "price_currency": "USD (write prices with $)",
+  "price_below_5y_high_pct": 77.8
+ },
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 6.9,
+   "posts": [
+    {
+     "text": "$NKE yields 4.37%, three times its 5-year average of 1.41% 📊 🔍",
+     "problems": [
+      "figure not in the data: 'three'",
+      "emojis stacked at the end: put an emoji where it adds meaning, such as at the start"
+     ]
+    },
+    {
+     "text": "Quantic labels $NKE safe after 23 straight years of dividend hikes 🧾 📅",
+     "problems": [
+      "emojis stacked at the end: put an emoji where it adds meaning, such as at the start"
+     ]
+    },
+    {
+     "text": "$NKE paid $0.48 in 2014 and $1.60 in 2025, a 3.33x increase 💵 📈",
+     "problems": [
+      "emojis stacked at the end: put an emoji where it adds meaning, such as at the start",
+      "not plain words: '3.33x'"
+     ]
+    },
+    {
+     "text": "As a Consumer Cyclical with a 20-year streak, $NKE ranks 1st by yield 🏆 📊",
+     "problems": [
+      "one or two emojis from the list, found: 🏆📊"
+     ]
+    },
+    {
+     "text": "The last price Quantic saw for $NKE was $37.56, down 77.8% from the 5-year high 📉 🧾",
+     "problems": [
+      "emojis stacked at the end: put an emoji where it adds meaning, such as at the start"
+     ]
+    }
+   ]
+  },
+  {
+   "attempt": 2,
+   "seconds": 7.6,
+   "posts": [
+    {
+     "text": "📊 $NKE yields 4.37%, well above its 5-year average of 1.41% 📈",
+     "problems": []
+    },
+    {
+     "text": "🧾 $NKE has a 23-year streak of raises, and Quantic rates the dividend safe 🛡️",
+     "problems": [
+      "one or two emojis from the list, found: 🧾🛡️"
+     ]
+    },
+    {
+     "text": "📅 $NKE dividend grew from $0.48 in 2014 to $1.60 in 2025, tripling the payment 📈",
+     "problems": []
+    },
+    {
+     "text": "🏆 $NKE is the top yielder among the four Consumer Cyclical peers with 20+ year streaks 📊",
+     "problems": [
+      "one or two emojis from the list, found: 🏆📊"
+     ]
+    },
+    {
+     "text": "📉 $NKE last traded at $37.56, down 77.8% from its 5-year high of $169.24 📊",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 3,
+   "seconds": 7.3,
+   "posts": [
+    {
+     "text": "📊 $NKE yields 4.37%, well above its 5-year average of 1.41% 📈",
+     "problems": []
+    },
+    {
+     "text": "🧾 $NKE has raised its dividend for 23 straight years, a record Quantic rates safe",
+     "problems": []
+    },
+    {
+     "text": "📅 $NKE dividend grew from $0.48 in 2014 to $1.60 in 2025, tripling the payment 📈",
+     "problems": []
+    },
+    {
+     "text": "🏆 $NKE is the top yielder among the four Consumer Cyclical peers with 20+ year streaks",
+     "problems": [
+      "one or two emojis from the list, found: 🏆"
+     ]
+    },
+    {
+     "text": "📉 $NKE last traded at $37.56, down 77.8% from its 5-year high of $169.24 📊",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

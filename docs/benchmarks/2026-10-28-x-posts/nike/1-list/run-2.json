@@ -1,0 +1,115 @@
+{
+ "model": "hf.co/unsloth/Qwen3.8-27B-GGUF:UD-IQ3_S",
+ "seed": 2,
+ "facts": {
+  "company": "Nike",
+  "ticker": "NKE",
+  "current_yield_pct": 4.37,
+  "yield_avg_5y_pct": 1.41,
+  "yield_high_5y_pct": 2.33,
+  "yield_low_5y_pct": 0.73,
+  "current_yield_times_5y_average": 3.1,
+  "current_yield_times_5y_high": 1.88,
+  "streak_years": 23,
+  "dividend_growth_5y_pct": 10.3,
+  "dividend_growth_last_12_months_pct": 3.8,
+  "dividend_per_share_2014": 0.48,
+  "dividend_per_share_2025": 1.6,
+  "dividend_multiple_2014_to_2025": 3.33,
+  "payment_frequency": "quarterly",
+  "safety": "safe",
+  "last_known_price": 37.56,
+  "last_known_price_as_of": "2026-10-28",
+  "price_high_monthly_5y": 169.24,
+  "price_below_5y_high_pct": 77.8
+ },
+ "attempts": [
+  {
+   "attempt": 1,
+   "seconds": 7.9,
+   "posts": [
+    {
+     "text": "3.1x the 5-year average yield.\n$NKE at 4.37%.\n23 consecutive years of hikes. 👟💰📊",
+     "problems": []
+    },
+    {
+     "text": "$1.60 dividend.\nUp from $0.48 in 2014.\n23 years of growth. 📈💵",
+     "problems": [
+      "figure not in the data: '2014'",
+      "the cashtag $NKE must appear exactly once"
+     ]
+    },
+    {
+     "text": "Price $37.56.\n5yr high was $169.24.\n$NKE yield sits at 4.37%. 📉👟",
+     "problems": [
+      "wording (market): 'Price'"
+     ]
+    },
+    {
+     "text": "23 straight years of increases.\n$NKE yield is 3.1x the 5y avg.\nQuarterly payments. 🧾📈",
+     "problems": []
+    },
+    {
+     "text": "Safety label: Safe.\nDividend growth 10.3% over 5y.\n$NKE at 4.37% yield. 💰🔍",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 2,
+   "seconds": 8.3,
+   "posts": [
+    {
+     "text": "3.1x the 5-year average yield.\n$NKE at 4.37%.\n23 consecutive years of hikes. 👟💰📊",
+     "problems": []
+    },
+    {
+     "text": "From $0.48 to $1.60 per share.\n3.33x multiple.\n23 years of growth. 📈💵",
+     "problems": [
+      "the cashtag $NKE must appear exactly once"
+     ]
+    },
+    {
+     "text": "$37.56 seen 2026-10-28.\n5y monthly high $169.24.\n$NKE yield 4.37%. 📉👟",
+     "problems": []
+    },
+    {
+     "text": "23 straight years of increases.\n$NKE yield is 3.1x the 5y avg.\nQuarterly payments. 🧾📈",
+     "problems": []
+    },
+    {
+     "text": "Safety label: Safe.\nDividend growth 10.3% over 5y.\n$NKE at 4.37% yield. 💰🔍",
+     "problems": []
+    }
+   ]
+  },
+  {
+   "attempt": 3,
+   "seconds": 8.7,
+   "posts": [
+    {
+     "text": "3.1x the 5-year average yield.\n$NKE at 4.37%.\n23 consecutive years of hikes. 👟💰📊",
+     "problems": []
+    },
+    {
+     "text": "$1.60 dividend per share.\n3.33x multiple vs 2014.\n$NKE growth 10.3% over 5y. 📈💵",
+     "problems": [
+      "figure not in the data: '2014'"
+     ]
+    },
+    {
+     "text": "$37.56 seen 2026-10-28.\n5y monthly high $169.24.\n$NKE yield 4.37%. 📉👟",
+     "problems": []
+    },
+    {
+     "text": "23 straight years of increases.\n$NKE yield is 3.1x the 5y avg.\nQuarterly payments. 🧾📈",
+     "problems": []
+    },
+    {
+     "text": "Safety label: Safe.\nDividend growth 10.3% over 5y.\n$NKE at 4.37% yield. 💰🔍",
+     "problems": []
+    }
+   ]
+  }
+ ]
+}

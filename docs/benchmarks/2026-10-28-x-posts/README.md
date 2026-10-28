@@ -120,6 +120,43 @@ What's still wrong in `final/` is wording, not figures: "extending its streak to
 data doesn't say this raise made it 22), "slashed" and "hiked". And Quantic's data behind the
 cuts and the CapLand raise, above, needs checking before any of them is posted.
 
+## Nike: one company, catchier
+
+[`nike/`](nike/): five alternative versions of one post about Nike per run, asked to be catchier,
+with the cashtag `$NKE` and emojis, and the link added by code. The facts come from
+[`mcp/get-stock-NKE.json`](mcp/get-stock-NKE.json) and the screener, computed by code: a 4.37%
+yield, 3.1 times the 5-year average and 1.88 times the 5-year high of 2.33%; 23 years of
+increases; $0.48 a share in 2014 to $1.60 in 2025; the last known price, $37.56 on 2026-10-28,
+77.8% below the 5-year monthly high of $169.24. From `2-prose/` on, also the estimated earnings
+date (2026-12-17, from `earnings_calendar`), the payment months, and a ranking computed by code:
+the highest yield of the 4 Consumer Cyclical companies in the screener with a 20+ year streak.
+`get_stock_research` and `compare_stocks` refused anonymous calls, with a message saying they read
+"a user's own portfolio", which neither does.
+
+- **`1-list/`** ("short and punchy", two or three emojis): every version a list of fragments
+  ("Yield: 4.37%. 5y avg: 1.41%. 📊"), jargon ("DPS", "3.33x dividend growth"), emojis stacked at
+  line ends. "2014" was rejected each time: years were inside field names
+  (`dividend_per_share_2014`), which the figure check doesn't read, so the model dropped them.
+- **`2-prose/`** ("like a person who follows dividend stocks", one or two sentences, one
+  invented example company): prose, 69–119 characters. Four faults were the checks': "Best Buy"
+  matched the advice rule's "buy" (so does `wording.py` on `main`); the market rule's "price"
+  pushed the model to "Nike shares traded at 37.56" and "the last known value"; "20+" lived in a
+  string, so "20" was rejected and the model wrote a false "23+ year streaks"; a "12 months" term
+  added for one fact let "over the last 12 years" through (2014 to 2025 is 11).
+- **`3-fixed-checks/`**: company names masked before the wording rules, "price" allowed, the
+  threshold a number (`min_streak_years`), the 11 years a fact, no "12 months" term; emojis
+  stacked at the end and a short list of selling words checked. Runs 1 and 3 passed at the first
+  attempt. Of 14 versions that passed, 5 had a claim no check sees: "pays its next dividend in
+  March" (it pays in March, June, September and December; after October the next is December),
+  "a 23-year streak … that started in 2014" (where Quantic's history starts), "23 years of
+  dividend raises puts $NKE at 4.37% yield" (the yield is high because the price fell), "Nike
+  shares are at $37.56" (the last known price as current), "earnings due 2026-12-17" (estimated).
+
+Each fix removed one class of error and the model found the next assumption the facts left
+unstated; each has the same kind of fix, the answer given as a fact (`next_payment_month`, where
+the history starts). The version I'd post as written, run 1's third: "The 4.37% yield on $NKE is
+more than triple the 5-year average, sitting well above the 2.33% high from that period 📊".
+
 ## The prompts
 
 Every writer's system message is `agent.SYSTEM_PROMPT`, and the facts come first in the user message. The rules after them, rounds 1 and 2 (`DEFS` only in round 2), with the posts as JSON through Ollama's `format`:
@@ -227,3 +264,65 @@ Reply as JSON: {{"posts": [{{"facts": [the ids of the facts used], "text": "..."
 
 When a post breaks a rule, the writer is sent `Some posts break the rules:`, one line per post with
 its problems, and `Reply with all 8 posts again, fixing those. Same JSON format.`
+
+Nike, `1-list/` (`EMOJI` is "👟💰📈📉🔥🧾💵📊📅🔍"; the facts come first, as JSON):
+
+```
+f"""Today is Wednesday {TODAY}. Write 5 alternative versions of one X (Twitter) post about Nike for Quantic, a dividend data site,
+from the data below. Code adds the link to Nike's page on Quantic on its own line after the post: don't write a link.
+
+Make it catchy:
+- Open with the strongest hook in the data: a striking figure or contrast, in the first words.
+- Short and punchy: two to four short lines, at most 200 characters. Line breaks are fine.
+- Include the cashtag $NKE once.
+- Use two or three emojis that fit, only from: {" ".join(EMOJI)}.
+- Make the 5 versions different: different hooks and structures, not rewordings.
+
+Never look like spam: no exclamation marks, no words in capitals, no hashtags, no "BREAKING", no questions to the reader,
+no teasers ("here's why", "you won't believe", "the numbers tell a story").
+
+Accuracy:
+- Every figure and date comes from the data, as the data gives it.
+- streak_years = consecutive years of dividend increases. safety = Quantic's dividend safety label.
+- last_known_price is the last price Quantic saw, on last_known_price_as_of: don't call it current or live; price_high_monthly_5y is the
+  highest monthly price in the last 5 years.
+- Describe what the data shows. No advice: never suggest buying, selling or holding, or that something is cheap, a bargain, an
+  opportunity, undervalued or a dip. Never address the reader ("you", "your", "investors", "readers").
+
+Reply as JSON: {{"posts": ["...", "...", "...", "...", "..."]}}"""
+```
+
+Nike, `3-fixed-checks/` (`2-prose/` is the same without the selling language and the emoji placement), and the selling words it checks:
+
+```
+f"""Today is Wednesday {TODAY}. Write 5 alternative versions of one X (Twitter) post about Nike for Quantic, a dividend data site,
+from the data below. Code adds the link to Nike's page on Quantic on its own line after the post: don't write a link.
+
+Write it like a person who follows dividend stocks, not like a data feed:
+- One observation, told in one or two natural, complete sentences, with the two or three figures that make it interesting. Not a list of figures. No selling language ("income potential", "impressive", "significant").
+- At most 200 characters. Plain words: "5-year average", never "5y", "avg", "DPS" or "x" for times.
+- Include the cashtag $NKE once, as part of a sentence.
+- One or two emojis that fit, placed where they add meaning (at the start, or next to the figure), never stacked at the end, only from: {" ".join(EMOJI)}.
+- Make the 5 versions tell different stories from the data (the yield, the long record of raises, the price, the ranking in its sector,
+  the next earnings date...), not rewordings of one.
+
+For example, about another company (made up, not data): "Northwind has raised its dividend every year since 2009, and at 3.2% its
+yield now sits above anything it paid in the last five years 📈 $NWND" — a story, not a list like "Yield: 3.2%. Streak: 17. 📈💰".
+
+Never look like spam: no exclamation marks, no words in capitals, no hashtags, no "BREAKING", no questions to the reader,
+no teasers ("here's why", "you won't believe", "the numbers tell a story").
+
+Accuracy:
+- Every figure and date comes from the data, as the data gives it.
+- streak_years = consecutive years of dividend increases. safety = Quantic's dividend safety label.
+- last_known_price is the last price Quantic saw, on last_known_price_as_of: don't call it current or live; price_high_monthly_5y is the
+  highest monthly price in the last 5 years.
+- Describe what the data shows. No advice: never suggest buying, selling or holding, or that something is cheap, a bargain, an
+  opportunity, undervalued or a dip. Never address the reader ("you", "your", "investors", "readers").
+
+Reply as JSON: {{"posts": ["...", "...", "...", "...", "..."]}}"""
+```
+
+```
+re.compile(r"\b(?:income potential|significant|impressive|remarkable|juicy|stunning|massive|huge|solid|strong|eye-catching)\b", re.I)
+```
