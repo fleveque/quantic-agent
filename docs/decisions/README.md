@@ -23,6 +23,7 @@ Why the design is what it is, one decision per file. New decisions are numbered 
 | [0017](0017-wording-checks.md) | Wording rules for the prose, sent back like figures | 2026-10-14 |
 | [0018](0018-x-post-draft.md) | The week's X post: drafted by code, in the pull request, posted by the author | 2026-10-26 |
 | [0019](0019-daily-x-posts.md) | Daily X posts: drafted by code and the model, reviewed in an issue, posted by the author | 2026-10-28 |
+| [0020](0020-posted-text-captured.md) | What was posted on X, captured from the issue (proposed) | 2026-10-29 |
 
 **0001–0007 were written for the Go version**, [quantic-agent-go](https://github.com/fleveque/quantic-agent-go),
 and are carried over unchanged, links aside: they are records of what was decided and why, at the

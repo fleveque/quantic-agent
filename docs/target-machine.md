@@ -344,9 +344,12 @@ journalctl --user -u quantic-agent-daily -e
 ```
 
 To review an issue before posting, ask Claude Code in this repository: "review today's posts issue"
-(the `review-posts` skill). It reads the issue, checks each version against its facts, and
-recommends one per company; it comments on the issue only if you ask. Exits 4 (no version passed
-its checks) and 5 (nothing to post about) are outcomes, not failures.
+(the `review-posts` skill). It reads the issue, checks each version against its facts and the
+facts against outside sources (the company's releases and filings, a quote), and comments on the
+issue from your GitHub account: one version per company, edited where that helps, with what's
+wrong with the others. Tick the version you posted, even with small edits; leave a rewritten one
+unticked. Close the issue when you're done. Exits 4 (no version passed its checks) and 5 (nothing
+to post about) are outcomes, not failures.
 
 ## 9. Freeing the GPU
 

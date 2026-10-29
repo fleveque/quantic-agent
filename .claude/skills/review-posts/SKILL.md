@@ -11,8 +11,9 @@ written from (in a collapsed "What it was written from" block), and the companie
 out. The checks catch what a rule can name. This review is for what they can't: claims that are
 wrong although every figure traces, and data that is wrong although it is Quantic's.
 
-The author posts on X themselves. Never post, and never edit, comment on or close the issue unless
-the author asks in this conversation.
+The review goes on the issue as one comment (step 4): the author chose that, so the verdicts sit
+next to the versions they judge (2026-10-29). The author posts on X themselves. Never post, and
+never edit the issue's body, tick a box or close the issue.
 
 ## 1. Find and read the issue
 
@@ -49,12 +50,21 @@ Read each claim, not just each figure. The errors the experiment and the first r
   near-duplicates of another version, a hint of advice ("look how cheap") by juxtaposing a price
   fall with a yield without saying why.
 
-## 3. Check the data itself
+## 3. Check the data against outside sources
 
-The agent may not use outside knowledge; the review should. Flag, as something to verify at the
-company's own source, not as fact, anything that looks wrong:
+The agent may not use outside knowledge; the review must. Check every fact a recommended version
+states, and anything else that looks wrong, with WebSearch: the company's own release or filing
+first (investor relations, SEC, the exchange), a quote page for prices. Say what each source
+confirms, contradicts or leaves open, and link it. A figure no source confirms is "not confirmed",
+never assumed right. On 2026-10-29 this found Hitachi's "annual rate" of 64 JPY to be its raised
+interim dividend (32 yen) times two, and Realty Income's 28-year streak to be over 31.
+
+What has gone wrong before:
 
 - Streaks: Quantic's stop at 29 years; a long-standing payer with a short streak (Microsoft's 15).
+- A semi-annual payer's "annual rate": the latest payment times two, so an interim raise reads as
+  an annual one (Hitachi). Japanese `payment_months` are record months (March, September), not when
+  the dividend is paid.
 - Changes: a raise or cut in a REIT's or a semi-annual payer's rate that may be a timing swing; a
   listing whose rate moves with the exchange rate.
 - Safety labels that sit oddly with the facts (a deep cut labelled safe).
@@ -63,12 +73,30 @@ company's own source, not as fact, anything that looks wrong:
 The "Looked at and left out" list is the day's data-quality report: mention anything there worth an
 issue on Quantic's side.
 
-## 4. Report, in the terminal
+## 4. Comment on the issue
 
-For each company: the version to post (as written, or with a minimal edit, marked as edited), and
-what's wrong with the others, one line each. Then the data flags, and anything time-sensitive
-(post today: the price is as of the facts' date; an ex-date tomorrow). Remind the author to tick
-the version they post, so `--sync` records it.
+Write the review to a file in the scratchpad and post it as one comment:
 
-Only if the author asks for the review on the issue: `gh issue comment N -R fleveque/quantic
---body-file FILE`. Say first that it is posted from their GitHub account.
+```sh
+gh issue comment N -R fleveque/quantic --body-file FILE
+```
+
+`gh` is signed in as the author, so the comment is theirs; say so in the terminal. Start it with
+`## Review (Claude)`, then one section per company:
+
+- **The version to post**, in a `text` block ready to copy: as written, or edited, with what was
+  edited and why. When the data is wrong, say not to post the versions as written; a replacement
+  may use a source's figures, named as the source's, not Quantic's.
+- **Each other version**, one line: what's wrong with it.
+- **What the sources say** about its facts, linked; "not confirmed" where none did.
+- **Anything time-sensitive**: an ex-date tomorrow, a price to check again if posted later.
+
+End with "For Quantic's data": what looked wrong, the "Looked at and left out" list included.
+
+A version posted with small edits is ticked; one rewritten past its version is left unticked, so
+the record doesn't claim a text that wasn't posted. Say which in the terminal.
+
+## 5. Report, in the terminal
+
+The comment's link, the recommended version per company in a line each, and what the sources
+changed. Not the whole comment again.
