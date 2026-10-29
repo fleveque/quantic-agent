@@ -178,7 +178,11 @@ starting point here.
    Quantic from the experiment, not yet filed: streaks capped at 29, rounding recorded as cuts,
    deep cuts labelled safe, duplicate listings disagreeing, Kings list with 12- and 29-year
    streaks, `get_stock_research`/`compare_stocks` refusing anonymous calls with a wrong message,
-   London listings mixing pounds and pence.
+   London listings mixing pounds and pence. The first real issue, quantic#515, was reviewed on the
+   issue: Hitachi's "annual rate" was its interim times two, Realty Income's streak 28 for 31+.
+   The author chose: `review-posts` always comments on the issue and checks the data against
+   outside sources. **ADR 0020 is proposed, not decided**: capture what was posted (a `posted SYM
+   version N` comment with the text) and the review; its open questions are the author's.
 
 1. **Installed and on, 2026-10-14**: `uv tool install` from `main` after #18's merge;
    `~/.config/quantic-agent/env` (App ID, `QUANTIC_AGENT_REPO`, `QUANTIC_AGENT_OUT=~/insights`,
