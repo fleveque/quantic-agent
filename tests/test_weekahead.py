@@ -172,6 +172,37 @@ def test_dividend_changes_are_copied_as_the_tool_has_them() -> None:
     )
 
 
+# Repsol's July payment against the July before, as Quantic's dividend_changes
+# gives a semi-annual payer's change since quantic#526.
+def test_a_payment_change_says_so_and_traces() -> None:
+    changes = {
+        "from": "2026-10-07",
+        "to": "2026-10-14",
+        "changes": [
+            {
+                "symbol": "REP.MC",
+                "name": "Repsol",
+                "sector": "Energy",
+                "kind": "raise",
+                "old_rate": 0.5,
+                "new_rate": 0.551,
+                "basis": "payment",
+                "currency": "EUR",
+                "detected_on": "2026-10-09",
+            }
+        ],
+    }
+    gathered = [
+        *calls(*GATHERED[:-1]),
+        Call(tool="dividend_changes", arguments={"days": 7}, result=json.dumps(changes)),
+    ]
+
+    block = weekahead.data_block(weekahead.gather(NEXT, gathered))
+
+    assert block["dividend_changes"][0]["basis"] == "payment"
+    assert provenance.check_data(block, manifest(gathered), percentages=weekahead.PERCENTAGES) == []
+
+
 def test_every_value_in_the_data_traces_to_a_tool() -> None:
     gathered = calls(*GATHERED)
     data = weekahead.gather(NEXT, gathered)

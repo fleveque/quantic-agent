@@ -25,7 +25,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from importlib import resources
 from string import Template
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
@@ -234,6 +234,10 @@ class DividendChange(_Data):
     new_rate: float
     currency: str | None
     detected_on: str
+    # "payment" when old and new are one payment and the same payment a year
+    # earlier (a semi-annual payer's, quantic#517); left out of the file for an
+    # annual rate, as every post before it was written.
+    basis: Literal["payment"] | None = Field(default=None, exclude_if=lambda v: v is None)
 
 
 class WeekData(_Data):
@@ -295,6 +299,7 @@ class _Change(BaseModel):
     new_rate: float
     currency: str | None = None
     detected_on: date
+    basis: str = "annual"  # Quantic before quantic#526 sends none: annual
 
 
 class _Changes(BaseModel):
@@ -494,6 +499,7 @@ def gather(week: Week, calls: Sequence[Call]) -> WeekData:
                 new_rate=c.new_rate,
                 currency=c.currency,
                 detected_on=c.detected_on.isoformat(),
+                basis="payment" if c.basis == "payment" else None,
             )
             for c in changes[-1].changes
         ],

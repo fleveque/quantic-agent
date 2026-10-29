@@ -157,6 +157,11 @@ starting point here.
   Migration 0009 (`proposals`, `issues`). `wording.check(names=, allow=)` fixes "Best Buy" as
   advice in the Week Ahead too. Project skill `.claude/skills/review-posts/`. First real run: 51 s,
   BAE, Realty Income, Nike, 8 versions; lesson 16.
+- **A change's basis, 2026-10-29** (branch `change-basis`, after quantic#526): Quantic's
+  `dividend_changes` rows carry `basis`, "annual" (a rate) or "payment" (a semi-annual payer's
+  payment against the same one a year earlier). The Week Ahead's data writes `basis` only for
+  payment rows (`exclude_if`), so annual rows and old runs trace as before; the daily facts name
+  them `new_payment` / `same_payment_a_year_earlier`. Absent = annual (Quantic before #526).
 - design.md keeps Go's "As built in Go" notes next to this repository's "As built" notes.
 - PRs are squash-merged, so a walkthrough built from a branch commit cites a SHA `main` won't have.
   After merge, rebuild the walkthrough page from the merge commit and republish the artifact. That

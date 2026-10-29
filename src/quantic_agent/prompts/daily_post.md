@@ -25,6 +25,7 @@ Accuracy:
 - The company by the name people use: "Nike", not "Nike, Inc."; "BAE Systems", not "BAE SYSTEMS PLC ORD 2.5P".
 - streak_years: consecutive years of dividend increases up to now.
 - dividend_history_starts: the first year of Quantic's dividend history, not when the streak or the dividend began.
+- new_payment and same_payment_a_year_earlier: one dividend payment, and the same payment a year before (a company that pays twice a year, its interim or its final): never call them an annual rate or the dividend for the year.
 - seen_on: the day Quantic first saw a new rate, not the day the company announced or changed it: say "seen on", never "raised on" or "cut on".
 - safety: Quantic's dividend safety label now (safe, watch or at_risk), with no history: never "remains" or "still".
 - last_known_price is the last price Quantic saw, on last_known_price_as_of: say "last known price", never "trades at" or "is now".
