@@ -144,7 +144,7 @@ starting point here.
   gathering facts beats the model researching; field meanings in the writer's prompt took wrong
   claims from 19/95 posts to 2/96; a 27B verifier caught 9/11 major errors given the post's own
   facts, 0 given all of them. The author posted a Claude-written Nike post on X (@quantic_es).
-- **Milestone 16** (branch `m16-daily-posts`, ADR 0019): `--daily`, weekdays 07:30 (its own units,
+- **Milestone 16 merged** (#27, ADR 0019): `--daily`, weekdays 07:30 (its own units,
   `contrib/systemd/quantic-agent-daily.*`). `quantic_agent/daily.py`: code makes the day's calls
   (`dividend_changes` 3, `dividend_calendar` 5, one `screen_stocks`), picks one company per angle
   (change, ex-dividend, yield) not proposed in 7 days, looks up until one is accepted (a cut next to
@@ -172,12 +172,13 @@ starting point here.
 
 ## Next, in order
 
-0. **Milestone 16's App permission**: add Issues: Read and write to `quantic-agent-fleveque` and
-   accept it on the installation, reinstall after merging, enable `quantic-agent-daily.timer`
-   (runbook §8d). Data issues for Quantic from the experiment, not yet filed: streaks capped at 29,
-   rounding recorded as cuts, deep cuts labelled safe, duplicate listings disagreeing, Kings list
-   with 12- and 29-year streaks, `get_stock_research`/`compare_stocks` refusing anonymous calls
-   with a wrong message, London listings mixing pounds and pence.
+0. **Daily posts on, 2026-10-29**: Issues: Read and write added to `quantic-agent-fleveque` and
+   accepted; reinstalled from `main` after #27's merge; `quantic-agent-daily.timer` enabled. The
+   first run is Friday 2026-10-30 07:30: check its journal and its issue then. Data issues for
+   Quantic from the experiment, not yet filed: streaks capped at 29, rounding recorded as cuts,
+   deep cuts labelled safe, duplicate listings disagreeing, Kings list with 12- and 29-year
+   streaks, `get_stock_research`/`compare_stocks` refusing anonymous calls with a wrong message,
+   London listings mixing pounds and pence.
 
 1. **Installed and on, 2026-10-14**: `uv tool install` from `main` after #18's merge;
    `~/.config/quantic-agent/env` (App ID, `QUANTIC_AGENT_REPO`, `QUANTIC_AGENT_OUT=~/insights`,
