@@ -11,7 +11,7 @@ presentation belongs to the Phoenix template (docs/rendering.md).
 """
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
@@ -166,6 +166,29 @@ DIVIDEND_CHANGES = Tool(
         "rate, which is not the company's declaration date."
     ),
     args=DividendChangesArgs,
+)
+
+
+class ScreenStocksArgs(ToolArgs):
+    min_streak: int = Field(ge=0, description="The least consecutive years of increases.")
+    safety: Literal["safe", "watch", "at_risk"] = Field(
+        description="Quantic's dividend safety label."
+    )
+    type: Literal["equity", "etf"] = Field(description="Companies or funds.")
+
+
+# Called by code for the daily X posts (daily.py), never offered to a model: one
+# screen of the companies whose yield can be compared with their own history.
+# The server returns at most 100 rows; safe companies with a 10-year streak
+# were 76 on 2026-10-28.
+SCREEN_STOCKS = Tool(
+    name="screen_stocks",
+    description=(
+        "Find dividend stocks by criteria: each row has the company's name, symbol, sector, "
+        "current yield and 5-year average yield (percentages), streak of increases, 5-year "
+        "dividend growth and safety label."
+    ),
+    args=ScreenStocksArgs,
 )
 
 

@@ -1,0 +1,13 @@
+# Monday to Friday at 07:30: the day's data, drafted before the market opens
+# in Europe. Persistent: a weekday missed because the computer was off runs
+# at the next login.
+[Unit]
+Description=quantic-agent: every weekday, today's X posts
+Documentation=https://github.com/fleveque/quantic-agent/blob/main/docs/target-machine.md
+
+[Timer]
+OnCalendar=Mon..Fri *-*-* 07:30:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

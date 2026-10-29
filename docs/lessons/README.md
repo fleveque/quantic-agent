@@ -27,6 +27,7 @@ Ruby that turned out wrong, and what changed from the Go version and why.
 | [13](13-sunday-without-me.md) | Sunday, without me | 13 — the weekly job: a systemd timer, the GPU check, logs for the journal | [Sunday, without me](https://claude.ai/artifact/KafaQjeZnB6NYqNrfqxvZt) | [The weekly job, line by line](https://claude.ai/artifact/UC8pHu5WxBkz5tJ3hiJLwF) |
 | [14](14-what-i-changed-before-merging.md) | What I changed before merging | 14 — the reviewer's corrections, read back from the merge commit | [What I changed before merging](https://claude.ai/artifact/4cqkDMqeD5yZVVBpcWP6NR) | [Corrections, line by line](https://claude.ai/artifact/7Vk6EXjDr8NE7Ac6Q14UJs) |
 | [15](15-words-the-post-cant-use.md) | Words the post can't use | 15 — wording rules for the prose, measured on 180 writings | [Words the post can't use](https://claude.ai/artifact/KcQeXD23ncBeX1kU94Nmx2) | [Wording, line by line](https://claude.ai/artifact/DnRLm51mYFbyMH3idu2ZDT) |
+| [16](16-a-shortlist-every-morning.md) | A shortlist every morning | 16 — daily X posts: code researches, the model writes, checks, an issue to pick from | [A shortlist every morning](https://claude.ai/artifact/JsApe2npz8oRro34bP7R62) | [Daily posts, line by line](https://claude.ai/artifact/Xt7zTAyHXogmMVx5tAnyUH) |
 
 Lessons tell the story of a milestone: what surprised me and why. Walkthroughs go through the code
 itself in reading order, the way a tech lead would with a new teammate. Formatted pages are built

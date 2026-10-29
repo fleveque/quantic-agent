@@ -132,6 +132,41 @@ class Correction:
 
 
 @dataclass(frozen=True)
+class Proposal:
+    """One version of a daily X post (milestone 16): its company, what it's
+    about, its number in the issue, its text, the facts it was written from,
+    and what its checks found, nothing if it was proposed. posted_at is when
+    --sync last saw it ticked as posted."""
+
+    symbol: str
+    angle: str
+    version: int
+    text: str
+    facts: dict[str, Any]
+    problems: list[str] = field(default_factory=lambda: list[str]())
+    posted_at: datetime | None = None
+
+    @property
+    def ready(self) -> bool:
+        return not self.problems
+
+
+@dataclass(frozen=True)
+class Issue:
+    """Where a daily run's posts went for the author, and its state when
+    last looked at."""
+
+    repo: str
+    number: int
+    url: str
+    state: str  # "open" or "closed"
+    run_id: int = 0
+
+
+_ISSUES = "SELECT repo, number, url, state, run_id FROM issues "
+
+
+@dataclass(frozen=True)
 class Review:
     """A reviewer's verdict on a run's answer."""
 
@@ -168,6 +203,8 @@ class Run:
     posts: list[Post] = field(default_factory=lambda: list[Post]())  # a Week Ahead's files
     pull_request: PullRequest | None = None
     corrections: list[Correction] = field(default_factory=lambda: list[Correction]())
+    proposals: list[Proposal] = field(default_factory=lambda: list[Proposal]())  # daily posts
+    issue: Issue | None = None
 
     def records(self) -> list[Record]:
         """The run's successful calls as provenance records: exactly what its
@@ -294,13 +331,33 @@ class Store:
         *,
         tokens: int | None = None,
         posts: Sequence[Post] = (),
+        proposals: Sequence[Proposal] = (),
     ) -> None:
         """Ends a run: its state, the error that stopped it, its draft if it
-        produced one, its posts if it wrote any, and the tokens it used in all
-        (None leaves them as checkpointed). One transaction, so a run is never
-        marked answered without its draft and posts, or the reverse. A run
-        with a draft is done; one without stays in its phase, to resume from."""
+        produced one, its posts or proposals if it wrote any, and the tokens
+        it used in all (None leaves them as checkpointed). One transaction, so
+        a run is never marked answered without its draft and posts, or the
+        reverse. A run with a draft is done; one without stays in its phase,
+        to resume from."""
         with self._transaction():
+            self._db.executemany(
+                "INSERT INTO proposals "
+                "(run_id, symbol, angle, version, text, facts, problems, created_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                [
+                    (
+                        run_id,
+                        p.symbol,
+                        p.angle,
+                        p.version,
+                        p.text,
+                        json.dumps(p.facts),
+                        json.dumps(p.problems),
+                        self._stamp(),
+                    )
+                    for p in proposals
+                ],
+            )
             self._db.executemany(
                 "INSERT INTO posts (run_id, locale, status, content, problems, created_at) "
                 "VALUES (?, ?, ?, ?, ?, ?)",
@@ -501,6 +558,82 @@ class Store:
                 ],
             )
 
+    def record_issue(self, run_id: int, issue: Issue) -> None:
+        """Records the issue a daily run's posts were opened in. A run has at
+        most one: a second is refused by the table."""
+        self._db.execute(
+            "INSERT INTO issues (run_id, repo, number, url, state, opened_at) "
+            "VALUES (?, ?, ?, ?, 'open', ?)",
+            (run_id, issue.repo, issue.number, issue.url, self._stamp()),
+        )
+
+    def open_issues(self) -> list[Issue]:
+        """The issues last seen open, oldest first."""
+        rows = self._db.execute(_ISSUES + "WHERE state = 'open' ORDER BY id")
+        return [Issue(*row) for row in rows]
+
+    def record_ticks(self, run_id: int, ticked: set[tuple[str, int]]) -> list[Proposal]:
+        """Records which of a run's proposed versions are ticked as posted,
+        as (symbol, version), and returns those that weren't before. A box
+        unticked is recorded too: the issue is the author's record, and this
+        mirrors it."""
+        with self._transaction():
+            before = {(p.symbol, p.version) for p in self._proposals(run_id) if p.posted_at}
+            stamp = self._stamp()
+            for p in self._proposals(run_id):
+                if not p.ready:
+                    continue
+                now = (p.symbol, p.version) in ticked
+                if now != (p.posted_at is not None):
+                    self._db.execute(
+                        "UPDATE proposals SET posted_at = ? "
+                        "WHERE run_id = ? AND symbol = ? AND version = ?",
+                        (stamp if now else None, run_id, p.symbol, p.version),
+                    )
+        return [
+            p
+            for p in self._proposals(run_id)
+            if p.posted_at and (p.symbol, p.version) not in before
+        ]
+
+    def close_issue(self, run_id: int) -> None:
+        """Records that a run's issue was closed."""
+        cursor = self._db.execute(
+            "UPDATE issues SET state = 'closed', closed_at = ? WHERE run_id = ? AND state = 'open'",
+            (self._stamp(), run_id),
+        )
+        if cursor.rowcount != 1:
+            raise NotFoundError(f"run {run_id} has no open issue")
+
+    def proposed_since(self, since: datetime) -> set[str]:
+        """The companies with a version proposed by a run started since: not
+        to be proposed again yet."""
+        rows = self._db.execute(
+            "SELECT DISTINCT p.symbol FROM proposals p JOIN runs r ON r.id = p.run_id "
+            "WHERE p.problems = '[]' AND r.started_at >= ?",
+            (since.astimezone(UTC).isoformat(),),
+        )
+        return {symbol for (symbol,) in rows}
+
+    def _proposals(self, run_id: int) -> list[Proposal]:
+        rows = self._db.execute(
+            "SELECT symbol, angle, version, text, facts, problems, posted_at FROM proposals "
+            "WHERE run_id = ? ORDER BY id",
+            (run_id,),
+        )
+        return [
+            Proposal(
+                symbol,
+                angle,
+                version,
+                text,
+                json.loads(facts),
+                json.loads(problems),
+                datetime.fromisoformat(posted) if posted else None,
+            )
+            for symbol, angle, version, text, facts, problems, posted in rows
+        ]
+
     def memories(self, model: str) -> list[memory.Memory]:
         """Every approved answer embedded with model: the style memory a
         writer can be shown. Only approved answers have vectors: approve
@@ -588,6 +721,9 @@ class Store:
                 (run_id,),
             )
         ]
+        run.proposals = self._proposals(run_id)
+        issue = self._db.execute(_ISSUES + "WHERE run_id = ?", (run_id,)).fetchone()
+        run.issue = Issue(*issue) if issue is not None else None
         if row is not None:  # no draft: the run failed or was stopped before answering
             content, truncated, findings, created = row
             run.draft = Draft(

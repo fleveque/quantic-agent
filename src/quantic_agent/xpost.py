@@ -33,6 +33,11 @@ _URL_WEIGHT = 23
 _LIGHT = ((0x0000, 0x10FF), (0x2000, 0x200D), (0x2010, 0x201F), (0x2032, 0x2037))
 
 
+def cashtag(symbol: str) -> str | None:
+    """The ticker as X links it, "$NKE", or None for one X doesn't."""
+    return f"${symbol}" if _CASHTAG.fullmatch(symbol) else None
+
+
 def x_length(text: str, urls: tuple[str, ...] = ()) -> int:
     """A post's length as X counts it: each link 23, each character 1 or 2."""
     for url in urls:
@@ -89,8 +94,9 @@ def _ex_dividend_line(data: WeekData) -> str:
     # The longest raise streaks first: the names dividend investors follow.
     tagged: list[str] = []
     for row in sorted(rows, key=lambda r: r.streak_years or 0, reverse=True):
-        if _CASHTAG.fullmatch(row.symbol) and f"${row.symbol}" not in tagged:
-            tagged.append(f"${row.symbol}")
+        tag = cashtag(row.symbol)
+        if tag is not None and tag not in tagged:
+            tagged.append(tag)
         if len(tagged) == 2:
             break
     return f"{line}, incl. {' and '.join(tagged)}" if tagged else line
@@ -125,7 +131,7 @@ def _earnings_line(data: WeekData) -> str:
 def _stock(row: DividendChange) -> str:
     """A cashtag where X makes one, else the company's name, in title case
     when the provider wrote it in capitals ("PAX GLOBAL")."""
-    if _CASHTAG.fullmatch(row.symbol):
-        return f"${row.symbol}"
+    if (tag := cashtag(row.symbol)) is not None:
+        return tag
     name = row.name.strip()
     return name.title() if name.isupper() else name

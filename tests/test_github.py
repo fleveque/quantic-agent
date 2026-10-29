@@ -226,3 +226,29 @@ def _other_key() -> str:
 
 
 OTHER_KEY = _other_key()
+
+
+@pytest.mark.anyio
+async def test_an_issue_is_opened_and_read_back_never_edited(
+    github_api: FakeGitHub, app_key: tuple[str, str]
+) -> None:
+    async with client(github_api, app_key) as gh:
+        opened = await gh.open_issue(
+            "X posts for Wednesday 2026-10-28", "- [ ] posted NKE version 1"
+        )
+        github_api.issues[opened.number]["body"] = "- [x] posted NKE version 1"
+        github_api.issues[opened.number]["state"] = "closed"
+        now = await gh.issue(opened.number)
+
+    assert (opened.number, opened.state) == (200, "open")
+    assert opened.html_url == "https://github.com/fleveque/quantic/issues/200"
+    assert (now.state, now.body) == ("closed", "- [x] posted NKE version 1")
+    repo = "/repos/fleveque/quantic"
+    writes = [(m, p) for m, p, _, _ in github_api.requests if m != "GET"]
+    assert writes[1:] == [("POST", f"{repo}/issues")]  # after the token's POST: one write
+
+
+def test_the_client_has_no_way_to_edit_an_issue() -> None:
+    # What the client can do to an issue is what it has a method for.
+    methods = {name for name in dir(github.Client) if not name.startswith("_")}
+    assert {m for m in methods if "issue" in m} == {"open_issue", "issue"}

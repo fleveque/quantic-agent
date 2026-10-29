@@ -134,3 +134,36 @@ def test_what_the_rules_leave_alone(text: str) -> None:
 def test_findings_come_in_the_order_they_are_written() -> None:
     # The count comes first in the text, the advice rule first in RULES.
     assert found("Both look attractive.") == [("Both", "count"), ("attractive", "advice")]
+
+
+# The 27B's X post (2026-10-28, docs/benchmarks/2026-10-28-x-posts/nike/): held
+# for "buy", which is part of a company's name.
+BEST_BUY = "In Consumer Cyclical, $NKE leads by yield at 4.37%. Best Buy is next."
+
+
+def test_a_companys_name_is_not_advice() -> None:
+    assert found(BEST_BUY) == [("Buy", "advice")]
+    assert wording.check(BEST_BUY, names=["Nike, Inc.", "Best Buy Co., Inc."]) == []
+
+
+def test_a_name_is_masked_where_it_is_written_and_nowhere_else() -> None:
+    text = "Best Buy is next. Analysts say buy."
+    [finding] = wording.check(text, names=["Best Buy Co., Inc."])
+    # The offset is the word's own: masking keeps every position.
+    assert (finding.text, finding.offset) == ("buy", text.index("buy."))
+
+
+def test_a_short_name_isnt_masked_inside_other_words() -> None:
+    # "Pay" (a two-letter prefix would be "Pa") is too short to try, and whole
+    # words only: masking "Sell" must not reach "Selling".
+    assert found("Selling pressure.") == [("Selling", "advice")]
+    assert wording.check("Selling pressure.", names=["Sell Co"]) == [
+        wording.check("Selling pressure.")[0]
+    ]
+
+
+def test_allow_lets_a_text_use_a_word_a_rule_names() -> None:
+    text = "The share price is 77.8% below its high, and its valuation…"
+    assert [(f.text, f.value) for f in wording.check(text, allow={"price"})] == [
+        ("valuation", "market")
+    ]

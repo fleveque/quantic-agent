@@ -605,3 +605,16 @@ def test_the_question_names_the_week_asked_for() -> None:
         "calendar that covers every day of that week. Each company in it is looked up for "
         "you afterwards. Sunday 2026-11-01 is 6 days from today."
     )
+
+
+def test_a_companys_name_in_the_prose_isnt_read_as_advice() -> None:
+    # A company named like an advice word: "Best Buy" (the X posts, 2026-10-28).
+    data = weekahead.gather(NEXT, calls(*GATHERED))
+    renamed = data.model_copy(
+        update={
+            "ex_dividends": [data.ex_dividends[0].model_copy(update={"name": "Best Buy Co., Inc."})]
+        }
+    )
+    prose = Prose(summary="Best Buy goes ex-dividend this week.", watch="Best Buy is rated safe.")
+    assert weekahead.check_prose(prose) != []  # without the names, "Buy" is advice
+    assert weekahead.check_prose(prose, weekahead.names(renamed)) == []
