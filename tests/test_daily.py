@@ -1,6 +1,6 @@
 import asyncio
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date
 from typing import Any
 
@@ -165,6 +165,24 @@ def test_a_change_is_sized_by_code() -> None:
         "change_pct": 5.6,
         "change_size_pct": 5.6,
     }
+
+
+def test_a_payment_change_is_named_as_one_payment() -> None:
+    # BAE pays twice a year; since quantic#526 its change is one payment
+    # against the same payment a year earlier, not an annual rate.
+    accepted, _, _ = looked_up()
+    candidate, stock = next((c, s) for c, s in accepted if c.symbol == "BA.L")
+    assert candidate.change is not None
+    payment = replace(candidate, change=candidate.change.model_copy(update={"basis": "payment"}))
+
+    copied = daily.facts(payment, stock, TODAY).copied
+
+    assert "old_annual_rate" not in copied
+    assert (copied["same_payment_a_year_earlier"], copied["new_payment"]) == (
+        candidate.change.old_rate,
+        candidate.change.new_rate,
+    )
+    assert "old_annual_rate" in facts_of("BA.L").copied
 
 
 def test_facts_read_back_as_they_were_stored() -> None:

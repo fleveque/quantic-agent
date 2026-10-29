@@ -107,6 +107,9 @@ class _Change(BaseModel):
     new_rate: float
     currency: str | None = None
     detected_on: date
+    # "payment": one payment against the same payment a year earlier, a
+    # semi-annual payer's (quantic#517). Quantic before it sends none.
+    basis: str = "annual"
 
     @property
     def ratio(self) -> float:
@@ -509,7 +512,13 @@ def facts(candidate: Candidate, stock: Stock, today: date) -> Facts:
         case Angle.CHANGE:
             change = candidate.change
             assert change is not None
-            copied |= {"old_annual_rate": change.old_rate, "new_annual_rate": change.new_rate}
+            if change.basis == "payment":
+                copied |= {
+                    "same_payment_a_year_earlier": change.old_rate,
+                    "new_payment": change.new_rate,
+                }
+            else:
+                copied |= {"old_annual_rate": change.old_rate, "new_annual_rate": change.new_rate}
             _put(copied, "rate_currency", change.currency)
             copied["seen_on"] = change.detected_on.isoformat()
             derived["change"] = "raise" if change.ratio > 0 else "cut"
