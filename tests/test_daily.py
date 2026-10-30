@@ -149,12 +149,37 @@ def test_amounts_in_different_units_are_left_out() -> None:
     assert facts_of("NKE").derived["price_below_5y_high_pct"] == 77.8
 
 
-def test_the_next_payment_month_is_after_today() -> None:
-    assert facts_of("NKE").derived["next_payment_month"] == "December"
-    assert facts_of("BA.L").derived["next_payment_month"] == "April"  # April and October
+def test_the_next_ex_dividend_month_is_after_today() -> None:
+    assert facts_of("NKE").derived["next_ex_dividend_month"] == "December"
+    assert facts_of("BA.L").derived["next_ex_dividend_month"] == "April"  # April and October
     realty = facts_of("O").derived
-    assert realty["next_payment_month"] == "November"
-    assert "pays_in" not in realty  # every month says nothing
+    assert realty["next_ex_dividend_month"] == "November"
+    assert "goes_ex_dividend_in" not in realty  # every month says nothing
+
+
+def months_of(symbol: str, **profile: object) -> dict[str, object]:
+    accepted, _, _ = looked_up()
+    candidate, stock = next((c, s) for c, s in accepted if c.symbol == symbol)
+    changed = stock.profile.model_copy(update=profile)
+    return daily.facts(candidate, stock.model_copy(update={"profile": changed}), TODAY).derived
+
+
+def test_months_with_no_real_payments_are_never_called_payments() -> None:
+    # Quantic before #533 gives no basis; after it, "ex_dividend" and ex_months.
+    for profile in ({}, {"payment_months_basis": "ex_dividend", "ex_months": [3, 9]}):
+        derived = months_of("NKE", **profile)
+        assert "pays_in" not in derived
+        assert "next_payment_month" not in derived
+    assert derived["goes_ex_dividend_in"] == ["March", "September"]
+
+
+def test_real_payment_months_are_called_payments() -> None:
+    derived = months_of(
+        "NKE", payment_months_basis="paid", payment_months=[1, 7], ex_months=[6, 12]
+    )
+    assert derived["pays_in"] == ["January", "July"]
+    assert derived["next_payment_month"] == "January"
+    assert "goes_ex_dividend_in" not in derived
 
 
 def test_a_change_is_sized_by_code() -> None:

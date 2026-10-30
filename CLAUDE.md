@@ -162,6 +162,11 @@ starting point here.
   payment against the same one a year earlier). The Week Ahead's data writes `basis` only for
   payment rows (`exclude_if`), so annual rows and old runs trace as before; the daily facts name
   them `new_payment` / `same_payment_a_year_earlier`. Absent = annual (Quantic before #526).
+- **Ex-dividend months, 2026-10-30** (branch `ex-months`, after quantic#533): Quantic's
+  `payment_months` have always been ex-dividend months, which is how "Hitachi pays in March" was
+  written (quantic#521). The daily facts are now `goes_ex_dividend_in` / `next_ex_dividend_month`,
+  and `pays_in` / `next_payment_month` only when `payment_months_basis` says real payments.
+  Absent = ex-dividend (Quantic before #533).
 - design.md keeps Go's "As built in Go" notes next to this repository's "As built" notes.
 - PRs are squash-merged, so a walkthrough built from a branch commit cites a SHA `main` won't have.
   After merge, rebuild the walkthrough page from the merge commit and republish the artifact. That
@@ -179,11 +184,9 @@ starting point here.
 
 0. **Daily posts on, 2026-10-29**: Issues: Read and write added to `quantic-agent-fleveque` and
    accepted; reinstalled from `main` after #27's merge; `quantic-agent-daily.timer` enabled. The
-   first run is Friday 2026-10-30 07:30: check its journal and its issue then. Data issues for
-   Quantic from the experiment, not yet filed: streaks capped at 29, rounding recorded as cuts,
-   deep cuts labelled safe, duplicate listings disagreeing, Kings list with 12- and 29-year
-   streaks, `get_stock_research`/`compare_stocks` refusing anonymous calls with a wrong message,
-   London listings mixing pounds and pence. The first real issue, quantic#515, was reviewed on the
+   first run is Friday 2026-10-30 07:30: check its journal and its issue then. The data issues
+   from the experiment were filed and fixed on Quantic (#524–#531), except real pay months
+   (quantic#521, in progress). The first real issue, quantic#515, was reviewed on the
    issue: Hitachi's "annual rate" was its interim times two, Realty Income's streak 28 for 31+.
    The author chose: `review-posts` always comments on the issue and checks the data against
    outside sources. **ADR 0020 is proposed, not decided**: capture what was posted (a `posted SYM

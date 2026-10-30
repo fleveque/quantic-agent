@@ -158,6 +158,10 @@ class _Profile(BaseModel):
     currency: str | None = None
     sector: str | None = None
     payment_months: list[int] = []
+    # "ex_dividend", or absent before quantic#533: payment_months are the months
+    # the stock goes ex-dividend, and the cash may arrive later.
+    payment_months_basis: str | None = None
+    ex_months: list[int] = []
     payment_frequency: str | None = None
 
 
@@ -500,12 +504,22 @@ def facts(candidate: Candidate, stock: Stock, today: date) -> Facts:
         # Per year: named "5y" alone, "grown 8% over five years" was written
         # for 8% a year (BAE Systems, 2026-10-28).
         derived["dividend_growth_per_year_5y_pct"] = round(dividend.cagr_5y * 100, 1)
-    if profile.payment_months:
-        months = sorted(set(profile.payment_months))
+    paid = profile.payment_months_basis not in (None, "ex_dividend")
+    months = sorted(
+        set(profile.payment_months if paid else profile.ex_months or profile.payment_months)
+    )
+    if months:
+        # "Hitachi pays in March and September" came from ex-dividend months
+        # under a payment name (quantic#521): the fact says which they are.
+        all_months, next_month = (
+            ("pays_in", "next_payment_month")
+            if paid
+            else ("goes_ex_dividend_in", "next_ex_dividend_month")
+        )
         if len(months) <= 6:  # a monthly payer's twelve months say nothing
-            derived["pays_in"] = [MONTHS[m - 1] for m in months]
+            derived[all_months] = [MONTHS[m - 1] for m in months]
         later = [m for m in months if m > today.month]
-        derived["next_payment_month"] = MONTHS[(later or months)[0] - 1]
+        derived[next_month] = MONTHS[(later or months)[0] - 1]
     _price(stock, copied, derived)
     _history(stock, today, _rate(candidate, stock), copied, derived)
     match candidate.angle:

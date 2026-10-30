@@ -63,8 +63,10 @@ What has gone wrong before:
 
 - Streaks: Quantic's stop at 29 years; a long-standing payer with a short streak (Microsoft's 15).
 - A semi-annual payer's "annual rate": the latest payment times two, so an interim raise reads as
-  an annual one (Hitachi). Japanese `payment_months` are record months (March, September), not when
-  the dividend is paid.
+  an annual one (Hitachi).
+- Months: until quantic#521 is done, `payment_months` are mostly ex-dividend months. A post saying a
+  company pays in a month needs checking, above all for Japan and the UK (Hitachi goes ex in March
+  and September and pays months later).
 - Changes: a raise or cut in a REIT's or a semi-annual payer's rate that may be a timing swing; a
   listing whose rate moves with the exchange rate.
 - Safety labels that sit oddly with the facts (a deep cut labelled safe).

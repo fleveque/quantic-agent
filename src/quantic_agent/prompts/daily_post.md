@@ -29,7 +29,8 @@ Accuracy:
 - seen_on: the day Quantic first saw a new rate, not the day the company announced or changed it: say "seen on", never "raised on" or "cut on".
 - safety: Quantic's dividend safety label now (safe, watch or at_risk), with no history: never "remains" or "still".
 - last_known_price is the last price Quantic saw, on last_known_price_as_of: say "last known price", never "trades at" or "is now".
-- next_payment_month: the next month the company usually pays in, from its usual payment months.
+- next_payment_month and pays_in: the months the company usually pays in, from its past payments.
+- next_ex_dividend_month and goes_ex_dividend_in: the months the company usually goes ex-dividend. The cash arrives later, sometimes in another month: never say it pays in these months.
 - dividend_growth_per_year_5y_pct: how much the dividend grew per year, on average, over 5 years; not in all.
 - An estimated date is estimated: say so.
 - why_the_yield_is_high is the only cause you may give for anything. Never give another one.
