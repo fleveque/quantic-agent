@@ -282,6 +282,22 @@ def test_a_company_x_makes_no_cashtag_of_is_named_without_one() -> None:
     ]
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        # Run 12 (2026-11-03) held all three of Brown-Forman's versions as
+        # not naming the company: the hyphen went from the name, not the text.
+        "📊 Brown-Forman Corporation yields 3.07%.",
+        "📊 BF-B yields 3.07%.",
+        "📊 Brown-Forman's yield is 3.07%.",
+    ],
+)
+def test_a_name_with_punctuation_is_found_as_written(text: str) -> None:
+    brown_forman = daily.Facts(daily.Angle.YIELD, "BF-B", "Brown-Forman Corporation", {}, {})
+    assert daily.names(brown_forman, text)
+    assert not daily.names(brown_forman, "📊 It yields 3.07%.")
+
+
 def test_a_company_name_isnt_advice() -> None:
     # The wording rules see "Buy" in "Best Buy" only outside a company's name.
     bae = daily.Facts(daily.Angle.CHANGE, "BBY", "Best Buy Co., Inc.", {}, {})

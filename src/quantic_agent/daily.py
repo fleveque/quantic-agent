@@ -701,11 +701,13 @@ def manifest(facts: Facts, today: date) -> provenance.Manifest:
 
 def names(facts: Facts, text: str) -> bool:
     """Whether text names the company: its ticker, or the first word of its
-    name ("Nike" for "Nike, Inc.", "Intertek" for "INTERTEK GROUP PLC")."""
-    plain = re.sub(r"['\u2019]", "", text.lower())
+    name ("Nike" for "Nike, Inc.", "Intertek" for "INTERTEK GROUP PLC").
+    Punctuation goes from both sides alike, so "Brown-Forman" and "BF-B"
+    are found as written (run 12 held every version without it)."""
+    plain = re.sub(r"[^\w\s]", "", text.lower())
     first = re.sub(r"[^\w]", "", facts.name.split()[0]).lower() if facts.name.split() else ""
-    ticker = facts.symbol.split(".")[0].lower()
-    return ticker in re.findall(r"[\w-]+", plain) or (len(first) >= 3 and first in plain)
+    ticker = re.sub(r"[^\w]", "", facts.symbol.split(".")[0]).lower()
+    return ticker in plain.split() or (len(first) >= 3 and first in plain)
 
 
 def check_version(text: str, facts: Facts, today: date) -> list[str]:
