@@ -6,7 +6,8 @@ Italian of quantic#539 could write "passa in esistenza dividendo", a phrase that
 the week after I'd fixed "esclusioni dividendi" for the same idea. Now a term I've corrected
 doesn't get published again. Measuring it taught me that telling the model wasn't what worked.
 
-*Also readable as a formatted page, with a code walkthrough of every change the milestone made.*
+*Also readable as a [formatted page](https://claude.ai/artifact/MspjfkztwMMkK8kW9FdsWj), with a [code walkthrough](https://claude.ai/artifact/Gv6Mqt1BoXdnze2ybtDgTV) of every
+change the milestone made.*
 
 ---
 
