@@ -8,7 +8,7 @@ import yaml
 from conftest import tool_result
 from test_agent import FakeServer, ScriptedModel, answers
 
-from quantic_agent import provenance, quantic, weekahead
+from quantic_agent import glossary, provenance, quantic, weekahead
 from quantic_agent.agent import Call
 from quantic_agent.weekahead import Prose, Week, WeekData
 
@@ -479,13 +479,63 @@ async def test_a_translation_is_told_its_language_and_checked() -> None:
 
 def test_a_translation_with_figures_is_held() -> None:
     translated = SPANISH.model_copy(update={"summary": SPANISH.summary + " Son 2 empresas."})
-    assert weekahead.check_translation(PROSE, translated) == ["summary: figure '2'"]
+    assert weekahead.check_translation(PROSE, translated, "es") == ["summary: figure '2'"]
 
 
 def test_a_translation_far_from_the_englishs_length_is_held() -> None:
     short = SPANISH.model_copy(update={"watch": "Segura."})
-    [problem] = weekahead.check_translation(PROSE, short)
+    [problem] = weekahead.check_translation(PROSE, short, "es")
     assert problem.startswith("watch: 0.09 times as long as the English, outside 0.75-1.75")
+
+
+ITALIAN = Prose(
+    summary="Procter & Gamble e Coca-Cola staccano il dividendo alla fine della settimana.",
+    watch="Coca-Cola è classificata come sicura, e Procter & Gamble sotto osservazione.",
+)
+# quantic#539's mistake, in the fixture's sentence.
+ITALIAN_WRONG = ITALIAN.model_copy(
+    update={
+        "summary": "Procter & Gamble e Coca-Cola passano in esistenza dividendo alla fine "
+        "della settimana."
+    }
+)
+
+
+@pytest.mark.anyio
+async def test_a_translation_is_told_its_glossary() -> None:
+    model = ScriptedModel([answers(ITALIAN.model_dump_json(), 50)])
+
+    t = await weekahead.translate(model, PROSE, "it")
+
+    assert (t.prose, t.problems, t.attempts) == (ITALIAN, [], 1)
+    system = model.shown[0][0].content
+    assert system.endswith(glossary.told(weekahead.LOCALES["it"].terms) + "\n")
+
+
+@pytest.mark.anyio
+async def test_a_translation_with_a_wrong_term_is_sent_back_with_it_named() -> None:
+    model = ScriptedModel(
+        [answers(ITALIAN_WRONG.model_dump_json(), 50), answers(ITALIAN.model_dump_json(), 40)]
+    )
+
+    t = await weekahead.translate(model, PROSE, "it")
+
+    assert (t.prose, t.problems, t.attempts, t.tokens) == (ITALIAN, [], 2, 90)
+    retry = model.shown[1][3].content
+    assert retry == (
+        "That translation has terms it can't use: 'esistenza dividendo' should be "
+        "'stacca il dividendo'. Translate both fields again."
+    )
+
+
+@pytest.mark.anyio
+async def test_a_wrong_term_still_there_after_the_last_attempt_is_held() -> None:
+    model = ScriptedModel([answers(ITALIAN_WRONG.model_dump_json(), 10)] * 3)
+
+    t = await weekahead.translate(model, PROSE, "it")
+
+    assert (t.prose, t.attempts, t.tokens) == (ITALIAN_WRONG, 3, 30)
+    assert t.problems == ["summary: term 'esistenza dividendo', not 'stacca il dividendo'"]
 
 
 @pytest.mark.anyio
@@ -570,6 +620,8 @@ def test_the_package_ships_its_prompts_and_locales() -> None:
     for locale in weekahead.LOCALES.values():
         assert set(locale.headings) == set(weekahead.SECTIONS)
     assert "$language" in weekahead.TRANSLATE_PROMPT.template
+    # A glossary goes last; with none, the prompt ends as it did before one.
+    assert weekahead.TRANSLATE_PROMPT.template.endswith("no markdown.\n$glossary\n")
     assert "No figures at all" in weekahead.WRITE_PROMPT
 
 

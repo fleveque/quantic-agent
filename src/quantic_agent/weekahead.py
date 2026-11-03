@@ -30,7 +30,7 @@ from typing import Any, Literal, Protocol
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-from quantic_agent import agent, llm, provenance, wording
+from quantic_agent import agent, glossary, llm, provenance, wording
 from quantic_agent.agent import Call, Model
 from quantic_agent.tools import (
     DIVIDEND_CALENDAR,
@@ -57,16 +57,30 @@ TRANSLATE_PROMPT = Template(_package_file("prompts", "translate.md"))
 @dataclass(frozen=True)
 class Locale:
     """One of Quantic's seven locales: the language as the translator is told
-    it, register included, and the post's section headings in it."""
+    it, register included, the post's section headings in it, and the terms
+    its translations mustn't use (its glossary, glossary.py).
+
+    Not named glossary: annotations are evaluated lazily, in the class's
+    namespace, where a field called glossary is its default, (). Then
+    typing.get_type_hints(Locale) reads glossary.Term as ().Term and raises."""
 
     code: str
     language: str
     headings: dict[str, str]
+    terms: tuple[glossary.Term, ...] = ()
 
 
 def _locales() -> dict[str, Locale]:
     table: dict[str, dict[str, Any]] = json.loads(_package_file("locales.json"))
-    return {code: Locale(code, **entry) for code, entry in table.items()}
+    return {
+        code: Locale(
+            code,
+            entry["language"],
+            entry["headings"],
+            glossary.terms(entry.get("glossary", [])),
+        )
+        for code, entry in table.items()
+    }
 
 
 LOCALES = _locales()
@@ -674,31 +688,54 @@ class Translation:
     raw: str
     problems: list[str] = field(default_factory=lambda: list[str]())
     tokens: int = 0
+    attempts: int = 1
 
 
 async def translate(
-    model: Model, source: Prose, locale: str, *, options: llm.Options | None = None
+    model: Model,
+    source: Prose,
+    locale: str,
+    *,
+    options: llm.Options | None = None,
+    attempts: int = ATTEMPTS,
 ) -> Translation:
-    """The prose translated into locale, and checked (check_translation)."""
-    system = TRANSLATE_PROMPT.substitute(language=LOCALES[locale].language)
+    """The prose translated into locale, and checked (check_translation).
+
+    The translator is told the locale's glossary. A translation with a term
+    the glossary names is sent back with it named, up to attempts times in
+    all; the last attempt is checked and returned whatever it holds. Figures
+    and length aren't sent back: they're held at once, as before."""
+    terms = LOCALES[locale].terms
+    system = TRANSLATE_PROMPT.substitute(
+        language=LOCALES[locale].language, glossary=glossary.told(terms)
+    )
     messages = [
-        llm.Message(role="system", content=system),
+        # Without a glossary the prompt is as it was, with no blank line left.
+        llm.Message(role="system", content=system.rstrip() + "\n"),
         llm.Message(role="user", content=source.model_dump_json()),
     ]
-    resp = await model.chat(messages, think=False, format=PROSE_FORMAT, options=options)
-    tokens = resp.prompt_eval_count + resp.eval_count
-    raw = resp.message.content
-    try:
-        translated = _prose(resp, tokens)
-    except NotProseError as err:
-        return Translation(locale, None, raw, [str(err)], tokens)
-    return Translation(locale, translated, raw, check_translation(source, translated), tokens)
+    tokens = 0
+    for attempt in range(1, attempts + 1):
+        resp = await model.chat(messages, think=False, format=PROSE_FORMAT, options=options)
+        tokens += resp.prompt_eval_count + resp.eval_count
+        raw = resp.message.content
+        try:
+            translated = _prose(resp, tokens)
+        except NotProseError as err:
+            return Translation(locale, None, raw, [str(err)], tokens, attempt)
+        hits = glossary.check(translated.text(), terms)
+        if not hits or attempt == attempts:
+            problems = check_translation(source, translated, locale)
+            return Translation(locale, translated, raw, problems, tokens, attempt)
+        messages += [resp.message, llm.Message(role="user", content=glossary.again(hits))]
+    raise AssertionError("unreachable: the last attempt returns")
 
 
-def check_translation(source: Prose, translated: Prose) -> list[str]:
+def check_translation(source: Prose, translated: Prose, locale: str) -> list[str]:
     """What's wrong with a translation, section by section: figures, which
-    the English has none of, and a length outside LENGTH_BAND, the sign of
-    something added or left out. Empty when it can be published.
+    the English has none of, a length outside LENGTH_BAND, the sign of
+    something added or left out, and a term locale's glossary names. Empty
+    when it can be published.
 
     Its sections are the English's by construction: the reply is parsed into
     Prose, which has those fields and refuses others. The figure check knows
@@ -710,6 +747,10 @@ def check_translation(source: Prose, translated: Prose) -> list[str]:
     for key in SECTIONS:
         text = getattr(translated, key)
         problems += [f"{key}: figure {f.text!r}" for f in provenance.no_figures(text)]
+        problems += [
+            f"{key}: term {h.text!r}, not {h.term.right!r}"
+            for h in glossary.check(text, LOCALES[locale].terms)
+        ]
         ratio = len(text) / len(getattr(source, key))
         if not low <= ratio <= high:
             problems.append(

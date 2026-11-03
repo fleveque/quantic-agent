@@ -140,4 +140,4 @@ records them. A box I untick is unrecorded again: the issue is my record, the da
 
 ---
 
-**Previous:** [Lesson 15 — Words the post can't use](15-words-the-post-cant-use.md)
+**Previous:** [Lesson 15 — Words the post can't use](15-words-the-post-cant-use.md) · **Next:** [Lesson 17 — Terms I already corrected](17-terms-i-already-corrected.md)

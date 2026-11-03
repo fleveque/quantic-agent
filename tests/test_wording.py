@@ -83,7 +83,8 @@ def test_parts_of_words_dont_count(text: str) -> None:
 
 def test_the_writer_is_told_what_to_do_once_per_rule() -> None:
     findings = wording.check(
-        "Investors: both have been attractive for a decade, and your price matters."
+        "Investors: both have been attractive for a decade, and your price matters as a "
+        "payout period starts."
     )
     assert wording.instructions(findings) == [
         rule.instead for rule in wording.RULES
@@ -167,3 +168,27 @@ def test_allow_lets_a_text_use_a_word_a_rule_names() -> None:
     assert [(f.text, f.value) for f in wording.check(text, allow={"price"})] == [
         ("valuation", "market")
     ]
+
+
+# Run 10's summary as drafted (quantic#539): the reviewer cut this clause in
+# English, and its seven translations all carried it.
+RUN_10_SUMMARY = (
+    "A diverse mix of companies across energy, financial services, and consumer sectors goes "
+    "ex-dividend this week, with several established names marking the start of their payout "
+    "periods. The list includes a range of payment frequencies, from quarterly to semi-annual "
+    "and annual distributions."
+)
+
+
+def test_an_ex_dividend_date_doesnt_start_a_payout_period() -> None:
+    assert found(RUN_10_SUMMARY) == [("payout periods", "ex_dividend")]
+    assert found("Coca-Cola goes ex-dividend on Friday, ahead of its payment period.") == [
+        ("payment period", "ex_dividend")
+    ]
+
+
+def test_what_the_reviewer_published_instead_passes() -> None:
+    published = RUN_10_SUMMARY.replace(
+        ", with several established names marking the start of their payout periods", ""
+    )
+    assert found(published) == []

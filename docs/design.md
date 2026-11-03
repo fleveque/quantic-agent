@@ -273,8 +273,14 @@ Don't-repeat-yourself and filing text aren't built.
 needs. A Week Ahead isn't style memory, and a merge approved the post *as the reviewer left it*.
 `--sync` reads a merged post's files back from the merge commit and stores each section the
 reviewer changed, with the agent's text and the published one; `--run N` shows them as word
-diffs. On quantic#492, 8 sections in 6 locales. Retrieving past corrections for the translator,
-and a per-locale glossary check, are built on these when the author chooses them.
+diffs. On quantic#492, 8 sections in 6 locales. Retrieving past corrections for the translator
+is built on these when the author chooses it.
+
+**As built (milestone 17, [`glossary.py`](../src/quantic_agent/glossary.py),
+[decision 0021](decisions/0021-glossary-check.md)).** The corrections' first use: each locale's
+glossary in `locales.json` lists terms the reviewer corrected, with the right one. The translator
+is told them; a translation with a wrong one is sent back, then held. On run 10's English, 9 of 30
+translations had one without it, none with it ([benchmarks](benchmarks/2026-11-03-glossary/README.md)).
 
 ### 3.5 Translation
 
@@ -669,7 +675,9 @@ refused Qwen3.5 outright with a `412: requires a newer version of Ollama`.
     answer it. [Benchmarks](benchmarks/2026-10-09-models/README.md).)* *(2026-10-14: the reviewer
     reads every locale in the pull request, and corrected six of seven on quantic#492. From
     milestone 14 those corrections are stored per locale and section, the measure of translation
-    quality this question asked for, counted from real reviews.)*
+    quality this question asked for, counted from real reviews.)* *(2026-11-03, milestone 17: a
+    term the reviewer corrected is now held in its locale's glossary. A mistake not in it still
+    needs the reviewer.)*
 
 ## 6. Explicit non-goals
 

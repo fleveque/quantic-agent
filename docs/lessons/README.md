@@ -28,6 +28,7 @@ Ruby that turned out wrong, and what changed from the Go version and why.
 | [14](14-what-i-changed-before-merging.md) | What I changed before merging | 14 — the reviewer's corrections, read back from the merge commit | [What I changed before merging](https://claude.ai/artifact/4cqkDMqeD5yZVVBpcWP6NR) | [Corrections, line by line](https://claude.ai/artifact/7Vk6EXjDr8NE7Ac6Q14UJs) |
 | [15](15-words-the-post-cant-use.md) | Words the post can't use | 15 — wording rules for the prose, measured on 180 writings | [Words the post can't use](https://claude.ai/artifact/KcQeXD23ncBeX1kU94Nmx2) | [Wording, line by line](https://claude.ai/artifact/DnRLm51mYFbyMH3idu2ZDT) |
 | [16](16-a-shortlist-every-morning.md) | A shortlist every morning | 16 — daily X posts: code researches, the model writes, checks, an issue to pick from | [A shortlist every morning](https://claude.ai/artifact/JsApe2npz8oRro34bP7R62) | [Daily posts, line by line](https://claude.ai/artifact/Xt7zTAyHXogmMVx5tAnyUH) |
+| [17](17-terms-i-already-corrected.md) | Terms I already corrected | 17 — a glossary per locale from the reviewer's corrections, measured on 60 translations | [Terms I already corrected](https://claude.ai/artifact/MspjfkztwMMkK8kW9FdsWj) | [The glossary, line by line](https://claude.ai/artifact/Gv6Mqt1BoXdnze2ybtDgTV) |
 
 Lessons tell the story of a milestone: what surprised me and why. Walkthroughs go through the code
 itself in reading order, the way a tech lead would with a new teammate. Formatted pages are built
