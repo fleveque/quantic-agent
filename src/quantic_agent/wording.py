@@ -91,6 +91,15 @@ RULES = (
         'Don\'t count the companies, in any form: name them, or say "these companies".',
     ),
     Rule(
+        # What an ex-dividend date is: the last day that qualifies for a declared
+        # dividend. "Marking the start of their payout periods" (quantic#539)
+        # said it starts something, in English and so in all seven.
+        "ex_dividend",
+        _words(r"(?:payout|payment|dividend) periods?"),
+        "An ex-dividend date starts nothing: say the company goes ex-dividend, not that a "
+        "payout period begins.",
+    ),
+    Rule(
         # Figures in words the figure check doesn't read: "for over a decade".
         "duration",
         _words(r"decades?", r"centur(?:y|ies)", r"dozens?"),

@@ -167,6 +167,17 @@ starting point here.
   written (quantic#521). The daily facts are now `goes_ex_dividend_in` / `next_ex_dividend_month`,
   and `pays_in` / `next_payment_month` only when `payment_months_basis` says real payments.
   Absent = ex-dividend (Quantic before #533).
+- **Milestone 17** (branch `m17-glossary`, ADR 0021): a glossary per locale (`glossary.py`,
+  `locales.json` `glossary`: `wrong` forms, `right`, `seen`, `match_case`), whole words, any case and
+  spacing. The translator is told the right terms (`$glossary`, last in `translate.md`); a wrong
+  one sends the translation back (`glossary.again`), up to `ATTEMPTS`; on the last it's a problem
+  (`check_translation(source, translated, locale)`), held. Figures and length still hold at once.
+  13 seed entries, each from a stored correction (quantic#492, #511, #539), each tested on its
+  drafted and published sentences. Wording rule `ex_dividend` ("payout/payment/dividend period"),
+  after #539's "start of their payout periods". Measured (`docs/benchmarks/2026-11-03-glossary/`):
+  9/30 translations with a listed term without it, 0/30 with it, none held; the prompt alone
+  didn't lower the first attempt's rate, the retry did. No false positives in the 14 published
+  files; lesson 17.
 - design.md keeps Go's "As built in Go" notes next to this repository's "As built" notes.
 - PRs are squash-merged, so a walkthrough built from a branch commit cites a SHA `main` won't have.
   After merge, rebuild the walkthrough page from the merge commit and republish the artifact. That
@@ -225,6 +236,8 @@ starting point here.
    anything), and past corrections retrieved as examples for the translator (RAG, design §3.4's
    style memory extended to Week Aheads). §3.4's other planned uses have no milestone yet: don't-repeat-yourself (what was
    recently written about a ticker) and filings and news text (open questions 7 and 11).
+   *(2026-11-03: the author chose the glossary, milestone 17. Retrieval for the translator is
+   still open.)*
 
 ## Conventions
 

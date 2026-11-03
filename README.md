@@ -15,7 +15,8 @@ tool call; nothing ships without a human.
 > run exits 4. Every research run is stored in SQLite with each tool call as it happens (`--runs`,
 > `--run N` re-checks one). The deterministic calculators for derived figures are in, with their tests.
 > `--week-ahead` writes the Dividend Week Ahead in seven locales into a folder: data from the tools,
-> prose with no figures in it, each translation checked. `--pr N` opens a pull request with a post's
+> prose with no figures in it, each translation checked, including against a glossary of terms
+> the reviewer has corrected. `--pr N` opens a pull request with a post's
 > files on Quantic's repository, as a GitHub App, and `--sync` records merges as approvals; the agent
 > never merges. `--daily` drafts each weekday's X posts, checked, into an issue for the author to
 > pick from and post. The agent was first built in Go, up to milestone 8:
@@ -98,7 +99,9 @@ Python with Go. Milestones 0–8 are ports of the Go version; the lessons say wh
 | 12 | GitHub PR flow | a GitHub client, auth |
 | 13 | Ship it: logging, a systemd unit | structured logging, packaging an application |
 | 14 | The reviewer's corrections, read back | `difflib`, base64, an ordered set from a dict |
-| 15 | Wording the prose can't use *(you are here)* | `re` alternations and word boundaries, a rule as data, measuring a check |
+| 15 | Wording the prose can't use | `re` alternations and word boundaries, a rule as data, measuring a check |
+| 16 | Daily X posts, reviewed in an issue | code gathering facts, checks per version, an issue as a review queue |
+| 17 | A glossary of the reviewer's corrections *(you are here)* | per-locale data, `re` flags, a retry loop, measuring an instruction against a check |
 
 ## Working on this
 
