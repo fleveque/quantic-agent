@@ -1,3 +1,5 @@
+import typing
+
 import pytest
 
 from quantic_agent import glossary, weekahead
@@ -72,7 +74,7 @@ CORRECTED = [
 
 
 def wrong(text: str, locale: str) -> list[str]:
-    return [h.text for h in glossary.check(text, weekahead.LOCALES[locale].glossary)]
+    return [h.text for h in glossary.check(text, weekahead.LOCALES[locale].terms)]
 
 
 @pytest.mark.parametrize(("locale", "drafted", "published"), CORRECTED)
@@ -86,7 +88,7 @@ def test_what_the_reviewer_corrected_is_held_and_what_they_wrote_passes(
 def test_every_entry_comes_from_a_correction() -> None:
     # An entry with no sentence above is a word banned on no evidence.
     for code, locale in weekahead.LOCALES.items():
-        for term in locale.glossary:
+        for term in locale.terms:
             assert term.seen.startswith("quantic#")
             assert any(
                 glossary.check(drafted, [term]) for c, drafted, _ in CORRECTED if c == code
@@ -112,7 +114,7 @@ def test_hits_come_in_the_order_they_are_written() -> None:
 
 
 def test_the_translator_is_told_the_right_terms() -> None:
-    told = glossary.told(weekahead.LOCALES["it"].glossary)
+    told = glossary.told(weekahead.LOCALES["it"].terms)
     assert told.startswith("Use these terms:\n")
     assert '- "stacca il dividendo", never "esistenza dividendo"' in told
     assert glossary.told(()) == ""
@@ -120,7 +122,7 @@ def test_the_translator_is_told_the_right_terms() -> None:
 
 def test_the_translator_is_sent_each_wrong_term_once() -> None:
     hits = glossary.check(
-        "rendita, rendita, distribuzione in uscita", weekahead.LOCALES["it"].glossary
+        "rendita, rendita, distribuzione in uscita", weekahead.LOCALES["it"].terms
     )
     assert glossary.again(hits) == (
         "That translation has terms it can't use: 'rendita' should be 'importo'; "
@@ -133,4 +135,10 @@ def test_an_entry_reads_as_locales_json_has_it() -> None:
         [{"wrong": ["dividende"], "right": "Dividende", "seen": "quantic#539", "match_case": True}]
     )
     assert term == Term(("dividende",), "Dividende", "quantic#539", match_case=True)
-    assert weekahead.LOCALES["en"].glossary == ()
+    assert weekahead.LOCALES["en"].terms == ()
+
+
+def test_a_locale_s_types_resolve() -> None:
+    # A field named glossary made its own annotation read glossary.Term as ().Term.
+    hints = typing.get_type_hints(weekahead.Locale)
+    assert hints["terms"] == tuple[Term, ...]

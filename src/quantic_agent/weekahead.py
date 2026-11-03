@@ -58,12 +58,16 @@ TRANSLATE_PROMPT = Template(_package_file("prompts", "translate.md"))
 class Locale:
     """One of Quantic's seven locales: the language as the translator is told
     it, register included, the post's section headings in it, and the terms
-    its translations mustn't use (glossary.py)."""
+    its translations mustn't use (its glossary, glossary.py).
+
+    Not named glossary: annotations are evaluated lazily, in the class's
+    namespace, where a field called glossary is its default, (). Then
+    typing.get_type_hints(Locale) reads glossary.Term as ().Term and raises."""
 
     code: str
     language: str
     headings: dict[str, str]
-    glossary: tuple[glossary.Term, ...] = ()
+    terms: tuple[glossary.Term, ...] = ()
 
 
 def _locales() -> dict[str, Locale]:
@@ -701,7 +705,7 @@ async def translate(
     the glossary names is sent back with it named, up to attempts times in
     all; the last attempt is checked and returned whatever it holds. Figures
     and length aren't sent back: they're held at once, as before."""
-    terms = LOCALES[locale].glossary
+    terms = LOCALES[locale].terms
     system = TRANSLATE_PROMPT.substitute(
         language=LOCALES[locale].language, glossary=glossary.told(terms)
     )
@@ -745,7 +749,7 @@ def check_translation(source: Prose, translated: Prose, locale: str) -> list[str
         problems += [f"{key}: figure {f.text!r}" for f in provenance.no_figures(text)]
         problems += [
             f"{key}: term {h.text!r}, not {h.term.right!r}"
-            for h in glossary.check(text, LOCALES[locale].glossary)
+            for h in glossary.check(text, LOCALES[locale].terms)
         ]
         ratio = len(text) / len(getattr(source, key))
         if not low <= ratio <= high:

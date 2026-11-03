@@ -69,6 +69,24 @@ that locale as before. Figures and length aren't sent back: they held at once be
 milestone and still do, so nothing about how often a locale is held changed except for the new
 check.
 
+## A field named like a module
+
+My first `Locale` had a field called `glossary`, typed `tuple[glossary.Term, ...]`, in a file that
+imports the module `glossary`. Pyright was happy and every test passed. Then, writing the
+walkthrough, I went to explain why that annotation means the module, and checked instead:
+
+```
+>>> typing.get_type_hints(weekahead.Locale)
+AttributeError: 'tuple' object has no attribute 'Term'
+```
+
+Since Python 3.14, annotations are evaluated lazily, when something asks for them, and in the
+class's namespace. There, `glossary` is the field's default, `()`, so `glossary.Term` is
+`().Term`. Dataclasses only ask for a forward reference, so nothing failed until something asked
+for real types. The field is `terms` now, and a test asks for the types. In Go a struct field can
+share a package's name safely: field names live in their own scope, and types resolve at compile
+time. Here the type checker and the tests both missed it, and explaining the code found it.
+
 ## What measuring showed
 
 I translated run 10's English as the agent drafted it, 10 times each into Italian, German and
@@ -108,6 +126,8 @@ it's a wording rule for the English (`ex_dividend`), checked before anything is 
   sentence.
 - Case-insensitive is a choice per language. German nouns made it a flag.
 - Break every test once. One of mine was checking a word that couldn't match.
+- Don't name a field after a module its annotation uses: since 3.14 the annotation is read lazily,
+  in the class, where the field's default wins.
 - Measure the instruction and the check separately. Here the instruction did nothing and the check
   did everything.
 

@@ -169,7 +169,8 @@ starting point here.
   Absent = ex-dividend (Quantic before #533).
 - **Milestone 17** (branch `m17-glossary`, ADR 0021): a glossary per locale (`glossary.py`,
   `locales.json` `glossary`: `wrong` forms, `right`, `seen`, `match_case`), whole words, any case and
-  spacing. The translator is told the right terms (`$glossary`, last in `translate.md`); a wrong
+  spacing; `Locale.terms`, not `.glossary`: a field named like the module made
+  `typing.get_type_hints(Locale)` read `glossary.Term` as `().Term` (3.14's lazy annotations). The translator is told the right terms (`$glossary`, last in `translate.md`); a wrong
   one sends the translation back (`glossary.again`), up to `ATTEMPTS`; on the last it's a problem
   (`check_translation(source, translated, locale)`), held. Figures and length still hold at once.
   13 seed entries, each from a stored correction (quantic#492, #511, #539), each tested on its

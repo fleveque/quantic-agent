@@ -509,7 +509,7 @@ async def test_a_translation_is_told_its_glossary() -> None:
 
     assert (t.prose, t.problems, t.attempts) == (ITALIAN, [], 1)
     system = model.shown[0][0].content
-    assert system.endswith(glossary.told(weekahead.LOCALES["it"].glossary) + "\n")
+    assert system.endswith(glossary.told(weekahead.LOCALES["it"].terms) + "\n")
 
 
 @pytest.mark.anyio
