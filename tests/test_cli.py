@@ -1899,8 +1899,78 @@ def test_sync_records_what_was_posted_from_an_issue_and_its_closing(
     assert [(p.symbol, p.version) for p in run.proposals if p.posted_at] == [("NKE", 2)]
     assert run.issue is not None
     assert run.issue.state == "closed"
-    # Nothing on GitHub was edited: one issue created, the rest reads.
-    assert [m for m, p, _, _ in github_api.requests if "/issues" in p] == ["POST", "GET"]
+    # Nothing on GitHub was edited: one issue created, the rest reads (the
+    # issue, then its comments, once more now that it's closed).
+    assert [m for m, p, _, _ in github_api.requests if "/issues" in p] == ["POST", "GET", "GET"]
+
+
+@pytest.mark.usefixtures("on_the_28th")
+def test_sync_keeps_what_was_posted_and_the_review_from_the_issues_comments(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    github_api: FakeGitHub,
+    app_key: tuple[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    isolated_state: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    as_the_app(monkeypatch, github_api, app_key[0], tmp_path)
+    daily_servers(ollama, quantic_mcp)
+    assert run_daily(ollama, quantic_mcp) == 0
+    capsys.readouterr()
+    nike = "https://quantic.finance/stocks/NKE"
+    edited = VERSIONS["NKE"][0].replace("Mostly because", "Mostly, because")
+    # The review, then the author's post from version 1 with an edit, a typo'd
+    # one, one naming a version the issue didn't have, and a thank-you.
+    github_api.comments[200] = [
+        {"body": "## Review (Claude)\n\n### Nike (NKE): post version 1, edited"},
+        {"body": f"posted NKE version 1\r\n\r\n```text\r\n{edited}\r\n\r\n{nike}\r\n```"},
+        {"body": "posted NKE v3\n```text\nNike\n```"},
+        {"body": "posted NKE version 9\n```text\nNike\n```"},
+        {"body": "Thanks!"},
+    ]
+
+    assert main(["--sync"]) == 0
+
+    out = capsys.readouterr().out
+    assert (
+        "run 1: the review, read: https://github.com/fleveque/quantic/issues/200#issuecomment-200000\n"
+        in out
+    )
+    assert "run 1: posted NKE from version 1, read: " in out
+    assert 'run 1: comment not read, not "posted SYMBOL"' in out
+    assert "run 1: comment not read, the issue has no NKE version 9: " in out
+    # Read again while open: nothing new. Then closed, with a post added after.
+    assert main(["--sync"]) == 0
+    assert "read:" not in capsys.readouterr().out
+    github_api.comments[200].append({"body": "posted O\n```text\nRealty Income pays monthly.\n```"})
+    github_api.issues[200]["state"] = "closed"
+    assert main(["--sync"]) == 0
+    assert "run 1: posted O, written from scratch, read: " in capsys.readouterr().out
+    # Closed and read once more: not read again, a comment added later isn't seen.
+    github_api.comments[200].append({"body": "posted O\n```text\nToo late.\n```"})
+    reads = len(github_api.requests)
+    assert main(["--sync"]) == 0
+    assert capsys.readouterr().out == "no open pull requests or issues\n"
+    assert len(github_api.requests) == reads
+
+    [run] = stored_runs(isolated_state)
+    assert [(c.kind, c.symbol, c.version) for c in run.comments] == [
+        ("review", None, None),
+        ("posted", "NKE", 1),
+        ("posted", "O", None),
+    ]
+    assert run.comments[1].text == f"{edited}\n\n{nike}"
+    # Nothing on GitHub was written but the issue: comments are read, never made.
+    assert [m for m, p, _, _ in github_api.requests if "/issues" in p and m != "GET"] == ["POST"]
+
+    main(["--run", "1"])
+    shown = capsys.readouterr().out
+    assert "posted NKE from version 1 (https://github.com" in shown
+    assert "👟 [-Mostly-]{+Mostly,+} because the share price fell." in shown
+    assert "posted O, written from scratch (" in shown
+    assert "the review (2026-11-04, https://github.com" in shown
 
 
 @pytest.mark.usefixtures("on_the_28th")

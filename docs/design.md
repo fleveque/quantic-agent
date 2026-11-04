@@ -517,6 +517,14 @@ they posted; `--sync` records the ticks. Research is code's, not the model's: th
 (docs/benchmarks/2026-10-28-x-posts/) measured the model as a writer of facts, not a finder of
 them.
 
+**As built (milestone 18, [decision 0020](decisions/0020-posted-text-captured.md)).** A tick says
+a version was posted as written. A post edited or written from scratch comes back as a comment,
+`posted SYMBOL version N` (or `posted SYMBOL`) and the text in a `text` block, and the review as
+the comment starting `## Review (Claude)`; `--sync` keeps both in `issue_comments`, reading an
+issue's comments while it's open and once more after it closes. The client gained one read
+(`issue_comments`) and still writes nothing to an issue but creating it. Capture only: nothing
+reads them back yet.
+
 ## 4. Stack
 
 | Concern | Choice | Reasoning |

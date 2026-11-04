@@ -251,4 +251,22 @@ async def test_an_issue_is_opened_and_read_back_never_edited(
 def test_the_client_has_no_way_to_edit_an_issue() -> None:
     # What the client can do to an issue is what it has a method for.
     methods = {name for name in dir(github.Client) if not name.startswith("_")}
-    assert {m for m in methods if "issue" in m} == {"open_issue", "issue"}
+    assert {m for m in methods if "issue" in m} == {"open_issue", "issue", "issue_comments"}
+
+
+@pytest.mark.anyio
+async def test_an_issues_comments_are_read_page_by_page(
+    github_api: FakeGitHub, app_key: tuple[str, str]
+) -> None:
+    github_api.issues[200] = {"title": "t", "body": "b", "state": "open"}
+    github_api.comments[200] = [{"body": f"comment {i}"} for i in range(150)]
+    async with client(github_api, app_key) as gh:
+        comments = await gh.issue_comments(200)
+
+    assert [c.body for c in comments] == [f"comment {i}" for i in range(150)]
+    assert (
+        comments[0].html_url == "https://github.com/fleveque/quantic/issues/200#issuecomment-200000"
+    )
+    pages = [p for _, p, _, _ in github_api.requests if p.endswith(("page=1", "page=2", "page=3"))]
+    assert [p.rsplit("&", 1)[1] for p in pages] == ["page=1", "page=2"]  # 100, then 50: done
+    assert all(m == "GET" for m, p, _, _ in github_api.requests if "/issues" in p)

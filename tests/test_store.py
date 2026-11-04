@@ -106,6 +106,7 @@ def test_migrations_apply_once(tmp_path: Path) -> None:
         "drafts",
         "embeddings",
         "examples",
+        "issue_comments",
         "issues",
         "posts",
         "proposals",
@@ -118,7 +119,7 @@ def test_migrations_apply_once(tmp_path: Path) -> None:
 
 
 # The latest migration.
-HEAD = "0009"
+HEAD = "0010"
 
 
 def tables(path: Path) -> list[str]:
@@ -587,6 +588,37 @@ def test_an_issue_closes_once(tmp_path: Path) -> None:
         assert db.run(run_id).issue == store.Issue("o/r", 200, "https://x/200", "closed", run_id)
         with pytest.raises(NotFoundError, match="no open issue"):
             db.close_issue(run_id)
+
+
+def comment(id: int, text: str, at: datetime, kind: str = "posted") -> store.IssueComment:
+    symbol, version = ("NKE", 2) if kind == "posted" else (None, None)
+    return store.IssueComment(id, f"https://x/200#{id}", kind, text, at, symbol, version)
+
+
+def test_an_issues_comments_are_kept_edited_and_read_once_after_closing(tmp_path: Path) -> None:
+    written = datetime(2026, 11, 4, 10, 0, tzinfo=UTC)
+    edited = written + timedelta(minutes=5)
+    with open_store(tmp_path) as db:
+        run_id = daily_run(db, ("NKE", 1, []), ("NKE", 2, []))
+        db.record_issue(run_id, store.Issue("o/r", 200, "https://x/200", "open"))
+        posted, review = (
+            comment(1, "Nike yields", written),
+            comment(2, "## Review", written, "review"),
+        )
+
+        assert db.record_comments(run_id, [posted, review], closed=False) == [posted, review]
+        assert db.record_comments(run_id, [posted, review], closed=False) == []  # seen already
+        fixed = comment(1, "Nike ($NKE) yields", edited)
+        assert db.record_comments(run_id, [fixed, review], closed=False) == [fixed]
+        assert db.run(run_id).comments == [fixed, review]
+
+        # Open, its comments are read on every sync; closed, once more.
+        assert db.unread_closed_issues() == []
+        db.close_issue(run_id)
+        assert [i.number for i in db.unread_closed_issues()] == [200]
+        db.record_comments(run_id, [review], closed=True)  # the post's comment was deleted
+        assert db.unread_closed_issues() == []
+        assert db.run(run_id).comments == [fixed, review]  # a deleted comment is kept
 
 
 def test_a_company_proposed_lately_is_known(tmp_path: Path) -> None:

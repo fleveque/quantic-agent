@@ -421,5 +421,53 @@ def test_ticks_are_read_back_from_the_issue() -> None:
     assert daily.ticks(ticked.replace("[x]", "[X]")) == {("NKE", 2)}
 
 
+def test_a_comment_records_a_post_a_review_or_nothing() -> None:
+    edited = (
+        "posted BF-B version 2\n\n```text\n📊 Brown-Forman yields 3.18%.\n\nhttps://q/BF-B\n```"
+    )
+    assert daily.read_comment(edited) == daily.Comment(
+        "posted", "📊 Brown-Forman yields 3.18%.\n\nhttps://q/BF-B", "BF-B", 2
+    )
+    # GitHub's web form sends CRLF; a symbol is read in capitals, as the issue writes it.
+    typed = edited.replace("BF-B", "bf-b", 1).replace("\n", "\r\n") + "\r\n"
+    assert daily.read_comment(typed) == daily.read_comment(edited)
+    scratch = "Posted 6501.T\n```text\nHitachi pays 32 yen.\n```"
+    assert daily.read_comment(scratch) == daily.Comment(
+        "posted", "Hitachi pays 32 yen.", "6501.T", None
+    )
+    review = "## Review (Claude)\n\n### Pfizer (PFE): post version 1, as written"
+    assert daily.read_comment(review) == daily.Comment("review", review)
+    assert daily.read_comment("Thanks, posted both.") is None  # "posted" not first
+    assert daily.read_comment("Looks good") is None
+
+
+def test_the_issue_shows_how_to_record_a_post_and_its_example_is_read() -> None:
+    written, rejected = written_for_the_day()
+    body = daily.issue_body(TODAY, 7, written, rejected)
+    assert daily.POSTED_HINT in body
+    # The example in the hint, filled in, is a comment read_comment keeps.
+    example = daily.POSTED_HINT.split("````text\n", 1)[1].split("\n````", 1)[0]
+    filled = example.replace("SYMBOL", "NKE").replace(" N\n", " 2\n")
+    assert daily.read_comment(filled) == daily.Comment(
+        "posted", "the text as you posted it, link included", "NKE", 2
+    )
+    # The example doesn't look like a box to tick.
+    assert daily.ticks(daily.POSTED_HINT.replace("SYMBOL version N", "NKE version 2")) == set()
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        "posted BF-B version 2\n📊 Brown-Forman yields 3.18%.",  # no text block
+        "posted BF-B v2\n```text\n📊 Brown-Forman yields 3.18%.\n```",  # "v2"
+        "posted BF-B version 2\n```text\n📊 Yields 3.18%.\n```\nand PFE too",  # text after
+        "posted\n```text\n📊 Yields 3.18%.\n```",  # no symbol
+    ],
+)
+def test_a_comment_starting_as_a_post_but_not_in_the_form_is_named(body: str) -> None:
+    with pytest.raises(daily.NotRead, match="on the first line"):
+        daily.read_comment(body)
+
+
 def test_the_title_names_the_day() -> None:
     assert daily.title(TODAY) == "X posts for Wednesday 2026-10-28"

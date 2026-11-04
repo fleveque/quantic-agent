@@ -179,6 +179,18 @@ starting point here.
   9/30 translations with a listed term without it, 0/30 with it, none held; the prompt alone
   didn't lower the first attempt's rate, the retry did. No false positives in the 14 published
   files; lesson 17.
+- **Milestone 18** (branch `m18-posted-text`, ADR 0020 accepted 2026-11-04): what was posted on X
+  and the review, kept from a daily issue's comments. The author chose: a comment per post
+  (`posted SYM version N` / `posted SYM`, then a `text` block), the review stored whole, capture
+  only (uses next). `daily.read_comment` (`re.fullmatch`, CRLF → LF, `NotRead` for a comment that
+  starts "posted" but isn't in the form); `github.Client.issue_comments` (GET, 100 a page, a
+  `RootModel` for the list); migration 0010: `issue_comments` (one table, kind posted/review,
+  upsert on GitHub's comment id when its `updated_at` changes, deleted ones kept) and
+  `issues.comments_read_at` (open: read every sync; closed: read once more, NULL = not yet, so
+  the first sync backfills). A version must be one the issue proposed. `--run N` word-diffs a
+  post against its version as the issue showed it (text + link). Ticks now mean "as written"
+  only. On a copy of the real database the first sync kept the reviews on quantic#515, #532,
+  #540, #542; lesson 18.
 - design.md keeps Go's "As built in Go" notes next to this repository's "As built" notes.
 - PRs are squash-merged, so a walkthrough built from a branch commit cites a SHA `main` won't have.
   After merge, rebuild the walkthrough page from the merge commit and republish the artifact. That
@@ -201,8 +213,9 @@ starting point here.
    (quantic#521, in progress). The first real issue, quantic#515, was reviewed on the
    issue: Hitachi's "annual rate" was its interim times two, Realty Income's streak 28 for 31+.
    The author chose: `review-posts` always comments on the issue and checks the data against
-   outside sources. **ADR 0020 is proposed, not decided**: capture what was posted (a `posted SYM
-   version N` comment with the text) and the review; its open questions are the author's.
+   outside sources. ADR 0020 was accepted 2026-11-04 (milestone 18): what was posted and the
+   review are kept. Using them (examples for the writer, checks from the reviews) is next, the
+   author's to choose.
 
 1. **Installed and on, 2026-10-14**: `uv tool install` from `main` after #18's merge;
    `~/.config/quantic-agent/env` (App ID, `QUANTIC_AGENT_REPO`, `QUANTIC_AGENT_OUT=~/insights`,

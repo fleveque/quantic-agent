@@ -21,7 +21,9 @@ The model then writes a few versions of one post per company, each checked
 (check_version) and sent back with what's wrong, as the Week Ahead's prose
 is. The versions that pass go into one GitHub issue a day (issue_body),
 which the author reviews, posts from, and ticks (ticks): the agent posts
-nothing (design N2).
+nothing (design N2). What the author posted when it isn't a version as
+written, and the review, come back as comments on the issue (read_comment,
+milestone 18, decision 0020).
 """
 
 import json
@@ -896,6 +898,23 @@ def title(day: date) -> str:
     return f"X posts for {day:%A} {day.isoformat()}"
 
 
+# How to record a post, at the top of every issue: what read_comment reads.
+POSTED_HINT = """Posted a version exactly as written: tick its box. Edited it, or wrote your own: \
+leave the box and add a comment like this one, **before closing the issue** (a closed issue's \
+comments are read once):
+
+````text
+posted SYMBOL version N
+
+```text
+the text as you posted it, link included
+```
+````
+
+`posted SYMBOL` with no version for a post written from scratch. Close the issue when you're \
+done."""
+
+
 def issue_body(
     day: date, run_id: int, written: Sequence[Written], rejected: Sequence[Rejected]
 ) -> str:
@@ -904,9 +923,9 @@ def issue_body(
     from; and the companies looked up and left out, with why."""
     parts = [
         f"Drafted by quantic-agent from Quantic's data on {day.isoformat()} (run {run_id}: "
-        f"`quantic-agent --run {run_id}`). The agent posts nothing. Pick a version, post it "
-        "on X, and tick its box; close the issue when you're done. Prices are as of the "
-        "date in each company's facts: post the same day.",
+        f"`quantic-agent --run {run_id}`). The agent posts nothing. Pick a version and post it "
+        "on X. Prices are as of the date in each company's facts: post the same day.",
+        POSTED_HINT,
     ]
     for w in written:
         if not w.ready:
@@ -937,3 +956,52 @@ def issue_body(
 def ticks(body: str) -> set[tuple[str, int]]:
     """The versions ticked as posted in an issue's body, as (symbol, version)."""
     return {(m[2], int(m[3])) for m in _TICK.finditer(body) if m[1] in "xX"}
+
+
+# A comment that records a post: "posted SYMBOL" or "posted SYMBOL version N"
+# alone on its first line, then the text as posted in a ```text block.
+_POSTED = re.compile(
+    r"posted[ \t]+(?P<symbol>\S+)(?:[ \t]+version[ \t]+(?P<version>\d+))?[ \t]*\n"
+    r"\s*```text\n(?P<text>.*?)\n```\s*",
+    re.IGNORECASE | re.DOTALL,
+)
+REVIEW = "## Review (Claude)"  # how a review-posts comment starts
+
+
+@dataclass(frozen=True)
+class Comment:
+    """A comment on an issue that the agent keeps: a post as the author
+    posted it ("posted"), with its company and the version it started from,
+    if any; or a review ("review"), whole."""
+
+    kind: str  # "posted" or "review"
+    text: str
+    symbol: str | None = None
+    version: int | None = None
+
+
+class NotRead(ValueError):
+    """A comment that starts as a post's does, in a form not read."""
+
+
+def read_comment(body: str) -> Comment | None:
+    """What a comment on a daily issue records: a post, a review, or
+    nothing the agent keeps (None). A comment that starts with "posted" but
+    isn't in the form raises NotRead, so a typo doesn't go unnoticed. The
+    first line says what a comment is, not its author: the author and the
+    review both comment from the author's account."""
+    body = body.replace("\r\n", "\n").strip()  # the web form sends CRLF
+    if body.startswith(REVIEW):
+        return Comment("review", body)
+    if not body.lower().startswith("posted"):
+        return None
+    found = _POSTED.fullmatch(body)
+    if found is None:
+        raise NotRead(
+            'not "posted SYMBOL" or "posted SYMBOL version N" on the first line, '
+            "then the text in a ```text block, and nothing after it"
+        )
+    version = found["version"]
+    return Comment(
+        "posted", found["text"].strip(), found["symbol"].upper(), int(version) if version else None
+    )

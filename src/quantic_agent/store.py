@@ -167,6 +167,26 @@ _ISSUES = "SELECT repo, number, url, state, run_id FROM issues "
 
 
 @dataclass(frozen=True)
+class IssueComment:
+    """A comment kept from a daily issue (milestone 18): a post as the
+    author posted it, or the review. comment_id is GitHub's; commented_at
+    is when it was written or last edited."""
+
+    comment_id: int
+    url: str
+    kind: str  # "posted" or "review"
+    text: str
+    commented_at: datetime
+    symbol: str | None = None  # posted only
+    version: int | None = None  # the version it started from; None: from scratch
+
+
+_ISSUE_COMMENTS = (
+    "SELECT comment_id, url, kind, text, commented_at, symbol, version FROM issue_comments "
+)
+
+
+@dataclass(frozen=True)
 class Review:
     """A reviewer's verdict on a run's answer."""
 
@@ -205,6 +225,7 @@ class Run:
     corrections: list[Correction] = field(default_factory=lambda: list[Correction]())
     proposals: list[Proposal] = field(default_factory=lambda: list[Proposal]())  # daily posts
     issue: Issue | None = None
+    comments: list[IssueComment] = field(default_factory=lambda: list[IssueComment]())
 
     def records(self) -> list[Record]:
         """The run's successful calls as provenance records: exactly what its
@@ -605,6 +626,60 @@ class Store:
         if cursor.rowcount != 1:
             raise NotFoundError(f"run {run_id} has no open issue")
 
+    def unread_closed_issues(self) -> list[Issue]:
+        """The closed issues whose comments haven't been read since they
+        closed, oldest first: closed since the last sync, or before the
+        agent read comments at all."""
+        rows = self._db.execute(
+            _ISSUES + "WHERE state = 'closed' AND comments_read_at IS NULL ORDER BY id"
+        )
+        return [Issue(*row) for row in rows]
+
+    def record_comments(
+        self, run_id: int, comments: Sequence[IssueComment], closed: bool
+    ) -> list[IssueComment]:
+        """Records the comments kept from a run's issue, and returns those
+        new or edited since last read. A comment already recorded is
+        replaced when GitHub's edit time differs; one no longer there stays.
+        closed: the issue is closed, so this is its last read. One
+        transaction, so an issue is never marked read with half its
+        comments."""
+        changed: list[IssueComment] = []
+        with self._transaction():
+            for c in comments:
+                at = c.commented_at.astimezone(UTC).isoformat()
+                before = self._db.execute(
+                    "SELECT commented_at FROM issue_comments WHERE comment_id = ?",
+                    (c.comment_id,),
+                ).fetchone()
+                if before is not None and before[0] == at:
+                    continue
+                self._db.execute(
+                    "INSERT INTO issue_comments (run_id, comment_id, url, kind, symbol, version, "
+                    "text, commented_at, read_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) "
+                    "ON CONFLICT (comment_id) DO UPDATE SET kind = excluded.kind, "
+                    "symbol = excluded.symbol, version = excluded.version, text = excluded.text, "
+                    "commented_at = excluded.commented_at, read_at = excluded.read_at",
+                    (
+                        run_id,
+                        c.comment_id,
+                        c.url,
+                        c.kind,
+                        c.symbol,
+                        c.version,
+                        c.text,
+                        at,
+                        self._stamp(),
+                    ),
+                )
+                changed.append(c)
+            if closed:
+                self._db.execute(
+                    "UPDATE issues SET comments_read_at = ? WHERE run_id = ? AND state = 'closed'",
+                    (self._stamp(), run_id),
+                )
+        return changed
+
     def proposed_since(self, since: datetime) -> set[str]:
         """The companies with a version proposed by a run started since: not
         to be proposed again yet."""
@@ -724,6 +799,12 @@ class Store:
         run.proposals = self._proposals(run_id)
         issue = self._db.execute(_ISSUES + "WHERE run_id = ?", (run_id,)).fetchone()
         run.issue = Issue(*issue) if issue is not None else None
+        run.comments = [
+            IssueComment(id, url, kind, text, datetime.fromisoformat(at), symbol, version)
+            for id, url, kind, text, at, symbol, version in self._db.execute(
+                _ISSUE_COMMENTS + "WHERE run_id = ? ORDER BY comment_id", (run_id,)
+            )
+        ]
         if row is not None:  # no draft: the run failed or was stopped before answering
             content, truncated, findings, created = row
             run.draft = Draft(
