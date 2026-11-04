@@ -362,7 +362,8 @@ https://quantic.finance/stocks/BF-B
 ```
 ````
 
-`posted BF-B` without a version for a post written from scratch. A comment that starts with
+`posted BF-B` without a version for a post written from scratch. Every issue repeats this form
+at its top (`daily.POSTED_HINT`, tested against the parser so the two can't drift). A comment that starts with
 "posted" but isn't in that form is named by `--sync` and not kept. Add it **before closing the
 issue**, or at least before the next sync: a closed issue's comments are read once. Close the
 issue when you're done. Exits 4 (no version passed its checks) and 5 (nothing

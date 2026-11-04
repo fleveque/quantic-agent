@@ -441,6 +441,20 @@ def test_a_comment_records_a_post_a_review_or_nothing() -> None:
     assert daily.read_comment("Looks good") is None
 
 
+def test_the_issue_shows_how_to_record_a_post_and_its_example_is_read() -> None:
+    written, rejected = written_for_the_day()
+    body = daily.issue_body(TODAY, 7, written, rejected)
+    assert daily.POSTED_HINT in body
+    # The example in the hint, filled in, is a comment read_comment keeps.
+    example = daily.POSTED_HINT.split("````text\n", 1)[1].split("\n````", 1)[0]
+    filled = example.replace("SYMBOL", "NKE").replace(" N\n", " 2\n")
+    assert daily.read_comment(filled) == daily.Comment(
+        "posted", "the text as you posted it, link included", "NKE", 2
+    )
+    # The example doesn't look like a box to tick.
+    assert daily.ticks(daily.POSTED_HINT.replace("SYMBOL version N", "NKE version 2")) == set()
+
+
 @pytest.mark.parametrize(
     "body",
     [

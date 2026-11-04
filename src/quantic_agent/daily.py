@@ -898,6 +898,23 @@ def title(day: date) -> str:
     return f"X posts for {day:%A} {day.isoformat()}"
 
 
+# How to record a post, at the top of every issue: what read_comment reads.
+POSTED_HINT = """Posted a version exactly as written: tick its box. Edited it, or wrote your own: \
+leave the box and add a comment like this one, **before closing the issue** (a closed issue's \
+comments are read once):
+
+````text
+posted SYMBOL version N
+
+```text
+the text as you posted it, link included
+```
+````
+
+`posted SYMBOL` with no version for a post written from scratch. Close the issue when you're \
+done."""
+
+
 def issue_body(
     day: date, run_id: int, written: Sequence[Written], rejected: Sequence[Rejected]
 ) -> str:
@@ -906,9 +923,9 @@ def issue_body(
     from; and the companies looked up and left out, with why."""
     parts = [
         f"Drafted by quantic-agent from Quantic's data on {day.isoformat()} (run {run_id}: "
-        f"`quantic-agent --run {run_id}`). The agent posts nothing. Pick a version, post it "
-        "on X, and tick its box; close the issue when you're done. Prices are as of the "
-        "date in each company's facts: post the same day.",
+        f"`quantic-agent --run {run_id}`). The agent posts nothing. Pick a version and post it "
+        "on X. Prices are as of the date in each company's facts: post the same day.",
+        POSTED_HINT,
     ]
     for w in written:
         if not w.ready:
