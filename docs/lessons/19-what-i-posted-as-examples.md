@@ -5,7 +5,8 @@ writes about a company: the same angle first, then the newest, never the same co
 edited one as its draft next to what I posted. I measured it before merging, and on everything the
 checks can see it changed nothing. That's the most useful thing this milestone taught me.
 
-*Also readable as a formatted page, with a code walkthrough of every change the milestone made.*
+*Also readable as a [formatted page](https://claude.ai/artifact/PLC4iEwTsgRkRYyrCrRn4r), with a [code walkthrough](https://claude.ai/artifact/Pc1GkCaXJnyDtBNRocqxBy) of every
+change the milestone made.*
 
 ---
 
