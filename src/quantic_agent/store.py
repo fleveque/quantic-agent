@@ -13,7 +13,7 @@ The schema is a series of Alembic migrations shipped in the package
 import fcntl
 import json
 import sqlite3
-from collections.abc import Callable, Generator, Sequence
+from collections.abc import Callable, Generator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, date, datetime, timedelta
@@ -181,6 +181,22 @@ class IssueComment:
     version: int | None = None  # the version it started from; None: from scratch
 
 
+@dataclass(frozen=True)
+class PostedText:
+    """A post as it went out on X (milestone 19): a version ticked as
+    written, or a post read from a "posted" comment. drafted is the version
+    it started from when it was edited, None when it went out as written or
+    was written from scratch. angle is the issue's for that company, None
+    for one the issue didn't propose."""
+
+    run_id: int
+    symbol: str
+    angle: str | None
+    text: str
+    posted_at: datetime
+    drafted: str | None = None
+
+
 _ISSUE_COMMENTS = (
     "SELECT comment_id, url, kind, text, commented_at, symbol, version FROM issue_comments "
 )
@@ -226,6 +242,10 @@ class Run:
     proposals: list[Proposal] = field(default_factory=lambda: list[Proposal]())  # daily posts
     issue: Issue | None = None
     comments: list[IssueComment] = field(default_factory=lambda: list[IssueComment]())
+    # What each company's writer was shown, by company, in order (milestone 19).
+    post_examples: dict[str, list[PostedText]] = field(
+        default_factory=lambda: dict[str, list[PostedText]]()
+    )
 
     def records(self) -> list[Record]:
         """The run's successful calls as provenance records: exactly what its
@@ -353,6 +373,7 @@ class Store:
         tokens: int | None = None,
         posts: Sequence[Post] = (),
         proposals: Sequence[Proposal] = (),
+        examples: Mapping[str, Sequence[PostedText]] | None = None,
     ) -> None:
         """Ends a run: its state, the error that stopped it, its draft if it
         produced one, its posts or proposals if it wrote any, and the tokens
@@ -361,6 +382,26 @@ class Store:
         reverse. A run with a draft is done; one without stays in its phase,
         to resume from."""
         with self._transaction():
+            self._db.executemany(
+                "INSERT INTO post_examples (run_id, symbol, position, example_run, "
+                "example_symbol, angle, text, drafted, posted_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                [
+                    (
+                        run_id,
+                        symbol,
+                        i,
+                        e.run_id,
+                        e.symbol,
+                        e.angle,
+                        e.text,
+                        e.drafted,
+                        e.posted_at.astimezone(UTC).isoformat(),
+                    )
+                    for symbol, shown in (examples or {}).items()
+                    for i, e in enumerate(shown, 1)
+                ],
+            )
             self._db.executemany(
                 "INSERT INTO proposals "
                 "(run_id, symbol, angle, version, text, facts, problems, created_at) "
@@ -680,6 +721,39 @@ class Store:
                 )
         return changed
 
+    def posted_texts(self) -> list[PostedText]:
+        """Every post that went out on X, newest first: the versions ticked
+        as written, and the posts read from "posted" comments. A comment
+        replaces its run's tick for the same company: it says what was
+        actually posted."""
+        commented = [
+            PostedText(
+                run_id,
+                symbol,
+                angle,
+                text,
+                datetime.fromisoformat(at),
+                drafted,
+            )
+            for run_id, symbol, angle, text, at, drafted in self._db.execute(
+                "SELECT c.run_id, c.symbol, "
+                "(SELECT angle FROM proposals a WHERE a.run_id = c.run_id AND a.symbol = c.symbol "
+                "LIMIT 1), c.text, c.commented_at, p.text "
+                "FROM issue_comments c LEFT JOIN proposals p ON p.run_id = c.run_id "
+                "AND p.symbol = c.symbol AND p.version = c.version WHERE c.kind = 'posted'"
+            )
+        ]
+        seen = {(p.run_id, p.symbol) for p in commented}
+        ticked = [
+            PostedText(run_id, symbol, angle, text, datetime.fromisoformat(at))
+            for run_id, symbol, angle, text, at in self._db.execute(
+                "SELECT run_id, symbol, angle, text, posted_at FROM proposals "
+                "WHERE posted_at IS NOT NULL"
+            )
+            if (run_id, symbol) not in seen
+        ]
+        return sorted(commented + ticked, key=lambda p: p.posted_at, reverse=True)
+
     def proposed_since(self, since: datetime) -> set[str]:
         """The companies with a version proposed by a run started since: not
         to be proposed again yet."""
@@ -799,6 +873,16 @@ class Store:
         run.proposals = self._proposals(run_id)
         issue = self._db.execute(_ISSUES + "WHERE run_id = ?", (run_id,)).fetchone()
         run.issue = Issue(*issue) if issue is not None else None
+        for symbol, example_run, example_symbol, angle, text, at, drafted in self._db.execute(
+            "SELECT symbol, example_run, example_symbol, angle, text, posted_at, drafted "
+            "FROM post_examples WHERE run_id = ? ORDER BY id",
+            (run_id,),
+        ):
+            run.post_examples.setdefault(symbol, []).append(
+                PostedText(
+                    example_run, example_symbol, angle, text, datetime.fromisoformat(at), drafted
+                )
+            )
         run.comments = [
             IssueComment(id, url, kind, text, datetime.fromisoformat(at), symbol, version)
             for id, url, kind, text, at, symbol, version in self._db.execute(

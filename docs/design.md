@@ -522,8 +522,12 @@ a version was posted as written. A post edited or written from scratch comes bac
 `posted SYMBOL version N` (or `posted SYMBOL`) and the text in a `text` block, and the review as
 the comment starting `## Review (Claude)`; `--sync` keeps both in `issue_comments`, reading an
 issue's comments while it's open and once more after it closes. The client gained one read
-(`issue_comments`) and still writes nothing to an issue but creating it. Capture only: nothing
-reads them back yet.
+(`issue_comments`) and still writes nothing to an issue but creating it.
+
+**As built (milestone 19, [decision 0022](decisions/0022-posted-examples-for-the-writer.md)).** The
+daily writer is shown up to three posted texts before the data: the same angle first, then the
+newest, never the company it's writing about, an edited one as its draft and what was posted.
+The examples each company's writer saw are recorded with the run (`post_examples`).
 
 ## 4. Stack
 

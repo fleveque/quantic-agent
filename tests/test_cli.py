@@ -2001,6 +2001,53 @@ def test_daily_steps_aside_while_the_gpu_is_in_use(
 
 
 @pytest.mark.usefixtures("on_the_28th")
+def test_the_writer_is_shown_what_was_posted_and_the_run_records_it(
+    ollama: FakeOllama,
+    quantic_mcp: FakeMCP,
+    isolated_state: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # Monday, Entergy's raise was posted as written.
+    monday = datetime(2026, 10, 26, 7, 30).astimezone()
+    entergy = "📈 Entergy ($ETR) raised its annual rate 6.7% to 2.56 USD, seen on Oct 24."
+    with store.Store(isolated_state, now=lambda: monday) as db:
+        run_id = db.start_run("daily_posts", "X posts for 2026-10-26", "m")
+        facts: dict[str, Any] = {
+            "angle": "change",
+            "symbol": "ETR",
+            "name": "Entergy Corporation",
+            "copied": {},
+            "derived": {},
+        }
+        db.finish(
+            run_id,
+            store.State.ANSWERED,
+            draft=store.Draft("…", False, []),
+            proposals=[store.Proposal("ETR", "change", 1, entergy, facts)],
+        )
+        db.record_ticks(run_id, {("ETR", 1)})
+    daily_servers(ollama, quantic_mcp)
+
+    assert run_daily(ollama, quantic_mcp) == 0
+
+    writes = [b for b in ollama.bodies if b.get("format")]
+    assert len(writes) == 3
+    for body in writes:
+        user = body["messages"][1]["content"]
+        assert f"Example 1 (a dividend change), posted as written:\n{entergy}" in user
+    run = stored_runs(isolated_state)[0]
+    assert run.id == 2
+    assert {s: [(e.run_id, e.symbol) for e in shown] for s, shown in run.post_examples.items()} == {
+        "BA.L": [(1, "ETR")],
+        "O": [(1, "ETR")],
+        "NKE": [(1, "ETR")],
+    }
+    capsys.readouterr()
+    main(["--run", "2"])
+    assert "NKE was shown: run 1 ETR\n" in capsys.readouterr().out
+
+
+@pytest.mark.usefixtures("on_the_28th")
 def test_a_company_proposed_lately_isnt_proposed_again(
     ollama: FakeOllama, quantic_mcp: FakeMCP, isolated_state: Path
 ) -> None:
