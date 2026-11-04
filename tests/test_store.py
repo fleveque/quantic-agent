@@ -108,6 +108,7 @@ def test_migrations_apply_once(tmp_path: Path) -> None:
         "examples",
         "issue_comments",
         "issues",
+        "post_examples",
         "posts",
         "proposals",
         "pull_requests",
@@ -119,7 +120,7 @@ def test_migrations_apply_once(tmp_path: Path) -> None:
 
 
 # The latest migration.
-HEAD = "0010"
+HEAD = "0011"
 
 
 def tables(path: Path) -> list[str]:
@@ -619,6 +620,46 @@ def test_an_issues_comments_are_kept_edited_and_read_once_after_closing(tmp_path
         db.record_comments(run_id, [review], closed=True)  # the post's comment was deleted
         assert db.unread_closed_issues() == []
         assert db.run(run_id).comments == [fixed, review]  # a deleted comment is kept
+
+
+def test_posted_texts_are_ticks_and_comments_newest_first(tmp_path: Path) -> None:
+    clock = {"now": datetime(2026, 11, 2, 7, 30, tzinfo=UTC)}
+    with Store(tmp_path / "agent.db", now=lambda: clock["now"]) as db:
+        monday = daily_run(db, ("ETR", 1, []), ("ETR", 2, []))
+        db.record_ticks(monday, {("ETR", 1)})
+        clock["now"] += timedelta(days=2)
+        wednesday = daily_run(db, ("PFE", 1, []), ("BF-B", 1, []), ("BF-B", 2, []))
+        # Brown-Forman ticked by mistake, then posted edited from version 2.
+        db.record_ticks(wednesday, {("PFE", 1), ("BF-B", 2)})
+        at = clock["now"] + timedelta(hours=4)
+        db.record_comments(
+            wednesday,
+            [
+                store.IssueComment(9, "u9", "posted", "BF-B edited", at, "BF-B", 2),
+                store.IssueComment(10, "u10", "posted", "Hitachi pays", at, "6501.T", None),
+                store.IssueComment(11, "u11", "review", "## Review", at),
+            ],
+            closed=False,
+        )
+
+        found = db.posted_texts()
+
+    assert [(p.run_id, p.symbol, p.text, p.drafted, p.angle) for p in found] == [
+        (wednesday, "BF-B", "BF-B edited", "BF-B 2", "yield"),
+        (wednesday, "6501.T", "Hitachi pays", None, None),  # from scratch: no version, no angle
+        (wednesday, "PFE", "PFE 1", None, "yield"),
+        (monday, "ETR", "ETR 1", None, "yield"),
+    ]
+
+
+def test_the_examples_a_writer_was_shown_are_kept_with_the_run(tmp_path: Path) -> None:
+    at = datetime(2026, 11, 4, 12, 0, tzinfo=UTC)
+    with open_store(tmp_path) as db:
+        earlier = daily_run(db, ("BF-B", 2, []))
+        shown = [store.PostedText(earlier, "BF-B", "yield", "BF-B posted", at, "BF-B 2")]
+        run_id = db.start_run("daily_posts", "X posts for 2026-11-05", "m")
+        db.finish(run_id, State.ANSWERED, draft=Draft("…", False, []), examples={"NKE": shown})
+        assert db.run(run_id).post_examples == {"NKE": shown}
 
 
 def test_a_company_proposed_lately_is_known(tmp_path: Path) -> None:

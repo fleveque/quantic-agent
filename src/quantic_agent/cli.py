@@ -1320,7 +1320,16 @@ async def _draft_posts(db: store.Store, args: argparse.Namespace, day: date) -> 
             draft: store.Draft | None = None,
             proposals: Sequence[store.Proposal] = (),
         ) -> None:
-            db.finish(run_id, state, error, draft, tokens=spent, proposals=proposals)
+            shown = {w.facts.symbol: w.examples for w in written if w.examples}
+            db.finish(
+                run_id,
+                state,
+                error,
+                draft,
+                tokens=spent,
+                proposals=proposals,
+                examples=shown,
+            )
             _outcome(run_id, state)
 
         options = llm.Options(num_ctx=args.num_ctx)
@@ -1350,8 +1359,10 @@ async def _draft_posts(db: store.Store, args: argparse.Namespace, day: date) -> 
                     raise provenance.ProvenanceError(
                         f"data no tool returned: {', '.join(unsourced)}"
                     )
+                posted = db.posted_texts()
                 for f in found:
-                    w = await daily.write(client, f, day, options=options)
+                    shown = daily.pick_examples(posted, f)
+                    w = await daily.write(client, f, day, options=options, examples=shown)
                     spent += w.tokens
                     written.append(w)
                     _note(
@@ -1572,6 +1583,12 @@ def _show_daily(run: store.Run) -> int:
     day = run.started_at.astimezone().date()
     found: list[str] = []
     manifest = _manifest(run.calls)
+    for symbol, shown in run.post_examples.items():
+        examples = ", ".join(
+            f"run {e.run_id} {e.symbol}{' (edited)' if e.drafted is not None else ''}"
+            for e in shown
+        )
+        print(f"{symbol} was shown: {examples}")
     for p in run.proposals:
         posted = f" · posted {p.posted_at:%Y-%m-%d}" if p.posted_at else ""
         print(f"{p.symbol} version {p.version}: {'proposed' if p.ready else 'held'}{posted}")

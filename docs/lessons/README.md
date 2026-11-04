@@ -30,6 +30,7 @@ Ruby that turned out wrong, and what changed from the Go version and why.
 | [16](16-a-shortlist-every-morning.md) | A shortlist every morning | 16 — daily X posts: code researches, the model writes, checks, an issue to pick from | [A shortlist every morning](https://claude.ai/artifact/JsApe2npz8oRro34bP7R62) | [Daily posts, line by line](https://claude.ai/artifact/Xt7zTAyHXogmMVx5tAnyUH) |
 | [17](17-terms-i-already-corrected.md) | Terms I already corrected | 17 — a glossary per locale from the reviewer's corrections, measured on 60 translations | [Terms I already corrected](https://claude.ai/artifact/MspjfkztwMMkK8kW9FdsWj) | [The glossary, line by line](https://claude.ai/artifact/Gv6Mqt1BoXdnze2ybtDgTV) |
 | [18](18-what-i-posted-not-what-i-ticked.md) | What I posted, not what I ticked | 18 — what was posted on X and the review, kept from the issue's comments | [What I posted, not what I ticked](https://claude.ai/artifact/6KvFeZ6HJ2KTWW9aQ4oCie) | [Posted text, line by line](https://claude.ai/artifact/3qGSZiMTJybtVR212Gk5QT) |
+| [19](19-what-i-posted-as-examples.md) | What I posted, as examples | 19 — posted texts shown to the daily writer, measured with and without | [What I posted, as examples](https://claude.ai/artifact/PLC4iEwTsgRkRYyrCrRn4r) | [Examples, line by line](https://claude.ai/artifact/Pc1GkCaXJnyDtBNRocqxBy) |
 
 Lessons tell the story of a milestone: what surprised me and why. Walkthroughs go through the code
 itself in reading order, the way a tech lead would with a new teammate. Formatted pages are built

@@ -191,6 +191,18 @@ starting point here.
   post against its version as the issue showed it (text + link). Ticks now mean "as written"
   only. On a copy of the real database the first sync kept the reviews on quantic#515, #532,
   #540, #542; lesson 18.
+- **Milestone 19** (branch `m19-posted-examples`, ADR 0022): the daily writer is shown up to 3
+  posted texts before the data. The author chose: same angle first, then newest, never the same
+  company (no embeddings); an edited post as draft + posted; measured before merging.
+  `Store.posted_texts` (ticks + `posted` comments, a comment replaces its run's tick, draft by
+  `LEFT JOIN` on the version), `daily.pick_examples` (`dataclasses.replace` strips the link),
+  `daily.examples_text`, `write(…, examples=)`, `Written.examples`; migration 0011
+  `post_examples` (text, draft and posted time copied as shown; `--run N` lists them). Measured
+  (`docs/benchmarks/2026-11-04-daily-examples/`, 10 companies × 2 × 2): no change on the checks
+  (retries 13→12 of 20, first-attempt problems 24→24), copying is phrasing not figures, +1.8 s a
+  write. 4 of the 5 examples were the agent's own drafts ticked as written; re-measure once edited
+  posts accumulate. `daily` now imports `store` (no cycle: store imports neither daily nor cli);
+  lesson 19.
 - design.md keeps Go's "As built in Go" notes next to this repository's "As built" notes.
 - PRs are squash-merged, so a walkthrough built from a branch commit cites a SHA `main` won't have.
   After merge, rebuild the walkthrough page from the merge commit and republish the artifact. That

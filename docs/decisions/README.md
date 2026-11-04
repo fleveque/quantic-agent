@@ -25,6 +25,7 @@ Why the design is what it is, one decision per file. New decisions are numbered 
 | [0019](0019-daily-x-posts.md) | Daily X posts: drafted by code and the model, reviewed in an issue, posted by the author | 2026-10-28 |
 | [0020](0020-posted-text-captured.md) | What was posted on X, captured from the issue | 2026-10-29 |
 | [0021](0021-glossary-check.md) | A glossary per locale, checked like wording | 2026-11-03 |
+| [0022](0022-posted-examples-for-the-writer.md) | What was posted, shown to the daily writer as examples | 2026-11-04 |
 
 **0001–0007 were written for the Go version**, [quantic-agent-go](https://github.com/fleveque/quantic-agent-go),
 and are carried over unchanged, links aside: they are records of what was decided and why, at the

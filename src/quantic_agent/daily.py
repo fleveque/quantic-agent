@@ -31,7 +31,7 @@ import re
 import statistics
 import time
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta
 from enum import StrEnum
 from importlib import resources
@@ -42,6 +42,7 @@ from pydantic import BaseModel, ValidationError
 
 from quantic_agent import agent, llm, provenance, wording, xpost
 from quantic_agent.agent import Call, Model
+from quantic_agent.store import PostedText
 from quantic_agent.tools import (
     DIVIDEND_CALENDAR,
     DIVIDEND_CHANGES,
@@ -58,6 +59,7 @@ CHANGES_DAYS = 3  # raises and cuts seen in the last three days: Monday sees the
 CALENDAR_DAYS = 5  # from a Friday, the next two weekdays are Monday and Tuesday
 EX_DIVIDEND_WEEKDAYS = 2  # ex-dividends in the next two weekdays
 REPEAT_DAYS = 7  # a company proposed in this many days isn't proposed again
+EXAMPLES = 3  # posts the author published, shown to the writer (milestone 19)
 MIN_STREAK = 10  # the screen's, and an ex-dividend's
 MIN_RAISE_STREAK = 5  # a raise from a shorter record is mostly a first payment or noise
 MIN_YIELD_RATIO = 1.25  # a yield this many times its own 5-year average, or more
@@ -815,6 +817,7 @@ class Written:
     versions: list[Version]
     attempts: int
     tokens: int
+    examples: list[PostedText] = field(default_factory=lambda: list[PostedText]())
 
     @property
     def ready(self) -> list[Version]:
@@ -838,16 +841,19 @@ async def write(
     options: llm.Options | None = None,
     versions: int = VERSIONS,
     attempts: int = ATTEMPTS,
+    examples: Sequence[PostedText] = (),
 ) -> Written:
     """Asks the model for versions of a post about one company, and checks
     each. Those that fail are sent back with what's wrong, up to attempts
     times; a version that passed is kept, so a retry that breaks it loses
-    nothing."""
+    nothing. examples are posts the author published, shown before the
+    data (pick_examples)."""
+    shown = f"{examples_text(examples)}\n\n" if examples else ""
     messages = [
         llm.Message(role="system", content=prompt(versions, facts.cashtag)),
         llm.Message(
             role="user",
-            content=f"Today is {today:%A} {today.isoformat()}.\n\nThe data:\n"
+            content=f"Today is {today:%A} {today.isoformat()}.\n\n{shown}The data:\n"
             + json.dumps(facts.shown(), indent=1),
         ),
     ]
@@ -868,9 +874,55 @@ async def write(
                 ready.setdefault(v.text, v)
         held = [v for v in checked if not v.ready]
         if len(ready) >= versions or not held or attempt == attempts:
-            return Written(facts, [*list(ready.values())[:versions], *held], attempt, tokens)
+            kept = [*list(ready.values())[:versions], *held]
+            return Written(facts, kept, attempt, tokens, list(examples))
         messages += [resp.message, llm.Message(role="user", content=_again(checked, versions))]
     raise AssertionError("unreachable: the last attempt returns")
+
+
+_LINK = re.compile(r"\s*\n\s*https?://\S+\s*\Z")
+
+
+def pick_examples(
+    posted: Sequence[PostedText], facts: Facts, k: int = EXAMPLES
+) -> list[PostedText]:
+    """The posts the author published that the writer is shown before
+    writing about facts' company (decision 0022): up to k, those about the
+    same angle first, then the newest; never one about the same company,
+    whose old figures could pass its checks. posted is newest first, as
+    the store gives it. Each without its link, which code adds; an edit
+    that changed nothing but the link is shown as posted as written."""
+    other = [p for p in posted if p.symbol != facts.symbol]
+    ordered = [p for p in other if p.angle == facts.angle] + [
+        p for p in other if p.angle != facts.angle
+    ]
+    picked: list[PostedText] = []
+    for p in ordered[:k]:
+        text = _LINK.sub("", p.text).strip()
+        drafted = p.drafted.strip() if p.drafted is not None else None
+        picked.append(replace(p, text=text, drafted=None if drafted == text else drafted))
+    return picked
+
+
+def examples_text(examples: Sequence[PostedText]) -> str:
+    """The examples as the writer reads them. An edited post shows the
+    draft and what was posted, so the edit is visible."""
+    parts = [
+        "Posts the author published on X earlier, about other companies, as examples of tone "
+        "and structure only. Their figures, dates and names belong to those companies and are "
+        "out of date: use none of them. Where the author edited a draft before posting, "
+        "the edit shows what they want."
+    ]
+    for i, e in enumerate(examples, 1):
+        about = f" ({ABOUT[Angle(e.angle)]})" if e.angle else ""
+        if e.drafted is None:
+            parts.append(f"Example {i}{about}, posted as written:\n{e.text}")
+        else:
+            parts.append(
+                f"Example {i}{about}, edited by the author before posting.\n"
+                f"Drafted:\n{e.drafted}\nPosted:\n{e.text}"
+            )
+    return "\n\n".join(parts)
 
 
 def _again(checked: Sequence[Version], versions: int) -> str:

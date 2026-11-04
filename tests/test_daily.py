@@ -1,7 +1,7 @@
 import asyncio
 import json
 from dataclasses import dataclass, field, replace
-from datetime import date
+from datetime import UTC, date, datetime
 from typing import Any
 
 import pytest
@@ -10,6 +10,7 @@ from test_agent import ScriptedModel, answers
 
 from quantic_agent import daily, provenance, quantic
 from quantic_agent.agent import Call
+from quantic_agent.store import PostedText
 
 # Wednesday 2026-10-28, when the fixtures were captured from quantic.finance.
 TODAY = date(2026, 10, 28)
@@ -366,6 +367,70 @@ def test_a_reply_that_isnt_the_versions_is_an_error() -> None:
     with pytest.raises(daily.NotPostsError) as err:
         asyncio.run(daily.write(model, facts_of("NKE"), TODAY))
     assert err.value.tokens == 5
+
+
+def posted(
+    symbol: str, angle: str | None, day: int, text: str, drafted: str | None = None
+) -> PostedText:
+    at = datetime(2026, 10, day, 9, 0, tzinfo=UTC)
+    return PostedText(day, symbol, angle, text, at, drafted)
+
+
+# Newest first, as the store gives them.
+POSTED = [
+    posted(
+        "BF-B", "yield", 27, "📊 Brown-Forman yields 3.18%.\n\nhttps://q/BF-B", "📊 Brown-Forman."
+    ),
+    posted("PFE", "ex_dividend", 26, "📅 Pfizer goes ex-dividend on Nov 6."),
+    posted("ETR", "change", 25, "📈 Entergy raised its rate."),
+    posted("NKE", "yield", 24, "📉 Nike yields 4.41%."),
+    posted(
+        "O",
+        "ex_dividend",
+        23,
+        "📅 Realty Income pays monthly.\nhttps://q/O\n",
+        "📅 Realty Income pays monthly.",
+    ),
+]
+
+
+def test_examples_are_the_same_angle_first_then_the_newest_never_the_same_company() -> None:
+    nike = facts_of("NKE")  # a yield
+    picked = daily.pick_examples(POSTED, nike)
+    # BF-B is the only other yield; then the newest; Nike's own post never.
+    assert [p.symbol for p in picked] == ["BF-B", "PFE", "ETR"]
+    assert [p.symbol for p in daily.pick_examples(POSTED, nike, k=5)] == ["BF-B", "PFE", "ETR", "O"]
+    realty = daily.pick_examples(POSTED, facts_of("O"))  # an ex-dividend
+    assert [p.symbol for p in realty] == ["PFE", "BF-B", "ETR"]
+
+
+def test_an_example_loses_its_link_and_an_unedited_draft() -> None:
+    picked = daily.pick_examples(POSTED, facts_of("NKE"), k=5)
+    bf, *_, realty = picked
+    assert (bf.text, bf.drafted) == ("📊 Brown-Forman yields 3.18%.", "📊 Brown-Forman.")
+    # Posted from a comment, only its link added: that's posted as written.
+    assert (realty.text, realty.drafted) == ("📅 Realty Income pays monthly.", None)
+
+
+def test_the_writer_sees_the_examples_before_the_data_and_the_edit() -> None:
+    model = ScriptedModel([reply(*GOOD)])
+    shown = daily.pick_examples(POSTED, facts_of("NKE"))
+    written = asyncio.run(daily.write(model, facts_of("NKE"), TODAY, examples=shown))
+
+    user = model.shown[0][1].content
+    assert user.index("Posts the author published on X earlier") < user.index("The data:")
+    assert "use none of them" in user
+    assert (
+        "Example 1 (its yield against its own history), edited by the author before posting.\n"
+        "Drafted:\n📊 Brown-Forman.\nPosted:\n📊 Brown-Forman yields 3.18%."
+    ) in user
+    assert "Example 2 (an ex-dividend date), posted as written:\n📅 Pfizer" in user
+    assert "https://q/" not in user
+    assert written.examples == shown
+    # No examples, no paragraph about them.
+    model = ScriptedModel([reply(*GOOD)])
+    asyncio.run(daily.write(model, facts_of("NKE"), TODAY))
+    assert "Posts the author published" not in model.shown[0][1].content
 
 
 def test_the_prompt_reads_with_its_example() -> None:
