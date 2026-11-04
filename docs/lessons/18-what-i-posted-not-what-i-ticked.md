@@ -6,7 +6,8 @@ second with the review's edits. The tick recorded Pfizer. Brown-Forman, and the 
 its streak was 38 years where the company says 42, existed only on GitHub. Now both are in the
 store, next to the versions they started from.
 
-*Also readable as a formatted page, with a code walkthrough of every change the milestone made.*
+*Also readable as a [formatted page](https://claude.ai/artifact/6KvFeZ6HJ2KTWW9aQ4oCie), with a [code walkthrough](https://claude.ai/artifact/3qGSZiMTJybtVR212Gk5QT) of every
+change the milestone made.*
 
 ---
 
