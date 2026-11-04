@@ -1,6 +1,6 @@
 # 0020 — What was posted on X, captured from the issue
 
-**Status:** proposed · **Date:** 2026-10-29
+**Status:** accepted · **Date:** 2026-10-29, accepted 2026-11-04 (milestone 18)
 
 ## Context
 
@@ -22,9 +22,11 @@ Milestone 14 solved the same problem for the Week Ahead (decision 0016): `--sync
 merge published and stores each section that differs from the draft. This proposes the same for
 the daily posts.
 
-## Proposal
+## Decision
 
-**Capture first, as milestone 14 did; uses later, each the author's to choose.**
+**Capture first, as milestone 14 did; uses later, each the author's to choose.** The author
+answered the open questions on 2026-11-04 (below), after quantic#542: its Brown-Forman post went out
+edited from version 2, and nothing but the review on GitHub recorded what it said.
 
 1. **The author records a post in a comment on the issue**, in a fixed form:
 
@@ -50,9 +52,26 @@ the daily posts.
    closed issue is read once more, then no more.
 3. **The review is stored too**: a comment starting `## Review (Claude)` (the `review-posts` form),
    whole, as text. Its structure is for people; storing it keeps the evidence without parsing it.
-4. **Migration 0010**: `posts` (run, symbol, version nullable, text, comment id, read at) and
-   `reviews` (run, comment id, text, read at). `--run N` shows each posted text as a word diff
-   against its version (`difflib`, as for corrections), or whole when it has none.
+4. **Migration 0010**: one table, `issue_comments` (run, GitHub's comment id, url, kind `posted`
+   or `review`, symbol and version for a post, text, GitHub's edit time, read at), and
+   `issues.comments_read_at`. `--run N` shows each posted text as a word diff against its version
+   as the issue showed it (text and link; `corrections.word_diff`), or whole when it has none.
+
+### As built
+
+- **One table, not `posts` and `reviews`**: both names were taken (the Week Ahead's posts,
+  milestone 11; the verdicts, milestone 10), and a post and a review differ by two nullable
+  columns.
+- **"Read once more" is `comments_read_at`**: an open issue's comments are read on every sync; a
+  closed one's once after closing, which sets it. NULL on a closed issue means not read since it
+  closed, as a NULL `merge_commit` did in migration 0007, so the first sync after the migration read
+  the issues closed before it: on a copy of the real database, the reviews on quantic#515, #532,
+  #540 and #542. A comment added after that read isn't seen: post the `posted` comment before
+  closing the issue, or before the next sync.
+- **A version must be one the issue proposed**: `posted NKE version 9` is named and not kept, like
+  a comment not in the form (`daily.NotRead`). `posted SYMBOL` with no version is any company.
+- The first line is read case-insensitively and CRLF (the web form's) as LF; the symbol is kept in
+  capitals.
 
 The client gains one GET (`issue_comments`); it still has no method that writes a comment, edits or
 closes an issue.
@@ -77,8 +96,9 @@ closes an issue.
 - The posted texts are the author's writing, stored locally like the rest of the store (N4: nothing
   leaves the machine that didn't already).
 
-## Open questions for the author
+## The author's answers (2026-11-04)
 
-1. A comment per post (proposed), or the posted text pasted under the tick in the issue's body?
-2. Store the review (proposed), or only the posts?
-3. Which use first, if any: examples for the writer, or checks from the reviews?
+1. **A comment per post**, not the text pasted under the tick.
+2. **Store the review too**, whole.
+3. **Capture now, use next**: no use in this milestone. Examples for the writer or checks from the
+   reviews come after, once there are posts and reviews to measure them against.

@@ -95,8 +95,14 @@ gh issue comment N -R fleveque/quantic --body-file FILE
 
 End with "For Quantic's data": what looked wrong, the "Looked at and left out" list included.
 
-A version posted with small edits is ticked; one rewritten past its version is left unticked, so
-the record doesn't claim a text that wasn't posted. Say which in the terminal.
+A version posted exactly as written is ticked. Anything else, however small the edit, is left
+unticked and recorded by a comment the author adds after posting (decision 0020): `posted SYMBOL
+version N` (or `posted SYMBOL` for one written from scratch) alone on the first line, then the
+text as posted in a `text` block, link included. `--sync` keeps it and this review (the comment
+starting `## Review (Claude)`) in the store. For an edited version, give that comment ready to
+paste, in a `` ````text `` block in the terminal, not in the issue comment: posted from the
+author's account before they've posted, it would record a post that hasn't happened. Remind them
+to add it before closing the issue: a closed issue's comments are read once.
 
 ## 5. Report, in the terminal
 

@@ -15,7 +15,8 @@ too. So this client is written so it can't change an existing branch:
   pull request published (milestone 14).
 
 Issues follow the same rule: the client creates one (the day's X posts,
-milestone 16) and reads it back, ticks and all. It never edits, closes or
+milestone 16) and reads it back, ticks and all, and its comments: what the
+author posted and the review (milestone 18). It never edits, closes or
 comments on one: what happens to an issue is the author's.
 
 Quantic's deploy workflow refuses a push to main by a bot, so a change to
@@ -38,7 +39,7 @@ from urllib.parse import quote
 
 import httpx
 import jwt
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, RootModel, ValidationError
 
 from quantic_agent import network
 
@@ -131,6 +132,21 @@ class Issue(BaseModel):
     state: str  # "open" or "closed"
     title: str
     body: str | None = None  # GitHub sends null for an empty body
+
+
+class IssueComment(BaseModel):
+    """A comment on an issue, as far as the agent needs it."""
+
+    id: int
+    html_url: str
+    body: str = ""
+    created_at: datetime
+    updated_at: datetime  # changes when the comment is edited
+
+
+# A page of comments: GitHub's reply is a JSON list, not an object.
+class _Comments(RootModel[list[IssueComment]]):
+    pass
 
 
 class _Object(BaseModel):
@@ -268,6 +284,19 @@ class Client:
         """An issue as it stands now: its state, and its body with the
         author's ticks."""
         return _validated(Issue, await self._call("GET", f"issues/{number}"))
+
+    async def issue_comments(self, number: int) -> list[IssueComment]:
+        """An issue's comments, oldest first. A read: GET only, a page of
+        100 at a time until one comes back short."""
+        comments: list[IssueComment] = []
+        page = 1
+        while True:
+            path = f"issues/{number}/comments?per_page=100&page={page}"
+            found = _validated(_Comments, await self._call("GET", path)).root
+            comments += found
+            if len(found) < 100:
+                return comments
+            page += 1
 
     async def pull_request(self, number: int) -> PullRequest:
         """A pull request as it stands now."""

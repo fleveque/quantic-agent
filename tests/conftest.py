@@ -353,6 +353,11 @@ class FakeGitHub:
     # Issues by number: their title, body and state, which a test edits as
     # the author would (ticking a box, closing it).
     issues: dict[int, dict[str, str]] = field(default_factory=lambda: dict[int, dict[str, str]]())
+    # Comments by issue number, oldest first: a body, and an edit time if
+    # edited (GitHub's updated_at). A test adds them as the author would.
+    comments: dict[int, list[dict[str, str]]] = field(
+        default_factory=lambda: dict[int, list[dict[str, str]]]()
+    )
     requests: list[tuple[str, str, Any, str]] = field(
         default_factory=lambda: list[tuple[str, str, Any, str]]()
     )
@@ -504,6 +509,17 @@ def github_api(app_key: tuple[str, str]) -> Iterator[FakeGitHub]:
                     "state": "open",
                 }
                 return 201, self._issue(number)
+            if method == "GET" and urlsplit(rest).path.endswith("/comments"):
+                url = urlsplit(rest)
+                number = int(url.path.removeprefix("issues/").removesuffix("/comments"))
+                if number not in fake.issues:
+                    return 404, github_fixture("not-found.json")
+                query = parse_qs(url.query)
+                size, page = int(query["per_page"][0]), int(query["page"][0])
+                every = [
+                    self._comment(number, i) for i in range(len(fake.comments.get(number, [])))
+                ]
+                return 200, every[(page - 1) * size : page * size]
             if method == "GET" and rest.startswith("issues/"):
                 number = int(rest.removeprefix("issues/"))
                 if number not in fake.issues:
@@ -537,6 +553,19 @@ def github_api(app_key: tuple[str, str]) -> Iterator[FakeGitHub]:
             reply["number"] = number
             reply["html_url"] = f"https://github.com/{fake.repo}/issues/{number}"
             reply |= fake.issues[number]
+            return reply
+
+        def _comment(self, number: int, index: int) -> dict[str, Any]:
+            # issue-comment.json is the review on fleveque/quantic#542 as the
+            # comments API returned it on 2026-11-04.
+            reply = github_fixture("issue-comment.json")
+            given = fake.comments[number][index]
+            reply["id"] = number * 1000 + index
+            reply["html_url"] = (
+                f"https://github.com/{fake.repo}/issues/{number}#issuecomment-{reply['id']}"
+            )
+            reply["body"] = given["body"]
+            reply["updated_at"] = given.get("updated_at", reply["created_at"])
             return reply
 
         def _pull(self, number: int, head: str) -> dict[str, Any]:

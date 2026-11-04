@@ -1024,7 +1024,7 @@ async def _sync(db: store.Store, args: argparse.Namespace) -> int:
     rate of design open question 3."""
     waiting = db.open_pull_requests()
     issues = db.open_issues()
-    if not waiting and not issues and not db.unread_merges():
+    if not waiting and not issues and not db.unread_merges() and not db.unread_closed_issues():
         print("no open pull requests or issues")
         return EXIT_OK
     clients: dict[str, github.Client] = {}
@@ -1048,6 +1048,9 @@ async def _sync(db: store.Store, args: argparse.Namespace) -> int:
             await _read_corrections(db, client(pr.repo), pr, args.repo_path)
         for issue in issues:
             await _read_ticks(db, client(issue.repo), issue)
+        # Closed just now, or before this version read comments.
+        for issue in db.unread_closed_issues():
+            await _read_comments(db, client(issue.repo), issue, closed=True)
     finally:
         for gh in clients.values():
             await gh.aclose()
@@ -1064,7 +1067,45 @@ async def _read_ticks(db: store.Store, gh: github.Client, issue: store.Issue) ->
         db.close_issue(issue.run_id)
         print(f"run {issue.run_id}: {issue.url} closed")
     else:
+        await _read_comments(db, gh, issue, closed=False)
         print(f"run {issue.run_id}: {issue.url} still open")
+
+
+async def _read_comments(
+    db: store.Store, gh: github.Client, issue: store.Issue, *, closed: bool
+) -> None:
+    """Records what a daily issue's comments say was posted, and the review
+    (milestone 18). A comment that starts as a post's but isn't in the form
+    is named, not recorded; so is one naming a version the issue didn't
+    propose."""
+    proposed = {(p.symbol, p.version) for p in db.run(issue.run_id).proposals if p.ready}
+    kept: list[store.IssueComment] = []
+    for c in await gh.issue_comments(issue.number):
+        try:
+            found = daily.read_comment(c.body)
+        except daily.NotRead as err:
+            print(f"run {issue.run_id}: comment not read, {err}: {c.html_url}")
+            continue
+        if found is None:
+            continue
+        if found.version is not None and (found.symbol, found.version) not in proposed:
+            print(
+                f"run {issue.run_id}: comment not read, the issue has no {found.symbol} "
+                f"version {found.version}: {c.html_url}"
+            )
+            continue
+        kept.append(
+            store.IssueComment(
+                c.id, c.html_url, found.kind, found.text, c.updated_at, found.symbol, found.version
+            )
+        )
+    for c in db.record_comments(issue.run_id, kept, closed=closed):
+        what = "the review" if c.kind == "review" else f"posted {c.symbol}"
+        if c.version is not None:
+            what += f" from version {c.version}"
+        elif c.kind == "posted":
+            what += ", written from scratch"
+        print(f"run {issue.run_id}: {what}, read: {c.url}")
 
 
 async def _read_corrections(
@@ -1544,6 +1585,7 @@ def _show_daily(run: store.Run) -> int:
         found += [
             f"{p.symbol} version {p.version}: {x}" for x in daily.check_version(p.text, facts, day)
         ]
+    _show_comments(run)
     if run.draft is not None:
         print(f"\n{run.draft.content}")
     if not run.proposals:
@@ -1557,6 +1599,26 @@ def _show_daily(run: store.Run) -> int:
     for line in dict.fromkeys(found):
         print(line)
     return EXIT_UNVERIFIED
+
+
+def _show_comments(run: store.Run) -> None:
+    """What the author posted, read from the issue's comments: a word diff
+    against the version it started from, as the issue showed it (text and
+    link), or whole when written from scratch; and the review, whole."""
+    versions = {(p.symbol, p.version): p for p in run.proposals}
+    for c in run.comments:
+        if c.kind == "review":
+            print(f"\nthe review ({c.commented_at:%Y-%m-%d}, {c.url}):\n{c.text}")
+            continue
+        start = versions.get((c.symbol or "", c.version or 0))
+        if start is None:
+            print(f"\nposted {c.symbol}, written from scratch ({c.url}):\n{c.text}")
+            continue
+        shown = f"{start.text}\n\n{daily.Facts.from_json(start.facts).link}"
+        print(
+            f"\nposted {c.symbol} from version {c.version} ({c.url}):\n"
+            f"{corrections.word_diff(shown, c.text)}"
+        )
 
 
 def _show_corrections(run: store.Run) -> None:

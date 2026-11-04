@@ -318,8 +318,9 @@ In a terminal the agent prints as before.
 repository, for you to pick from, post on X yourself, and tick
 ([decision 0019](decisions/0019-daily-x-posts.md)). Safe to run any number of times:
 
-1. `--sync`: pull request verdicts, and for each open daily issue, the versions you ticked as posted
-   and whether you closed it.
+1. `--sync`: pull request verdicts, and for each open daily issue, the versions you ticked as posted,
+   the `posted` comments and the review (below), and whether you closed it. A closed issue's
+   comments are read once more, then no more.
 2. Today's posts, unless today has a run already. Code gathers the day's data and picks up to one
    company per angle (a dividend change, an ex-dividend, a yield against its own history), none
    proposed in the last 7 days; the model writes three versions of each, every one checked. This is
@@ -347,8 +348,24 @@ To review an issue before posting, ask Claude Code in this repository: "review t
 (the `review-posts` skill). It reads the issue, checks each version against its facts and the
 facts against outside sources (the company's releases and filings, a quote), and comments on the
 issue from your GitHub account: one version per company, edited where that helps, with what's
-wrong with the others. Tick the version you posted, even with small edits; leave a rewritten one
-unticked. Close the issue when you're done. Exits 4 (no version passed its checks) and 5 (nothing
+wrong with the others. Tick a version you posted exactly as written. For anything else, edited
+or written from scratch, leave it unticked and add a comment with what you posted
+([decision 0020](decisions/0020-posted-text-captured.md)):
+
+````text
+posted BF-B version 2
+
+```text
+📊 Brown-Forman yields 3.18%, nearly double its 5-year average of 1.65%.
+
+https://quantic.finance/stocks/BF-B
+```
+````
+
+`posted BF-B` without a version for a post written from scratch. A comment that starts with
+"posted" but isn't in that form is named by `--sync` and not kept. Add it **before closing the
+issue**, or at least before the next sync: a closed issue's comments are read once. Close the
+issue when you're done. Exits 4 (no version passed its checks) and 5 (nothing
 to post about) are outcomes, not failures.
 
 ## 9. Freeing the GPU
